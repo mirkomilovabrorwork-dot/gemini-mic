@@ -19,9 +19,15 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
   + manifest + resources, faithful to the APK.
 - ✅ GitHub Actions build **GREEN** → debug APK artifact.
   Repo: https://github.com/mirkomilovabrorwork-dot/gemini-mic (public)
-  Latest good run: 28465174788. Built APK pulled to `dist/app-debug.apk`.
-- ⏳ NEXT: on-device test — install APK, paste Gemini API key, grant
-  mic + overlay + accessibility, start bubble, confirm voice→text works.
+- ✅ On-device: confirmed working (voice → typed text).
+- ✅ Feature: transcript formatted into paragraphs — blank line ~every 2
+  sentences, a long sentence (>=14 words) stands alone
+  (`GeminiClient.formatParagraphs`, applied after `cleanTranscript`).
+- ✅ Stable signing: committed `app/debug.keystore` (well-known debug key,
+  password "android") so updates install in place without uninstall.
+  Latest good run: 28479603726. APK pulled to `dist/app-debug.apk`.
+- ⏳ NEXT: user re-tests the paragraph formatting on device (needs ONE final
+  uninstall+reinstall to switch to the stable-key build); then next feature.
 
 ## Build / verify
 - No local JDK/SDK. Build is cloud-only via GitHub Actions (`.github/workflows/build.yml`):
