@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gemini Mic</string>
+    <string name="accessibility_service_label">Gemini Mic auto input</string>
+    <string name="accessibility_service_description">Types Gemini voice transcription into the focused text field.</string>
+    <string name="keyboard_service_label">Gemini Mic Keyboard</string>
+</resources>

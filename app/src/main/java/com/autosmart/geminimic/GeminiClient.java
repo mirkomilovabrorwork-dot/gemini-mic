@@ -1,0 +1,211 @@
+package com.autosmart.geminimic;
+
+import android.content.Context;
+import android.util.Base64;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+
+final class GeminiClient {
+
+    private GeminiClient() {
+    }
+
+    static String cleanTranscript(String p8) {
+        if (p8 != null) {
+            String s = p8.trim()
+                    .replace("```", "").trim()
+                    .replace("**", "").trim()
+                    .replaceAll("(?m)^\\s*\\[\\d{1,2}:\\d{2}(?::\\d{2})?\\]\\s*", "")
+                    .replaceAll("\\[\\d{1,2}:\\d{2}(?::\\d{2})?\\]\\s*", "")
+                    .replaceAll("(?m)^\\s*\\d+[.)]\\s+", "")
+                    .trim();
+            String lower = s.toLowerCase();
+            String[] prefixes = new String[6];
+            prefixes[0] = "transcript:";
+            prefixes[1] = "transcription:";
+            prefixes[2] = "text:";
+            prefixes[3] = "the transcript is:";
+            prefixes[4] = "here is the transcript:";
+            prefixes[5] = "boshqa ovoz:";
+            for (int i = 0; i < prefixes.length; i++) {
+                String prefix = prefixes[i];
+                if (lower.startsWith(prefix)) {
+                    s = s.substring(prefix.length()).trim();
+                    lower = s.toLowerCase();
+                }
+            }
+            if (((s.startsWith("\"")) && (s.endsWith("\"")))
+                    || ((s.startsWith("'")) && (s.endsWith("'")))) {
+                s = s.substring(1, s.length() - 1).trim();
+            }
+            return s;
+        } else {
+            return "";
+        }
+    }
+
+    private static String extractText(String body) throws Exception {
+        JSONArray candidates = new JSONObject(body).optJSONArray("candidates");
+        if (candidates == null || candidates.length() == 0) {
+            throw new IllegalStateException("No transcript returned");
+        }
+        JSONArray parts = candidates.getJSONObject(0)
+                .getJSONObject("content")
+                .getJSONArray("parts");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < parts.length(); i++) {
+            sb.append(parts.getJSONObject(i).optString("text", ""));
+        }
+        return sb.toString();
+    }
+
+    private static String languageInstruction(Context ctx) {
+        String mode = Prefs.languageMode(ctx);
+        if ("uz_en".equals(mode)) {
+            return "The speaker usually mixes Uzbek and English. Preserve both languages exactly as spoken.";
+        } else if ("uz_ru".equals(mode)) {
+            return "The speaker usually mixes Uzbek and Russian. Preserve both languages exactly as spoken.";
+        } else {
+            return "The speaker may mix Uzbek, English, and Russian in the same sentence. Preserve each language exactly as spoken.";
+        }
+    }
+
+    private static String transcriptionPrompt(Context ctx) {
+        return "Transcribe this audio for direct typing. "
+                + languageInstruction(ctx)
+                + "\n\nRules:\n"
+                + "- Write only the words that were actually spoken. Do not invent, replace, translate, or paraphrase words.\n"
+                + "- Do not add timestamps, numbers, bullets, speaker labels, headings, explanations, quotes, markdown, or formatting.\n"
+                + "- Do not summarize, rewrite, or turn speech into a task list.\n"
+                + "- Uzbek words must be written in natural Uzbek Latin.\n"
+                + "- Keep English words exactly in English/Latin when they were spoken.\n"
+                + "- Keep Russian words exactly in Cyrillic when they were spoken.\n"
+                + "- Do not convert English or Russian words into Uzbek. Do not convert Uzbek words into English or Russian.\n"
+                + "- Preserve mixed-language word order as spoken.\n"
+                + "- Remove only filler sounds like umm, aa, eee and obvious repeated stutters when they do not change the meaning.\n"
+                + "- If a word is impossible to identify, write [noaniq].\n"
+                + "- Return only the final plain transcript text.";
+    }
+
+    private static String readAll(InputStream in) throws Exception {
+        if (in == null) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+        try {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        } finally {
+            reader.close();
+        }
+        return sb.toString();
+    }
+
+    private static String postGenerateContent(Context ctx, String key, JSONObject body, int readTimeoutMs) throws Exception {
+        String urlStr = "https://generativelanguage.googleapis.com/v1beta/models/"
+                + Prefs.model(ctx) + ":generateContent?key=" + key;
+        HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+        try {
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(readTimeoutMs);
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
+            OutputStream out = conn.getOutputStream();
+            try {
+                out.write(payload);
+            } finally {
+                out.close();
+            }
+            int code = conn.getResponseCode();
+            InputStream stream;
+            if (code >= 200 && code < 300) {
+                stream = conn.getInputStream();
+            } else {
+                stream = conn.getErrorStream();
+            }
+            String responseBody = readAll(stream);
+            if (code < 200 || code >= 300) {
+                throw new IllegalStateException("Gemini error " + code + ": " + responseBody);
+            }
+            conn.disconnect();
+            return responseBody;
+        } catch (Throwable t) {
+            conn.disconnect();
+            throw t;
+        }
+    }
+
+    static String testConnection(Context ctx) throws Exception {
+        String key = Prefs.apiKey(ctx);
+        if (key.isEmpty()) {
+            throw new IllegalStateException("Missing Gemini API key");
+        }
+        JSONObject request = new JSONObject();
+        JSONArray contents = new JSONArray();
+        JSONObject content = new JSONObject();
+        JSONArray parts = new JSONArray();
+        parts.put(new JSONObject().put("text", "Reply with exactly OK."));
+        content.put("parts", parts);
+        contents.put(content);
+        request.put("contents", contents);
+        request.put("generationConfig", new JSONObject()
+                .put("temperature", 0)
+                .put("maxOutputTokens", 8));
+        String result = extractText(postGenerateContent(ctx, key, request, 30000)).trim();
+        if (result.isEmpty()) {
+            throw new IllegalStateException("Gemini returned empty response");
+        }
+        return result;
+    }
+
+    static String transcribe(Context ctx, File audioFile) throws Exception {
+        String key = Prefs.apiKey(ctx);
+        if (key.isEmpty()) {
+            throw new IllegalStateException("Missing Gemini API key");
+        }
+        byte[] bytes = Files.readAllBytes(audioFile.toPath());
+        if (bytes.length == 0) {
+            throw new IllegalStateException("No audio recorded");
+        }
+        if (bytes.length > 20971520) {
+            throw new IllegalStateException("Audio is too long");
+        }
+        JSONObject request = new JSONObject();
+        JSONArray contents = new JSONArray();
+        JSONObject content = new JSONObject();
+        JSONArray parts = new JSONArray();
+        parts.put(new JSONObject().put("text", transcriptionPrompt(ctx)));
+        parts.put(new JSONObject().put("inline_data",
+                new JSONObject()
+                        .put("mime_type", "audio/aac")
+                        .put("data", Base64.encodeToString(bytes, Base64.NO_WRAP))));
+        content.put("parts", parts);
+        contents.put(content);
+        request.put("contents", contents);
+        request.put("generationConfig", new JSONObject()
+                .put("temperature", 0)
+                .put("maxOutputTokens", 1024)
+                .put("thinkingConfig", new JSONObject().put("thinkingBudget", 0)));
+        String transcript = cleanTranscript(extractText(postGenerateContent(ctx, key, request, 45000)));
+        if (transcript.isEmpty()) {
+            throw new IllegalStateException("Empty transcript");
+        }
+        return transcript;
+    }
+}
