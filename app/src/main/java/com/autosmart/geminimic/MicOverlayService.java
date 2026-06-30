@@ -1,4 +1,4 @@
-﻿package com.autosmart.geminimic;
+package com.autosmart.geminimic;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

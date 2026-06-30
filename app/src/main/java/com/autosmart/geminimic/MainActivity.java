@@ -1,4 +1,4 @@
-﻿package com.autosmart.geminimic;
+package com.autosmart.geminimic;
 
 import android.app.Activity;
 import android.content.ComponentName;
