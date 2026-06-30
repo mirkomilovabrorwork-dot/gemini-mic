@@ -202,10 +202,51 @@ final class GeminiClient {
                 .put("temperature", 0)
                 .put("maxOutputTokens", 1024)
                 .put("thinkingConfig", new JSONObject().put("thinkingBudget", 0)));
-        String transcript = cleanTranscript(extractText(postGenerateContent(ctx, key, request, 45000)));
+        String transcript = formatParagraphs(cleanTranscript(extractText(postGenerateContent(ctx, key, request, 45000))));
         if (transcript.isEmpty()) {
             throw new IllegalStateException("Empty transcript");
         }
         return transcript;
+    }
+
+    // Groups the transcript into short paragraphs for readability:
+    // a blank line after about every 2 sentences, and a long sentence stands alone.
+    static String formatParagraphs(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String flat = raw.trim().replaceAll("\\s+", " ");
+        if (flat.isEmpty()) {
+            return "";
+        }
+        // Split on whitespace that follows a sentence terminator. A "3.5" has no
+        // following space, so decimals are not split.
+        String[] sentences = flat.split("(?<=[.!?…])\\s+");
+        if (sentences.length <= 1) {
+            return flat;
+        }
+        StringBuilder out = new StringBuilder();
+        int inGroup = 0;
+        for (int i = 0; i < sentences.length; i++) {
+            String s = sentences[i].trim();
+            if (s.isEmpty()) {
+                continue;
+            }
+            boolean big = s.split("\\s+").length >= 14;
+            if (inGroup > 0 && (big || inGroup >= 2)) {
+                out.append("\n\n");
+                inGroup = 0;
+            }
+            if (inGroup > 0) {
+                out.append(' ');
+            }
+            out.append(s);
+            inGroup++;
+            if (big && i < sentences.length - 1) {
+                out.append("\n\n");
+                inGroup = 0;
+            }
+        }
+        return out.toString().trim();
     }
 }
