@@ -1,6 +1,6 @@
 # Gemini Mic — STATE
 
-_Trigger word: "gemini mic". Source of truth for resume._
+_Trigger words: "gemini", "gemini mic". Source of truth for resume._
 
 ## What this is
 System-wide voice keyboard for Android: hold a floating mic → record → Gemini
