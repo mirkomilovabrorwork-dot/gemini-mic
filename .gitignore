@@ -4,3 +4,9 @@ local.properties
 *.iml
 .idea/
 dist/
+
+# Python (windows/)
+.venv/
+__pycache__/
+*.pyc
+*.spec
