@@ -26,8 +26,18 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
 - ✅ Stable signing: committed `app/debug.keystore` (well-known debug key,
   password "android") so updates install in place without uninstall.
   Latest good run: 28479603726. APK pulled to `dist/app-debug.apk`.
-- ⏳ NEXT: user re-tests the paragraph formatting on device (needs ONE final
-  uninstall+reinstall to switch to the stable-key build); then next feature.
+- ✅ Windows edition (`windows/`): Python tray push-to-talk app — hold Right Ctrl
+  → record → Gemini → paste into focused field. Same prompt/clean/format logic
+  (verified 1:1 via `python gemini_mic.py --selftest`). Packaged to a standalone
+  `windows/dist/GeminiMic.exe` (~33 MB) via PyInstaller. Source committed;
+  exe/venv gitignored. Build locally: `windows/build.bat`.
+- ⏳ NEXT: user runs GeminiMic.exe, sets API key in Settings, tests hold-to-talk
+  end-to-end on real mic; then next feature.
+
+## Windows build (local)
+- `windows/.venv` has deps; rebuild exe:
+  `.venv\Scripts\python -m PyInstaller --onefile --noconsole --name GeminiMic --icon icon.ico --collect-all sounddevice --hidden-import pystray._win32 --hidden-import pynput.keyboard._win32 --hidden-import pynput.mouse._win32 --noconfirm gemini_mic.py`
+- Default hotkey `right ctrl` (changeable in Settings). Config: `%APPDATA%\GeminiMic\config.json`.
 
 ## Build / verify
 - No local JDK/SDK. Build is cloud-only via GitHub Actions (`.github/workflows/build.yml`):
