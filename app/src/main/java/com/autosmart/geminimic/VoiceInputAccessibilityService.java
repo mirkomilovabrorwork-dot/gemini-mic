@@ -200,7 +200,11 @@ public class VoiceInputAccessibilityService extends AccessibilityService {
             }
             return false;
         }
-        return true;
+        // Selection unknown (-1): treat the existing text as REAL content, not a
+        // placeholder — otherwise setText would rebuild from "" and overwrite the
+        // user's existing text instead of appending. Real hints are already caught
+        // above via getHintText()/getContentDescription().
+        return false;
     }
 
     private boolean looksLikeShortFieldLabel(String text) {
