@@ -30,13 +30,13 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
 }
 
 MODEL_CHOICES = [
-    ("Better mixed (gemini-2.5-flash)", "gemini-2.5-flash"),
+    ("Better mixed (gemini-3.5-flash)", "gemini-3.5-flash"),
     ("Fast cheap (gemini-2.5-flash-lite)", "gemini-2.5-flash-lite"),
 ]
 
