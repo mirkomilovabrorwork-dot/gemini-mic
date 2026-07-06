@@ -236,8 +236,20 @@ import pystray
 from pynput import keyboard
 from pynput.keyboard import Key, Controller as KeyboardController
 
+import winsound
+
 import tkinter as tk
 from tkinter import ttk, messagebox
+
+
+def beep(freq, duration):
+    """Short non-blocking tone for audio feedback (recording start / done)."""
+    def _b():
+        try:
+            winsound.Beep(freq, duration)
+        except Exception:
+            pass
+    threading.Thread(target=_b, daemon=True).start()
 
 
 # ---------------------------------------------------------------------------
@@ -651,6 +663,11 @@ class GeminiMicApp:
         except Exception:
             pass
 
+    def _tooltip(self, text):
+        """Quiet status via the tray tooltip — no popup balloon."""
+        if self.icon is not None:
+            self.icon.title = text
+
     # -- recording ----------------------------------------------------------
 
     def _audio_callback(self, indata, frames_count, time_info, status):
@@ -695,6 +712,8 @@ class GeminiMicApp:
                 pass
             return
 
+        beep(1000, 80)  # audio cue: recording started (confirms the hotkey works)
+
         # auto-stop watchdog
         def watchdog():
             time.sleep(AUTO_STOP_SEC)
@@ -723,14 +742,14 @@ class GeminiMicApp:
 
         if duration < MIN_DURATION_SEC:
             self.set_state("idle")
-            self.notify("Hold longer")
+            self._tooltip("Gemini Mic — hold longer")
             return
 
         wav_bytes, audio = frames_to_wav_bytes(frames)
 
         if audio.size == 0 or int(np.max(np.abs(audio))) < SILENCE_PEAK_THRESHOLD:
             self.set_state("idle")
-            self.notify("Ovoz eshitilmadi")
+            self._tooltip("Gemini Mic — ovoz eshitilmadi")
             return
 
         self.set_state("transcribing")
@@ -745,6 +764,7 @@ class GeminiMicApp:
                     wav_bytes,
                 )
                 self.paste_text(transcript)
+                beep(660, 90)  # audio cue: transcript pasted (done)
             except GeminiError as e:
                 self.notify(str(e))
             except Exception as e:
