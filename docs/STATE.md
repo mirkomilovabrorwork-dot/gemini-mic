@@ -13,6 +13,33 @@ Original Codex-built project source was lost (not on D:/C:/GitHub). Reconstructe
 1:1 by decompiling `GeminiMic-Simple-Android-debug.apk` (androguard) into a clean
 Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimic-recovered\`.
 
+## GOAL (owner's words)
+Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
+mixed Uzbek/English/Russian, the text lands in the focused field — free
+(Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
+
+## STATUS (resume board) — 2026-07-07
+- Last done (commit `1214f66` + this one): Windows UX hardening after owner
+  feedback "ochilmayapti / ko'p xabar / hotkey ishlamadi":
+  - model reverted to **gemini-2.5-flash** (3.5-flash returns 503 UNAVAILABLE;
+    2.5 verified 200 OK with the owner's real key) — both platforms;
+  - hotkey parsing tolerant ("ctrl left" → left ctrl; config had a bad value
+    silently falling back);
+  - beep on record start/done; guard messages → tooltip instead of balloons;
+  - single-instance mutex + startup beep/balloon (Win11 hides tray icons in ^
+    → looked like "didn't open"; found 8 duplicate copies running);
+  - owner's live config patched (model + hotkey `right ctrl`), fresh exe
+    installed to Desktop\GeminiMic.exe and launched (PID verified).
+- NEXT: owner tests Windows end-to-end (beep on Right Ctrl hold → speak →
+  release → text pasted). If good → refresh the share-zip
+  (Desktop\GeminiMic-share.zip currently has the OLD exe + 3.5-flash APK —
+  rebuild both binaries into it) and hand to the friend.
+- Android APK with 2.5-flash revert: CI already green on the revert commit —
+  download fresh APK via `gh run download` when the owner next updates his phone.
+- Blockers: none. OWNER TODO: try Windows once (hold Right Ctrl, speak,
+  release) and say if the beep+text work; drag the mic icon out of the ^
+  overflow onto the taskbar so it's always visible.
+
 ## Status — 2026-06-30
 - ✅ Clean rebuild complete: 7 classes (MainActivity, MicOverlayService,
   VoiceInputAccessibilityService, GeminiClient, Prefs, GeminiMicApp, CrashActivity)
