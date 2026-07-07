@@ -19,25 +19,33 @@ mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
 ## STATUS (resume board) — 2026-07-07
-- MODEL: primary **gemini-3.5-flash** (free; verified live 200/STOP/text with the
-  owner's real key + the real transcribe body), with **auto-fallback to
-  gemini-2.5-flash** on retryable errors (HTTP 404/429/500/503 = busy/quota/
-  unavailable). Every call tries 3.5 first → returns to 3.5 once it recovers.
-  Impl: Android `GeminiClient` (postGenerateContent takes model param +
-  isRetryable, wrapped in transcribe/testConnection); Windows `_call_gemini`
-  helper sets `.status`, `gemini_transcribe` retries with FALLBACK_MODEL.
-- Windows also hardened earlier this session: tolerant hotkey parsing, beep on
-  record start/done, guard msgs → tray tooltip (not balloons), single-instance
-  mutex + startup beep/balloon (Win11 hides tray icons under ^). Fresh
-  Desktop\GeminiMic.exe installed + running (owner's config = 3.5 + right ctrl).
-- Android: CI green (run 28881668371), fresh APK at `dist/app-debug.apk` with
-  the fallback. Stable keystore → installs in place (no uninstall).
-- NEXT: owner tests both end-to-end. If good → refresh the friend share-zip
-  (`Desktop\GeminiMic-share.zip` still holds the OLD exe + OLD apk — rebuild both
-  binaries into it before handing over).
-- Blockers: none. OWNER TODO: (1) install the new APK on the phone;
-  (2) test Windows (hold Right Ctrl → beep → speak → release → text) and say if
-  it works; (3) drag the mic icon out of the ^ overflow onto the taskbar.
+- MODEL (final): primary **gemini-3.5-flash**, fallback **gemini-3-flash-preview**
+  on retryable errors (HTTP 404/429/500/503). Both are Gemini-3 flash, both
+  FREE-tier, and DIFFERENT models → separate rate limits, so a 429 on the
+  primary is absorbed instantly (429 returns immediately, no long wait).
+  Live-verified with real TTS audio: BOTH transcribe the test phrase exactly
+  (3.5 does NOT hallucinate). `gemini-3.0-flash` / `-preview` do NOT exist (404);
+  `gemini-3-flash-preview` and `gemini-3.5-flash` are the real ids on the key.
+  Fallback mechanism: Android GeminiClient.postGenerateContent(model)+isRetryable;
+  Windows/Mac `_call_gemini` sets `.status`, `gemini_transcribe` retries once.
+- BILLING (verified on official pricing page): free tier works WITHOUT billing —
+  both flash models free but rate-limited (~15 RPM). Enabling billing = paid
+  immediately, NO free allowance (3.5-flash ~$1.50/$9 per 1M tok). → owner should
+  use a NO-BILLING key. Free-tier caveat: Google may use the content for training.
+- Windows: hardened (tolerant hotkey parse, beep on start/done, guard msgs →
+  tray tooltip, single-instance mutex + startup beep/balloon since Win11 hides
+  tray icons under ^). Fresh Desktop\GeminiMic.exe running; live config = 3.5.
+- Android: CI green (run 28894991469), fresh APK on Desktop + dist/. Stable
+  keystore → installs in place (no uninstall).
+- macOS: rumps menu-bar app in `mac/`; cloud-built via `.github/workflows/build-mac.yml`
+  (macos-13 Intel → runs on all Macs). Artifact `GeminiMic-mac` (zip of the .app).
+  NOT yet delivered to the owner/friend or first-run-tested on a real Mac.
+- NEXT: (1) owner tests Windows + Android end-to-end; (2) grab the macOS build
+  artifact from the latest build-mac run + write the 1-page permission guide;
+  (3) refresh `Desktop\GeminiMic-share.zip` (currently OLD binaries) before the
+  friend hand-off.
+- Blockers: none. OWNER TODO: install the new APK on the phone; test Windows
+  (hold Right Ctrl → beep → speak → release → text); use a NO-BILLING key.
 
 ## Status — 2026-06-30
 - ✅ Clean rebuild complete: 7 classes (MainActivity, MicOverlayService,
