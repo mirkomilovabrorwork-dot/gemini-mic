@@ -42,7 +42,7 @@ MODEL_CHOICES = [
 
 # Primary is gemini-3.5-flash; when it errors (busy/quota/not available) retry
 # once with a DIFFERENT model (separate quota) so a 429 rarely reaches the user.
-FALLBACK_MODEL = "gemini-2.5-flash"
+FALLBACK_MODEL = "gemini-3-flash-preview"
 FALLBACK_STATUSES = (404, 429, 500, 503)
 
 LANGUAGE_CHOICES = [
