@@ -18,6 +18,21 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
+## STATUS (resume board) — 2026-07-07 (v3)
+- **Android bubble REMOVED** (owner: "volume yetadi"). Volume-Down hold-to-talk is
+  now the ONLY Android trigger. Dropped the whole floating overlay UI from
+  MicOverlayService (recording engine + volume start/stop/cancel bridge + fg
+  notification kept intact), the "Ustidan chizish" checklist row + overlay gate
+  from MainActivity, orphan `hasActiveTextInput()`, and **SYSTEM_ALERT_WINDOW**
+  from the manifest → one fewer setup step for the friend. Feedback now = toast
+  ("Recording") + persistent notification (Ready/Transcribing). CI GREEN
+  (run 28902251781); fresh APK verified (correct models, overlay perm ABSENT in
+  compiled manifest) → copied to Desktop `GeminiMic-android.apk` + `dist/`.
+- ⚠️ **share zip is now STALE** for Android: `GeminiMic-share.zip` still bundles
+  the old bubble source + old APK + HOW-TO-USE.txt that mentions the bubble.
+  REFRESH IT (source tree + new APK + reword HOW-TO) only AFTER owner confirms the
+  no-bubble build works on his phone — else it'd be rebuilt twice.
+
 ## STATUS (resume board) — 2026-07-07 (v2)
 - THREE platforms, all built & current: **Android** (app/, Java), **Windows**
   (windows/gemini_mic.py, tray), **macOS** (mac/gemini_mic_mac.py, rumps menu bar).
