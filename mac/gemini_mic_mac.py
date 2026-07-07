@@ -41,7 +41,8 @@ MODEL_CHOICES = [
     ("Fast cheap (gemini-2.5-flash-lite)", "gemini-2.5-flash-lite"),
 ]
 
-# When the primary model errors (busy/quota/not available), retry once here.
+# Primary is gemini-3.5-flash; on error (busy/quota/not available) retry once
+# with a DIFFERENT model (separate quota) so a 429 rarely reaches the user.
 FALLBACK_MODEL = "gemini-2.5-flash"
 FALLBACK_STATUSES = (404, 429, 500, 503)
 
