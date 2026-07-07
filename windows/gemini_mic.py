@@ -30,15 +30,19 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-2.5-flash",
+    "model": "gemini-3.5-flash",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
 }
 
 MODEL_CHOICES = [
-    ("Better mixed (gemini-2.5-flash)", "gemini-2.5-flash"),
+    ("Better mixed (gemini-3.5-flash)", "gemini-3.5-flash"),
     ("Fast cheap (gemini-2.5-flash-lite)", "gemini-2.5-flash-lite"),
 ]
+
+# When the primary model errors (busy/quota/not available), retry once here.
+FALLBACK_MODEL = "gemini-2.5-flash"
+FALLBACK_STATUSES = (404, 429, 500, 503)
 
 LANGUAGE_CHOICES = [
     ("Uzbek + English", "uz_en"),
@@ -328,6 +332,42 @@ class GeminiError(Exception):
     pass
 
 
+def _call_gemini(api_key, model, body):
+    """POST to the Gemini generateContent endpoint for `model` and return the
+    joined text of the first candidate's parts."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+
+    try:
+        resp = requests.post(
+            url,
+            json=body,
+            timeout=(GEMINI_CONNECT_TIMEOUT, GEMINI_READ_TIMEOUT),
+        )
+    except requests.RequestException as e:
+        raise GeminiError(f"Network error: {e}")
+
+    if resp.status_code < 200 or resp.status_code >= 300:
+        err = GeminiError(f"Gemini error {resp.status_code}: {resp.text}")
+        err.status = resp.status_code
+        raise err
+
+    try:
+        data = resp.json()
+    except ValueError:
+        raise GeminiError("Gemini returned invalid JSON")
+
+    candidates = data.get("candidates") or []
+    if not candidates:
+        raise GeminiError("No transcript returned")
+
+    try:
+        parts = candidates[0]["content"]["parts"]
+    except (KeyError, IndexError, TypeError):
+        raise GeminiError("No transcript returned")
+
+    return "".join(p.get("text", "") for p in parts)
+
+
 def gemini_transcribe(api_key, model, language_mode, wav_bytes):
     if not api_key:
         raise GeminiError("Missing Gemini API key")
@@ -336,7 +376,6 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes):
     if len(wav_bytes) > MAX_AUDIO_BYTES:
         raise GeminiError("Audio is too long")
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     body = {
         "contents": [
             {
@@ -359,32 +398,13 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes):
     }
 
     try:
-        resp = requests.post(
-            url,
-            json=body,
-            timeout=(GEMINI_CONNECT_TIMEOUT, GEMINI_READ_TIMEOUT),
-        )
-    except requests.RequestException as e:
-        raise GeminiError(f"Network error: {e}")
+        text = _call_gemini(api_key, model, body)
+    except GeminiError as e:
+        if getattr(e, "status", None) in FALLBACK_STATUSES and model != FALLBACK_MODEL:
+            text = _call_gemini(api_key, FALLBACK_MODEL, body)
+        else:
+            raise
 
-    if resp.status_code < 200 or resp.status_code >= 300:
-        raise GeminiError(f"Gemini error {resp.status_code}: {resp.text}")
-
-    try:
-        data = resp.json()
-    except ValueError:
-        raise GeminiError("Gemini returned invalid JSON")
-
-    candidates = data.get("candidates") or []
-    if not candidates:
-        raise GeminiError("No transcript returned")
-
-    try:
-        parts = candidates[0]["content"]["parts"]
-    except (KeyError, IndexError, TypeError):
-        raise GeminiError("No transcript returned")
-
-    text = "".join(p.get("text", "") for p in parts)
     transcript = format_paragraphs(clean_transcript(text))
     if not transcript:
         raise GeminiError("Empty transcript")

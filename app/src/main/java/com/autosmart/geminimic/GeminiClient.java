@@ -18,6 +18,8 @@ import java.nio.file.Files;
 
 final class GeminiClient {
 
+    private static final String FALLBACK_MODEL = "gemini-2.5-flash";
+
     private GeminiClient() {
     }
 
@@ -115,9 +117,17 @@ final class GeminiClient {
         return sb.toString();
     }
 
-    private static String postGenerateContent(Context ctx, String key, JSONObject body, int readTimeoutMs) throws Exception {
+    private static boolean isRetryable(IllegalStateException e) {
+        String msg = e.getMessage();
+        return msg != null && (msg.startsWith("Gemini error 404")
+                || msg.startsWith("Gemini error 429")
+                || msg.startsWith("Gemini error 500")
+                || msg.startsWith("Gemini error 503"));
+    }
+
+    private static String postGenerateContent(String key, String model, JSONObject body, int readTimeoutMs) throws Exception {
         String urlStr = "https://generativelanguage.googleapis.com/v1beta/models/"
-                + Prefs.model(ctx) + ":generateContent?key=" + key;
+                + model + ":generateContent?key=" + key;
         HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
         try {
             conn.setRequestMethod("POST");
@@ -167,7 +177,18 @@ final class GeminiClient {
         request.put("generationConfig", new JSONObject()
                 .put("temperature", 0)
                 .put("maxOutputTokens", 8));
-        String result = extractText(postGenerateContent(ctx, key, request, 30000)).trim();
+        String model = Prefs.model(ctx);
+        String raw;
+        try {
+            raw = postGenerateContent(key, model, request, 30000);
+        } catch (IllegalStateException e) {
+            if (isRetryable(e) && !FALLBACK_MODEL.equals(model)) {
+                raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
+            } else {
+                throw e;
+            }
+        }
+        String result = extractText(raw).trim();
         if (result.isEmpty()) {
             throw new IllegalStateException("Gemini returned empty response");
         }
@@ -202,7 +223,18 @@ final class GeminiClient {
                 .put("temperature", 0)
                 .put("maxOutputTokens", 1024)
                 .put("thinkingConfig", new JSONObject().put("thinkingBudget", 0)));
-        String transcript = formatParagraphs(cleanTranscript(extractText(postGenerateContent(ctx, key, request, 45000))));
+        String model = Prefs.model(ctx);
+        String raw;
+        try {
+            raw = postGenerateContent(key, model, request, 45000);
+        } catch (IllegalStateException e) {
+            if (isRetryable(e) && !FALLBACK_MODEL.equals(model)) {
+                raw = postGenerateContent(key, FALLBACK_MODEL, request, 45000);
+            } else {
+                throw e;
+            }
+        }
+        String transcript = formatParagraphs(cleanTranscript(extractText(raw)));
         if (transcript.isEmpty()) {
             throw new IllegalStateException("Empty transcript");
         }

@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
 
         Button betterBtn = button("Better mixed language");
         betterBtn.setOnClickListener(v -> {
-            Prefs.get(this).edit().putString("model", "gemini-2.5-flash").apply();
+            Prefs.get(this).edit().putString("model", "gemini-3.5-flash").apply();
             toast("Mode: Better mixed");
             refreshStatusSafely();
         });
