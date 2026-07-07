@@ -1,0 +1,47 @@
+name: Build macOS app
+
+on:
+  push:
+    paths:
+      - 'mac/**'
+      - '.github/workflows/build-mac.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Intel runner → x86_64 .app runs natively on Intel Macs and via Rosetta 2
+    # on Apple Silicon, so a single build works on any Mac.
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r mac/requirements.txt pyinstaller
+
+      - name: Parity self-test (pure text logic)
+        run: python mac/gemini_mic_mac.py --selftest
+
+      - name: Build .app
+        working-directory: mac
+        run: pyinstaller GeminiMic.spec --noconfirm
+
+      - name: Ad-hoc codesign (reduces "app is damaged" on first open)
+        working-directory: mac
+        run: codesign --force --deep --sign - "dist/Gemini Mic.app" || true
+
+      - name: Zip the .app (ditto preserves the bundle)
+        working-directory: mac
+        run: ditto -c -k --sequesterRsrc --keepParent "dist/Gemini Mic.app" "GeminiMic-mac.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GeminiMic-mac
+          path: mac/GeminiMic-mac.zip
