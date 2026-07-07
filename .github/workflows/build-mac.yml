@@ -9,9 +9,10 @@ on:
 
 jobs:
   build:
-    # Intel runner → x86_64 .app runs natively on Intel Macs and via Rosetta 2
-    # on Apple Silicon, so a single build works on any Mac.
-    runs-on: macos-13
+    # GitHub retired the Intel macos-13 runner, so we build on Apple Silicon.
+    # The resulting arm64 .app runs on Apple Silicon Macs (M1/M2/M3/M4…).
+    # (Intel Macs would need a source build — no Intel GitHub runner exists now.)
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
