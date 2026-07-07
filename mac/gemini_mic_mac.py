@@ -36,11 +36,6 @@ DEFAULT_CONFIG = {
     "hotkey": "right ctrl",
 }
 
-MODEL_CHOICES = [
-    ("Better mixed (gemini-3.5-flash)", "gemini-3.5-flash"),
-    ("Fast cheap (gemini-2.5-flash-lite)", "gemini-2.5-flash-lite"),
-]
-
 # Primary is gemini-3.5-flash; on error (busy/quota/not available) retry once
 # with a DIFFERENT model (separate quota) so a 429 rarely reaches the user.
 FALLBACK_MODEL = "gemini-3-flash-preview"
@@ -462,7 +457,7 @@ class GeminiMicApp(rumps.App):
         self._refresh_language_ticks()
 
         self.hotkey_info_item = rumps.MenuItem(
-            f"Hotkey: {self.cfg.get('hotkey', DEFAULT_CONFIG['hotkey'])}"
+            f"{self.cfg.get('hotkey', DEFAULT_CONFIG['hotkey'])} ni bosib turib gapiring"
         )
         self.hotkey_info_item.set_callback(None)
 

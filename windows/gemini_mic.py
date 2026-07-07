@@ -35,11 +35,6 @@ DEFAULT_CONFIG = {
     "hotkey": "right ctrl",
 }
 
-MODEL_CHOICES = [
-    ("Better mixed (gemini-3.5-flash)", "gemini-3.5-flash"),
-    ("Fast cheap (gemini-2.5-flash-lite)", "gemini-2.5-flash-lite"),
-]
-
 # Primary is gemini-3.5-flash; when it errors (busy/quota/not available) retry
 # once with a DIFFERENT model (separate quota) so a 429 rarely reaches the user.
 FALLBACK_MODEL = "gemini-3-flash-preview"
@@ -495,60 +490,84 @@ class SettingsWindow:
         except tk.TclError:
             pass
 
-        pad = {"padx": 10, "pady": 6}
+        try:
+            style = ttk.Style(root)
+            if "vista" in style.theme_names():
+                style.theme_use("vista")
+        except tk.TclError:
+            pass
 
-        frm = ttk.Frame(root)
-        frm.pack(fill="both", expand=True)
+        outer = ttk.Frame(root, padding=16)
+        outer.pack(fill="both", expand=True)
 
-        ttk.Label(frm, text="Gemini API key:").grid(row=0, column=0, sticky="w", **pad)
+        ttk.Label(
+            outer,
+            text="Right Ctrl ni bosib turib gapiring — matn o'zi yoziladi.",
+            font=("Segoe UI", 9, "italic"),
+            foreground="#555",
+            wraplength=360,
+            justify="left",
+        ).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 14))
+
+        # -- API key ---------------------------------------------------------
+        ttk.Label(outer, text="Gemini API key", font=("Segoe UI", 9, "bold")).grid(
+            row=1, column=0, columnspan=3, sticky="w"
+        )
         api_key_var = tk.StringVar(value=cfg.get("api_key", ""))
-        api_key_entry = ttk.Entry(frm, textvariable=api_key_var, show="*", width=40)
-        api_key_entry.grid(row=0, column=1, sticky="we", **pad)
+        api_key_entry = ttk.Entry(outer, textvariable=api_key_var, show="*", width=42)
+        api_key_entry.grid(row=2, column=0, columnspan=2, sticky="we", pady=(4, 0))
 
         show_var = tk.BooleanVar(value=False)
 
         def toggle_show():
             api_key_entry.config(show="" if show_var.get() else "*")
 
-        ttk.Checkbutton(frm, text="Show", variable=show_var, command=toggle_show).grid(
-            row=0, column=2, sticky="w", **pad
+        ttk.Checkbutton(outer, text="Show", variable=show_var, command=toggle_show).grid(
+            row=2, column=2, sticky="w", padx=(8, 0), pady=(4, 0)
         )
 
-        ttk.Label(frm, text="Model:").grid(row=1, column=0, sticky="nw", **pad)
-        model_var = tk.StringVar(value=cfg.get("model", DEFAULT_CONFIG["model"]))
-        model_frame = ttk.Frame(frm)
-        model_frame.grid(row=1, column=1, columnspan=2, sticky="w", **pad)
-        for label, value in MODEL_CHOICES:
-            ttk.Radiobutton(model_frame, text=label, variable=model_var, value=value).pack(
-                anchor="w"
-            )
+        ttk.Label(
+            outer,
+            text="Model avtomatik tanlanadi — tanlash shart emas.",
+            foreground="#777",
+        ).grid(row=3, column=0, columnspan=3, sticky="w", pady=(4, 16))
 
-        ttk.Label(frm, text="Language:").grid(row=2, column=0, sticky="nw", **pad)
+        ttk.Separator(outer).grid(row=4, column=0, columnspan=3, sticky="we", pady=(0, 14))
+
+        # -- Language ---------------------------------------------------------
+        ttk.Label(outer, text="Til", font=("Segoe UI", 9, "bold")).grid(
+            row=5, column=0, columnspan=3, sticky="w"
+        )
         lang_var = tk.StringVar(value=cfg.get("language_mode", DEFAULT_CONFIG["language_mode"]))
-        lang_frame = ttk.Frame(frm)
-        lang_frame.grid(row=2, column=1, columnspan=2, sticky="w", **pad)
+        lang_frame = ttk.Frame(outer)
+        lang_frame.grid(row=6, column=0, columnspan=3, sticky="w", pady=(4, 16))
         for label, value in LANGUAGE_CHOICES:
             ttk.Radiobutton(lang_frame, text=label, variable=lang_var, value=value).pack(
-                anchor="w"
+                anchor="w", pady=2
             )
 
-        ttk.Label(frm, text="Push-to-talk hotkey:").grid(row=3, column=0, sticky="w", **pad)
-        hotkey_var = tk.StringVar(value=cfg.get("hotkey", DEFAULT_CONFIG["hotkey"]))
-        ttk.Entry(frm, textvariable=hotkey_var, width=20).grid(
-            row=3, column=1, sticky="w", **pad
+        ttk.Separator(outer).grid(row=7, column=0, columnspan=3, sticky="we", pady=(0, 14))
+
+        # -- Hotkey ---------------------------------------------------------
+        ttk.Label(outer, text="Push-to-talk tugmasi", font=("Segoe UI", 9, "bold")).grid(
+            row=8, column=0, columnspan=3, sticky="w"
         )
-        ttk.Label(frm, text="(e.g. 'right ctrl', 'f9')", foreground="#666").grid(
-            row=3, column=2, sticky="w", **pad
+        hotkey_var = tk.StringVar(value=cfg.get("hotkey", DEFAULT_CONFIG["hotkey"]))
+        ttk.Entry(outer, textvariable=hotkey_var, width=20).grid(
+            row=9, column=0, sticky="w", pady=(4, 0)
+        )
+        ttk.Label(outer, text="masalan: 'right ctrl', 'f9'", foreground="#777").grid(
+            row=9, column=1, columnspan=2, sticky="w", padx=(8, 0), pady=(4, 0)
         )
 
         status_var = tk.StringVar(value="")
-        status_label = ttk.Label(frm, textvariable=status_var, foreground="#0a0")
-        status_label.grid(row=4, column=0, columnspan=3, sticky="w", padx=10)
+        status_label = ttk.Label(outer, textvariable=status_var, foreground="#0a0")
+        status_label.grid(row=10, column=0, columnspan=3, sticky="w", pady=(14, 0))
 
         def on_save():
             new_cfg = {
                 "api_key": api_key_var.get().strip(),
-                "model": model_var.get(),
+                "model": cfg.get("model", DEFAULT_CONFIG["model"]),
                 "language_mode": lang_var.get(),
                 "hotkey": hotkey_var.get().strip() or DEFAULT_CONFIG["hotkey"],
             }
@@ -561,10 +580,10 @@ class SettingsWindow:
             status_var.set("Saved.")
             root.after(700, root.destroy)
 
-        btn_frame = ttk.Frame(frm)
-        btn_frame.grid(row=5, column=0, columnspan=3, sticky="e", padx=10, pady=(10, 10))
+        btn_frame = ttk.Frame(outer)
+        btn_frame.grid(row=11, column=0, columnspan=3, sticky="e", pady=(16, 0))
         ttk.Button(btn_frame, text="Save", command=on_save).pack(side="right")
-        ttk.Button(btn_frame, text="Cancel", command=root.destroy).pack(side="right", padx=(0, 6))
+        ttk.Button(btn_frame, text="Cancel", command=root.destroy).pack(side="right", padx=(0, 8))
 
         root.update_idletasks()
         w = root.winfo_reqwidth()
