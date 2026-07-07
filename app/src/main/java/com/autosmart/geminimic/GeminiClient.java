@@ -187,6 +187,12 @@ final class GeminiClient {
             } else {
                 throw e;
             }
+        } catch (java.io.IOException e) {
+            if (!FALLBACK_MODEL.equals(model)) {
+                raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
+            } else {
+                throw e;
+            }
         }
         String result = extractText(raw).trim();
         if (result.isEmpty()) {
@@ -226,10 +232,16 @@ final class GeminiClient {
         String model = Prefs.model(ctx);
         String raw;
         try {
-            raw = postGenerateContent(key, model, request, 45000);
+            raw = postGenerateContent(key, model, request, 30000);
         } catch (IllegalStateException e) {
             if (isRetryable(e) && !FALLBACK_MODEL.equals(model)) {
-                raw = postGenerateContent(key, FALLBACK_MODEL, request, 45000);
+                raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
+            } else {
+                throw e;
+            }
+        } catch (java.io.IOException e) {
+            if (!FALLBACK_MODEL.equals(model)) {
+                raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
             } else {
                 throw e;
             }

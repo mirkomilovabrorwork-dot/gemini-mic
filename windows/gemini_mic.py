@@ -38,7 +38,8 @@ DEFAULT_CONFIG = {
 # Primary is gemini-3.5-flash; when it errors (busy/quota/not available) retry
 # once with a DIFFERENT model (separate quota) so a 429 rarely reaches the user.
 FALLBACK_MODEL = "gemini-3-flash-preview"
-FALLBACK_STATUSES = (404, 429, 500, 503)
+# 0 = a network/timeout error (retryable → try the other model too).
+FALLBACK_STATUSES = (0, 404, 429, 500, 503)
 
 LANGUAGE_CHOICES = [
     ("Uzbek + English", "uz_en"),
@@ -54,7 +55,7 @@ SILENCE_PEAK_THRESHOLD = 500  # abs int16 sample amplitude
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
 GEMINI_CONNECT_TIMEOUT = 15
-GEMINI_READ_TIMEOUT = 45
+GEMINI_READ_TIMEOUT = 30
 
 
 def load_config():
@@ -340,7 +341,10 @@ def _call_gemini(api_key, model, body):
             timeout=(GEMINI_CONNECT_TIMEOUT, GEMINI_READ_TIMEOUT),
         )
     except requests.RequestException as e:
-        raise GeminiError(f"Network error: {e}")
+        # timeout / connection issue → mark retryable so the caller tries the other model
+        err = GeminiError("Model band yoki internet sekin. Qayta urinib ko'ring.")
+        err.status = 0
+        raise err
 
     if resp.status_code < 200 or resp.status_code >= 300:
         err = GeminiError(f"Gemini error {resp.status_code}: {resp.text}")
