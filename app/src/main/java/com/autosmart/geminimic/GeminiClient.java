@@ -18,7 +18,7 @@ import java.nio.file.Files;
 
 final class GeminiClient {
 
-    private static final String FALLBACK_MODEL = "gemini-3-flash-preview";
+    private static final String FALLBACK_MODEL = "gemini-3.5-flash";
 
     private GeminiClient() {
     }
