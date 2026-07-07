@@ -869,7 +869,25 @@ class GeminiMicApp:
             "Gemini Mic — ready",
             menu=self._build_menu(),
         )
-        self.icon.run()
+
+        def on_ready(icon):
+            icon.visible = True
+            beep(880, 120)
+            self.notify(
+                "Ishga tushdi. Yozish joyiga bosing, o'ng Ctrl ni bosib turib gapiring. "
+                "Ikonka soat yonidagi ^ ichida bo'lishi mumkin."
+            )
+
+        self.icon.run(setup=on_ready)
+
+
+def _already_running():
+    """Single-instance guard via a named Windows mutex."""
+    try:
+        ctypes.windll.kernel32.CreateMutexW(None, False, "GeminiMic_SingleInstance")
+        return ctypes.windll.kernel32.GetLastError() == 183  # ERROR_ALREADY_EXISTS
+    except Exception:
+        return False
 
 
 def main():
@@ -878,6 +896,17 @@ def main():
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
         pass
+
+    if _already_running():
+        ctypes.windll.user32.MessageBoxW(
+            None,
+            "Gemini Mic allaqachon ishlayapti.\n\n"
+            "Soat yonidagi ^ belgisini bosing — ko'k mikrofon ikonkasi o'sha yerda.\n"
+            "Ishlatish: yozish joyiga bosing, o'ng Ctrl ni bosib turib gapiring.",
+            "Gemini Mic",
+            0x40,  # MB_ICONINFORMATION
+        )
+        return
 
     app = GeminiMicApp()
     app.run()
