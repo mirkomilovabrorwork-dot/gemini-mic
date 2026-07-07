@@ -19,26 +19,25 @@ mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
 ## STATUS (resume board) — 2026-07-07
-- Last done (commit `1214f66` + this one): Windows UX hardening after owner
-  feedback "ochilmayapti / ko'p xabar / hotkey ishlamadi":
-  - model reverted to **gemini-2.5-flash** (3.5-flash returns 503 UNAVAILABLE;
-    2.5 verified 200 OK with the owner's real key) — both platforms;
-  - hotkey parsing tolerant ("ctrl left" → left ctrl; config had a bad value
-    silently falling back);
-  - beep on record start/done; guard messages → tooltip instead of balloons;
-  - single-instance mutex + startup beep/balloon (Win11 hides tray icons in ^
-    → looked like "didn't open"; found 8 duplicate copies running);
-  - owner's live config patched (model + hotkey `right ctrl`), fresh exe
-    installed to Desktop\GeminiMic.exe and launched (PID verified).
-- NEXT: owner tests Windows end-to-end (beep on Right Ctrl hold → speak →
-  release → text pasted). If good → refresh the share-zip
-  (Desktop\GeminiMic-share.zip currently has the OLD exe + 3.5-flash APK —
-  rebuild both binaries into it) and hand to the friend.
-- Android APK with 2.5-flash revert: CI already green on the revert commit —
-  download fresh APK via `gh run download` when the owner next updates his phone.
-- Blockers: none. OWNER TODO: try Windows once (hold Right Ctrl, speak,
-  release) and say if the beep+text work; drag the mic icon out of the ^
-  overflow onto the taskbar so it's always visible.
+- MODEL: primary **gemini-3.5-flash** (free; verified live 200/STOP/text with the
+  owner's real key + the real transcribe body), with **auto-fallback to
+  gemini-2.5-flash** on retryable errors (HTTP 404/429/500/503 = busy/quota/
+  unavailable). Every call tries 3.5 first → returns to 3.5 once it recovers.
+  Impl: Android `GeminiClient` (postGenerateContent takes model param +
+  isRetryable, wrapped in transcribe/testConnection); Windows `_call_gemini`
+  helper sets `.status`, `gemini_transcribe` retries with FALLBACK_MODEL.
+- Windows also hardened earlier this session: tolerant hotkey parsing, beep on
+  record start/done, guard msgs → tray tooltip (not balloons), single-instance
+  mutex + startup beep/balloon (Win11 hides tray icons under ^). Fresh
+  Desktop\GeminiMic.exe installed + running (owner's config = 3.5 + right ctrl).
+- Android: CI green (run 28881668371), fresh APK at `dist/app-debug.apk` with
+  the fallback. Stable keystore → installs in place (no uninstall).
+- NEXT: owner tests both end-to-end. If good → refresh the friend share-zip
+  (`Desktop\GeminiMic-share.zip` still holds the OLD exe + OLD apk — rebuild both
+  binaries into it before handing over).
+- Blockers: none. OWNER TODO: (1) install the new APK on the phone;
+  (2) test Windows (hold Right Ctrl → beep → speak → release → text) and say if
+  it works; (3) drag the mic icon out of the ^ overflow onto the taskbar.
 
 ## Status — 2026-06-30
 - ✅ Clean rebuild complete: 7 classes (MainActivity, MicOverlayService,
