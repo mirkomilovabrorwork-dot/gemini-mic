@@ -30,13 +30,13 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-3.5-flash",
+    "model": "gemini-2.5-flash",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
 }
 
 MODEL_CHOICES = [
-    ("Better mixed (gemini-3.5-flash)", "gemini-3.5-flash"),
+    ("Better mixed (gemini-2.5-flash)", "gemini-2.5-flash"),
     ("Fast cheap (gemini-2.5-flash-lite)", "gemini-2.5-flash-lite"),
 ]
 
@@ -578,10 +578,24 @@ _NAMED_KEYS = {
 }
 
 
+_HOTKEY_ALIASES = {
+    "control": "ctrl",
+    "ctrl left": "left ctrl", "ctrl right": "right ctrl",
+    "left control": "left ctrl", "right control": "right ctrl",
+    "control left": "left ctrl", "control right": "right ctrl",
+    "alt left": "left alt", "alt right": "right alt",
+    "shift left": "left shift", "shift right": "right shift",
+    "lctrl": "left ctrl", "rctrl": "right ctrl",
+    "lshift": "left shift", "rshift": "right shift",
+    "lalt": "left alt", "ralt": "right alt",
+}
+
+
 def parse_hotkey(hotkey_str):
     """Returns a pynput Key or a single-character string to match against
-    KeyCode.char (lowercased)."""
-    s = (hotkey_str or "").strip().lower()
+    KeyCode.char (lowercased). Tolerant of word order / spelling variants."""
+    s = " ".join((hotkey_str or "").strip().lower().replace("_", " ").split())
+    s = _HOTKEY_ALIASES.get(s, s)
     if s in _NAMED_KEYS:
         return _NAMED_KEYS[s]
     if len(s) == 1:

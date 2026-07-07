@@ -12,7 +12,7 @@ final class Prefs {
     static final String LANG_UZ_EN_RU = "uz_en_ru";
     static final String LANG_UZ_RU = "uz_ru";
     static final String MODEL = "model";
-    static final String MODEL_BETTER = "gemini-3.5-flash";
+    static final String MODEL_BETTER = "gemini-2.5-flash";
     static final String MODEL_CHEAP = "gemini-2.5-flash-lite";
     static final String NAME = "gemini_mic_prefs";
 
@@ -28,7 +28,7 @@ final class Prefs {
     }
 
     static String model(Context ctx) {
-        return get(ctx).getString("model", "gemini-3.5-flash");
+        return get(ctx).getString("model", "gemini-2.5-flash");
     }
 
     static String languageMode(Context ctx) {
