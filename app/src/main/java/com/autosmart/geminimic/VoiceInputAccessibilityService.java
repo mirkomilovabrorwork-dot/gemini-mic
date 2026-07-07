@@ -110,17 +110,6 @@ public class VoiceInputAccessibilityService extends AccessibilityService {
         return false;
     }
 
-    static boolean hasActiveTextInput() {
-        VoiceInputAccessibilityService svc = instance;
-        if (svc == null) return false;
-        AccessibilityNodeInfo root = svc.getRootInActiveWindow();
-        if (root == null) return false;
-        if (svc.isUsableEditable(root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT))) {
-            return true;
-        }
-        return svc.findEditable(root, true) != null;
-    }
-
     private void insertText(String text) {
         AccessibilityNodeInfo target = findTarget(getRootInActiveWindow());
         if (target != null) {

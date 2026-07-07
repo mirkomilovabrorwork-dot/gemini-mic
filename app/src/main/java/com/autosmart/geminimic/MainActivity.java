@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.ViewGroup;
@@ -35,7 +34,6 @@ public class MainActivity extends Activity {
     private TextView nextStep;
 
     private LinearLayout micRow;
-    private LinearLayout overlayRow;
     private LinearLayout accessRow;
 
     private TextView langUzEnRuLabel;
@@ -93,7 +91,7 @@ public class MainActivity extends Activity {
         layout.addView(titleView, fullWidth());
 
         TextView subtitleView = new TextView(this);
-        subtitleView.setText("Bitta suzuvchi mikrofon. Ovoz-pastga tugmasini bosib turing.");
+        subtitleView.setText("Ovoz-pastga tugmasini bosib turib gapiring.");
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f);
         subtitleView.setTextColor(mutedColor);
         subtitleView.setPadding(0, dp(2), 0, 0);
@@ -175,9 +173,6 @@ public class MainActivity extends Activity {
 
         micRow = checklistRow("Mikrofon");
         card.addView(micRow, fullWidth());
-
-        overlayRow = checklistRow("Ustidan chizish");
-        card.addView(overlayRow, fullWidth());
 
         accessRow = checklistRow("Avto-kiritish");
         card.addView(accessRow, fullWidth());
@@ -278,8 +273,7 @@ public class MainActivity extends Activity {
         TextView body = new TextView(this);
         body.setText("1. Ovoz-pastga tugmasini bosib turib gapiring, qo'yib yuborsangiz yoziladi.\n"
                 + "   Qisqa bossangiz — oddiy ovoz pasayadi.\n"
-                + "2. Yoki chetdagi kichkina micni bosib turing va gapiring.\n"
-                + "3. Rang: ko'k - tayyor, qizil - yozilmoqda, yashil - ishlanmoqda.");
+                + "2. Matn to'g'ridan-to'g'ri faol maydonga yoziladi.");
         body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
         body.setTextColor(mutedColor);
         body.setLineSpacing(dp(2), 1.0f);
@@ -361,13 +355,11 @@ public class MainActivity extends Activity {
         try {
             boolean hasKey = !Prefs.apiKey(this).isEmpty();
             boolean hasMic = hasAudioPermission();
-            boolean hasOverlay = Settings.canDrawOverlays(this);
             boolean hasAccess = isAccessibilityEnabled(this);
 
             apiKeySavedLabel.setText(hasKey ? "✓ saqlangan" : "");
 
             setRowState(micRow, hasMic, this::requestAudioPermissions);
-            setRowState(overlayRow, hasOverlay, this::openOverlaySettings);
             setRowState(accessRow, hasAccess, () -> openSettings(
                     "android.settings.ACCESSIBILITY_SETTINGS", "Could not open Accessibility settings"));
 
@@ -376,17 +368,16 @@ public class MainActivity extends Activity {
             boolean running = MicOverlayService.isRunning();
             primaryButton.setText(running ? "To'xtatish" : "Mikrofonni yoqish");
 
-            nextStep.setText(nextStepText(hasKey, hasMic, hasOverlay, hasAccess, running));
+            nextStep.setText(nextStepText(hasKey, hasMic, hasAccess, running));
         } catch (Exception e) {
             nextStep.setText("Status check failed: " + e.getMessage());
         }
     }
 
-    private String nextStepText(boolean hasKey, boolean hasMic, boolean hasOverlay,
+    private String nextStepText(boolean hasKey, boolean hasMic,
                                  boolean hasAccess, boolean running) {
         if (!hasKey) return "Keyingi qadam: API kalitni kiriting va Saqlash bosing.";
         if (!hasMic) return "Keyingi qadam: mikrofonga ruxsat bering.";
-        if (!hasOverlay) return "Keyingi qadam: ustidan chizishga ruxsat bering.";
         if (!hasAccess) return "Keyingi qadam: avto-kiritishni yoqing.";
         if (running) return "Tayyor: mikrofon ishlamoqda.";
         return "Tayyor: Mikrofonni yoqish tugmasini bosing.";
@@ -414,12 +405,6 @@ public class MainActivity extends Activity {
         } else {
             requestPermissions(new String[]{"android.permission.RECORD_AUDIO"}, 10);
         }
-    }
-
-    private void openOverlaySettings() {
-        Intent intent = new Intent("android.settings.action.MANAGE_OVERLAY_PERMISSION");
-        intent.setData(android.net.Uri.parse("package:" + getPackageName()));
-        safeStartActivity(intent, "Could not open floating mic settings");
     }
 
     private void openSettings(String action, String errorMsg) {
@@ -456,11 +441,6 @@ public class MainActivity extends Activity {
         }
         if (!hasAudioPermission()) {
             requestAudioPermissions();
-            return;
-        }
-        if (!Settings.canDrawOverlays(this)) {
-            toast("Avval ustidan chizishga ruxsat bering");
-            openOverlaySettings();
             return;
         }
         if (!isAccessibilityEnabled(this)) {
