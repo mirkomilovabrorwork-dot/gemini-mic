@@ -28,6 +28,8 @@ import java.util.concurrent.Future;
 
 public class MicOverlayService extends Service {
 
+    private static MicOverlayService instance;
+
     private static final long AMPLITUDE_SAMPLE_MS = 150;
     private static final String CHANNEL_ID = "gemini_mic";
     private static final int COLLAPSED_SIZE_DP = 18;
@@ -90,6 +92,7 @@ public class MicOverlayService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        instance = this;
         startMicForeground("Ready");
         windowManager = (WindowManager) getSystemService("window");
         if (Settings.canDrawOverlays(this)) {
@@ -107,6 +110,9 @@ public class MicOverlayService extends Service {
 
     @Override
     public void onDestroy() {
+        if (instance == this) {
+            instance = null;
+        }
         main.removeCallbacks(collapseWhenIdle);
         clearTranscriptionTimeout();
         if (currentTranscription != null) {
@@ -120,6 +126,44 @@ public class MicOverlayService extends Service {
         }
         worker.shutdownNow();
         super.onDestroy();
+    }
+
+    static boolean isRunning() {
+        return instance != null;
+    }
+
+    static void volumeStart() {
+        MicOverlayService svc = instance;
+        if (svc != null) {
+            svc.main.post(svc::startRecording);
+        }
+    }
+
+    static void volumeStop() {
+        MicOverlayService svc = instance;
+        if (svc != null) {
+            svc.main.post(svc::stopAndTranscribe);
+        }
+    }
+
+    static void volumeCancel() {
+        MicOverlayService svc = instance;
+        if (svc != null) {
+            svc.main.post(svc::cancelRecording);
+        }
+    }
+
+    private void cancelRecording() {
+        File audioFile = currentFile;
+        try {
+            if (recorder != null) recorder.stop();
+        } catch (Exception ignored) {
+        }
+        stopRecordingQuietly();
+        if (audioFile != null) {
+            audioFile.delete();
+        }
+        scheduleCollapseWhenIdle();
     }
 
     private void showBubble() {

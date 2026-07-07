@@ -3,20 +3,25 @@ package com.autosmart.geminimic;
 import android.accessibilityservice.AccessibilityService;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
+import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.widget.Toast;
 
 public class VoiceInputAccessibilityService extends AccessibilityService {
 
+    private static final long VOLUME_TAP_MAX_MS = 250;
     private static final String[] PLACEHOLDER_TEXTS;
     private static VoiceInputAccessibilityService instance;
 
     private AccessibilityNodeInfo lastEditable;
     private final Handler main;
+    private long volDownAt = -1;
 
     static {
         PLACEHOLDER_TEXTS = new String[]{
@@ -45,6 +50,42 @@ public class VoiceInputAccessibilityService extends AccessibilityService {
             }
             rememberEditable(editable);
         }
+    }
+
+    @Override
+    protected boolean onKeyEvent(KeyEvent event) {
+        if (event.getKeyCode() != KeyEvent.KEYCODE_VOLUME_DOWN) {
+            return super.onKeyEvent(event);
+        }
+        if (!MicOverlayService.isRunning()) {
+            return false;
+        }
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (event.getRepeatCount() == 0) {
+                volDownAt = SystemClock.uptimeMillis();
+                MicOverlayService.volumeStart();
+            }
+            return true;
+        }
+        if (event.getAction() == KeyEvent.ACTION_UP) {
+            if (volDownAt < 0) {
+                return false;
+            }
+            long held = SystemClock.uptimeMillis() - volDownAt;
+            volDownAt = -1;
+            if (held < VOLUME_TAP_MAX_MS) {
+                MicOverlayService.volumeCancel();
+                AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+                if (am != null) {
+                    am.adjustSuggestedStreamVolume(AudioManager.ADJUST_LOWER,
+                            AudioManager.USE_DEFAULT_STREAM_TYPE, AudioManager.FLAG_SHOW_UI);
+                }
+            } else {
+                MicOverlayService.volumeStop();
+            }
+            return true;
+        }
+        return super.onKeyEvent(event);
     }
 
     @Override
