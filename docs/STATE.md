@@ -18,34 +18,41 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
-## STATUS (resume board) — 2026-07-07
-- MODEL (final): primary **gemini-3.5-flash**, fallback **gemini-3-flash-preview**
-  on retryable errors (HTTP 404/429/500/503). Both are Gemini-3 flash, both
-  FREE-tier, and DIFFERENT models → separate rate limits, so a 429 on the
-  primary is absorbed instantly (429 returns immediately, no long wait).
-  Live-verified with real TTS audio: BOTH transcribe the test phrase exactly
-  (3.5 does NOT hallucinate). `gemini-3.0-flash` / `-preview` do NOT exist (404);
-  `gemini-3-flash-preview` and `gemini-3.5-flash` are the real ids on the key.
-  Fallback mechanism: Android GeminiClient.postGenerateContent(model)+isRetryable;
-  Windows/Mac `_call_gemini` sets `.status`, `gemini_transcribe` retries once.
-- BILLING (verified on official pricing page): free tier works WITHOUT billing —
-  both flash models free but rate-limited (~15 RPM). Enabling billing = paid
-  immediately, NO free allowance (3.5-flash ~$1.50/$9 per 1M tok). → owner should
-  use a NO-BILLING key. Free-tier caveat: Google may use the content for training.
-- Windows: hardened (tolerant hotkey parse, beep on start/done, guard msgs →
-  tray tooltip, single-instance mutex + startup beep/balloon since Win11 hides
-  tray icons under ^). Fresh Desktop\GeminiMic.exe running; live config = 3.5.
-- Android: CI green (run 28894991469), fresh APK on Desktop + dist/. Stable
-  keystore → installs in place (no uninstall).
-- macOS: rumps menu-bar app in `mac/`; cloud-built via `.github/workflows/build-mac.yml`
-  (macos-13 Intel → runs on all Macs). Artifact `GeminiMic-mac` (zip of the .app).
-  NOT yet delivered to the owner/friend or first-run-tested on a real Mac.
-- NEXT: (1) owner tests Windows + Android end-to-end; (2) grab the macOS build
-  artifact from the latest build-mac run + write the 1-page permission guide;
-  (3) refresh `Desktop\GeminiMic-share.zip` (currently OLD binaries) before the
-  friend hand-off.
-- Blockers: none. OWNER TODO: install the new APK on the phone; test Windows
-  (hold Right Ctrl → beep → speak → release → text); use a NO-BILLING key.
+## STATUS (resume board) — 2026-07-07 (v2)
+- THREE platforms, all built & current: **Android** (app/, Java), **Windows**
+  (windows/gemini_mic.py, tray), **macOS** (mac/gemini_mic_mac.py, rumps menu bar).
+  Same Gemini core on all (prompt/clean/paragraph-format, verified identical).
+- MODEL (final): primary **gemini-3-flash-preview** (good quality, ~3x cheaper on
+  paid: $0.50/$3 vs 3.5-flash $1.50/$9 per 1M), fallback **gemini-3.5-flash**.
+  Fallback fires on HTTP 404/429/500/503 AND on network/read-TIMEOUT (read
+  timeout 30s). Both live-verified to transcribe accurately. Note `gemini-3.0-flash`
+  does NOT exist (404); real ids = `gemini-3-flash-preview`, `gemini-3.5-flash`.
+- v2 features this session:
+  · Android: **Volume-Down hold-to-talk** (short press = normal volume; hold =
+    record from key-DOWN so speech start isn't missed; via accessibility
+    onKeyEvent + MicOverlayService volumeStart/Stop/Cancel bridge). Floating
+    bubble still works. MainActivity fully **redesigned** (card UI, light/dark,
+    permission checklist, one Start/Stop button; model picker removed).
+  · Windows: single-instance mutex, startup beep/balloon (Win11 hides tray under ^),
+    beep on record start/done, tray-tooltip guards, Settings modernized + model
+    picker removed. Owner's live config = 3-flash-preview.
+  · macOS: rumps menu bar (Cmd+V paste, right-Ctrl hold), model picker gone.
+- BILLING (verified, official pricing): free tier = no billing, both flash models
+  free but rate-limited PER DAY per model (owner's 3.5 daily quota got exhausted by
+  my testing → resets daily). Paid = charged immediately, but CHEAP for dictation
+  (~$1–5/mo; 3-flash-preview cheapest of the good ones). Paid also = data not used
+  for training. App needs NO change for paid — same key, billing on Google's side.
+- Delivery: fresh binaries on Desktop — `GeminiMic-android.apk`, `GeminiMic.exe`
+  (installed+running), and `GeminiMic-share.zip` (46 MB: all source + all 3
+  ready binaries + HOW-TO-USE.txt) for the friend who will continue developing.
+- macOS CI: **build on `macos-14` (arm64)** — GitHub retired macos-13 Intel (it
+  queues forever). So the `.app` is Apple-Silicon-only (Intel Macs build from
+  source). `mac/GeminiMic.spec` is force-committed (a `*.spec` gitignore hid it).
+- IN FLIGHT at /clear: a CI run (Android build.yml + Mac build-mac.yml) for the
+  3-flash-preview swap was still building — on resume, `gh run list` the latest,
+  download `debug-apk` + `GeminiMic-mac` if newer, and refresh the share zip.
+- Blockers: none. OWNER TODO: test each platform (hold trigger → speak → text);
+  decide free vs paid key (paid = fast/reliable, ~a few $/mo).
 
 ## Status — 2026-06-30
 - ✅ Clean rebuild complete: 7 classes (MainActivity, MicOverlayService,
