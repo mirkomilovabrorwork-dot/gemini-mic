@@ -1,8 +1,13 @@
 package com.autosmart.geminimic;
 
 import android.accessibilityservice.AccessibilityService;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -16,6 +21,8 @@ import android.widget.Toast;
 public class VoiceInputAccessibilityService extends AccessibilityService {
 
     private static final long VOLUME_TAP_MAX_MS = 250;
+    static final int ARM_NOTIFICATION_ID = 42;
+    private static final String ARM_CHANNEL_ID = "gemini_mic_arm";
     private static final String[] PLACEHOLDER_TEXTS;
     private static VoiceInputAccessibilityService instance;
 
@@ -38,6 +45,34 @@ public class VoiceInputAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         instance = this;
+        maybePostArmNotification();
+    }
+
+    // After a reboot the system re-binds this accessibility service automatically,
+    // but the microphone foreground service stays dead (Android 14+ forbids
+    // starting it from the background). So we surface a one-tap notification: the
+    // user taps it, ArmActivity comes to the foreground and starts the mic service.
+    private void maybePostArmNotification() {
+        if (Prefs.apiKey(this).isEmpty() || MicOverlayService.isRunning()) {
+            return;
+        }
+        NotificationManager nm = (NotificationManager) getSystemService(NotificationManager.class);
+        if (nm == null) {
+            return;
+        }
+        nm.createNotificationChannel(new NotificationChannel(
+                ARM_CHANNEL_ID, "Gemini Mic yoqish", NotificationManager.IMPORTANCE_DEFAULT));
+        PendingIntent tap = PendingIntent.getActivity(this, 0,
+                new Intent(this, ArmActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        Notification n = new Notification.Builder(this, ARM_CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_mic_24)
+                .setContentTitle("Gemini Mic")
+                .setContentText("Yoqish uchun bosing")
+                .setContentIntent(tap)
+                .setAutoCancel(true)
+                .build();
+        nm.notify(ARM_NOTIFICATION_ID, n);
     }
 
     @Override

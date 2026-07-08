@@ -5,8 +5,6 @@ import android.content.SharedPreferences;
 
 final class Prefs {
     static final String API_KEY = "api_key";
-    static final String BUBBLE_X = "bubble_x";
-    static final String BUBBLE_Y = "bubble_y";
     static final String LANGUAGE_MODE = "language_mode";
     static final String LANG_UZ_EN = "uz_en";
     static final String LANG_UZ_EN_RU = "uz_en_ru";

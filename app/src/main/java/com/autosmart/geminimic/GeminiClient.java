@@ -88,7 +88,8 @@ final class GeminiClient {
                 + languageInstruction(ctx)
                 + "\n\nRules:\n"
                 + "- Write only the words that were actually spoken. Do not invent, replace, translate, or paraphrase words.\n"
-                + "- Do not add timestamps, numbers, bullets, speaker labels, headings, explanations, quotes, markdown, or formatting.\n"
+                + "- Do not add timestamps, numbers, bullets, speaker labels, headings, explanations, quotes, or markdown.\n"
+                + "- Add natural punctuation and capitalization so the text is easy to read: start each sentence with a capital letter and end it with a period, question mark, or exclamation mark.\n"
                 + "- Do not summarize, rewrite, or turn speech into a task list.\n"
                 + "- Uzbek words must be written in natural Uzbek Latin.\n"
                 + "- Keep English words exactly in English/Latin when they were spoken.\n"

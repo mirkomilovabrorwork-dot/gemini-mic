@@ -29,6 +29,13 @@
             android:name=".CrashActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".ArmActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <service
             android:name=".MicOverlayService"
             android:exported="false"

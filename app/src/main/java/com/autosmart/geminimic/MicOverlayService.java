@@ -67,6 +67,11 @@ public class MicOverlayService extends Service {
     public void onCreate() {
         super.onCreate();
         instance = this;
+        // Once the mic service is up, the post-boot "tap to arm" nudge is done.
+        NotificationManager nm = (NotificationManager) getSystemService(NotificationManager.class);
+        if (nm != null) {
+            nm.cancel(VoiceInputAccessibilityService.ARM_NOTIFICATION_ID);
+        }
         startMicForeground("Ready");
     }
 
