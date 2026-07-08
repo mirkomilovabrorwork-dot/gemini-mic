@@ -18,7 +18,35 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
-## STATUS (resume board) — 2026-07-08 (v4)
+## STATUS (resume board) — 2026-07-08 (v5)
+- **Senior-review pass done (owner asked "critical analiz")**: independent
+  adversarial review of the whole product graded it C and found real bugs.
+  Owner approved fixing the 4 worst → ALL FIXED + re-verified by the same
+  reviewer (verdict: SHIP), commit 4193858:
+  (F1) Android placeholder heuristic could WIPE user text → deleted, only exact
+  placeholder list matches now. (F2) desktop stale 60s watchdog killed the next
+  recording → record_gen generation guard. (F3) desktop quick-tap left a 60s
+  ghost recording → hotkey_down press/release flag + abort in start_recording.
+  (F5) mac default hotkey right Ctrl doesn't exist on MacBooks → default now
+  RIGHT CMD (cmd keys added to keymap; right ctrl still selectable). Mac README
+  + HOW-TO updated. **Mac hotkey answer for owner: hold RIGHT CMD (⌘).**
+- All 3 rebuilt GREEN (Android run 28918771980, Mac 28918771923, local exe) and
+  the FIXES VERIFIED INSIDE the shipped zip (read the java/py back out of it).
+  Desktop refreshed: GeminiMic-android.apk + GeminiMic-share.zip (46.1 MB).
+  Desktop GeminiMic.exe still the OLD running copy (file-locked) — owner must
+  close it and take windows/dist/GeminiMic.exe (or from the zip).
+- **Review findings left OPEN (owner not yet asked / next batch candidates):**
+  (F6) finishReason/MAX_TOKENS never checked → long fast speech silently
+  truncates mid-sentence (all 3 platforms; cheap fix: maxOutputTokens 4096 +
+  check finishReason). (F9) if POST_NOTIFICATIONS denied, post-boot arm
+  notification silently never shows. (F4) desktop clipboard: image/file
+  clipboard lost after dictation + 0.15s restore race. (F8) dictating while
+  a transcription is in flight → misleading "No audio" toast (Android).
+  Plus MINORs: raw HTTP error toasts, key in URL query (prefer header),
+  Tk settings in a thread, crash handler can't launch from background.
+- OWNER TODO: (1) phone: install new APK, test dictation + reboot-arm;
+  (2) PC: close running GeminiMic.exe, replace with the new one, test;
+  (3) decide: fix F6+F9 next batch? ("ha" = qilaman)
 - **Readability fix (all 3 platforms)**: casual dictation often came back with no
   sentence punctuation, so `formatParagraphs` (splits on `.?!`) couldn't break it
   → one run-on block. Prompt now asks Gemini for natural sentence punctuation +
