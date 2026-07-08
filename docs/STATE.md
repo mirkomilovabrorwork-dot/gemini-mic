@@ -18,6 +18,32 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
+## STATUS (resume board) — 2026-07-08 (v4)
+- **Readability fix (all 3 platforms)**: casual dictation often came back with no
+  sentence punctuation, so `formatParagraphs` (splits on `.?!`) couldn't break it
+  → one run-on block. Prompt now asks Gemini for natural sentence punctuation +
+  capitalization. Same edit in GeminiClient.java + windows/gemini_mic.py +
+  mac/gemini_mic_mac.py (kept identical).
+- **Android reboot survival (one-tap arm)**: Android 14 forbids starting a mic
+  foreground service from background / BOOT_COMPLETED. Solution WITHOUT a boot
+  receiver: the accessibility service auto-rebinds on boot →
+  `onServiceConnected` posts a "Yoqish uchun bosing" notification → tapping it
+  opens `ArmActivity` (translucent, no-history) which — being foreground — starts
+  the mic service. Notification cancelled on tap / on service start / skipped when
+  already running or no key. New file ArmActivity.java + manifest entry. Orphan
+  Prefs BUBBLE_X/Y dropped. Independently reviewed: no blockers.
+- All THREE built GREEN this session (Android run 28917789116, Mac 28917789123,
+  Windows exe via PyInstaller). Fresh APK verified (models ok, ArmActivity present,
+  no overlay/boot perms). Docs (README.md, HOW-TO-USE.txt) de-bubbled + HOW-TO
+  model line corrected (primary=3-flash-preview) + reboot-arm step added.
+- Delivery: Desktop `GeminiMic-android.apk` refreshed; `GeminiMic-share.zip`
+  rebuilt with all fresh source + 3 binaries + corrected HOW-TO. **Desktop
+  `GeminiMic.exe` NOT swapped** — the running copy was file-locked; owner must
+  close it then replace with `windows/dist/GeminiMic.exe` (or from the zip).
+- OWNER TODO: (1) test punctuation/breaks on phone; (2) test reboot → tap arm
+  notification → volume-down still types; (3) to update his PC exe, close the
+  running GeminiMic.exe and replace it.
+
 ## STATUS (resume board) — 2026-07-07 (v3)
 - **Android bubble REMOVED** (owner: "volume yetadi"). Volume-Down hold-to-talk is
   now the ONLY Android trigger. Dropped the whole floating overlay UI from
