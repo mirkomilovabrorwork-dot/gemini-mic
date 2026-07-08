@@ -7,8 +7,9 @@ avtomatik joylashtiriladi (Gemini orqali).
 1. Menyu-bar ikonkasi (🎙️) ustiga bosing → **API key kiritish…** → Gemini API
    key ni kiriting → Save.
 2. Yozish kerak bo'lgan joyga bosing (masalan, Notes, Messages, brauzer).
-3. **O'ng Ctrl** tugmasini bosib turib gapiring, qo'yib yuboring — matn
-   avtomatik joylashtiriladi.
+3. **O'ng Cmd (⌘)** tugmasini bosib turib gapiring, qo'yib yuboring — matn
+   avtomatik joylashtiriladi. (MacBook klaviaturasida o'ng Ctrl yo'q, shuning
+   uchun standart tugma — o'ng Cmd.)
 4. Ikonka holati: 🎙️ tayyor · 🔴 yozilmoqda · ⏳ Gemini javob kutilmoqda.
 5. Menyudagi **"Til"** bo'limidan tilni tanlang (O'zbek+Ingliz+Rus / +Ingliz
    / +Rus).

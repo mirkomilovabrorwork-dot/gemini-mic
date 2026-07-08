@@ -665,6 +665,8 @@ class GeminiMicApp:
         self.cfg = load_config()
         self.lock = threading.Lock()
         self.recording = False
+        self.record_gen = 0  # increments per recording; stale watchdogs check it
+        self.hotkey_down = False  # physical key state; guards the press/release race
         self.frames = []
         self.stream = None
         self.record_start = 0.0
@@ -738,6 +740,8 @@ class GeminiMicApp:
             if self.recording:
                 return
             self.recording = True
+            self.record_gen += 1
+            gen = self.record_gen
             self.frames = []
             self.record_start = time.monotonic()
         self.set_state("recording")
@@ -771,12 +775,17 @@ class GeminiMicApp:
                 pass
             return
 
+        if not self.hotkey_down:
+            # key released before the mic finished opening — abort this recording
+            self.stop_recording_and_transcribe()
+            return
+
         beep(1000, 80)  # audio cue: recording started (confirms the hotkey works)
 
         # auto-stop watchdog
         def watchdog():
             time.sleep(AUTO_STOP_SEC)
-            if self.recording:
+            if self.recording and self.record_gen == gen:
                 self.stop_recording_and_transcribe()
 
         threading.Thread(target=watchdog, daemon=True).start()
@@ -868,6 +877,7 @@ class GeminiMicApp:
 
     def _on_press(self, key):
         if key_matches(key, self.hotkey_target):
+            self.hotkey_down = True
             # Dispatch off the pynput listener thread so a slow mic init
             # can't block key-event delivery (incl. the matching release).
             if not self.recording:
@@ -876,6 +886,7 @@ class GeminiMicApp:
 
     def _on_release(self, key):
         if key_matches(key, self.hotkey_target):
+            self.hotkey_down = False
             if self.recording:
                 threading.Thread(target=self.stop_recording_and_transcribe, daemon=True).start()
 

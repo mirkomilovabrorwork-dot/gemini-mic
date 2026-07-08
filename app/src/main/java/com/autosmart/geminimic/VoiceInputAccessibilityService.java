@@ -257,27 +257,13 @@ public class VoiceInputAccessibilityService extends AccessibilityService {
         for (String ph : PLACEHOLDER_TEXTS) {
             if (normalized.equals(ph)) return true;
         }
-        int selStart = node.getTextSelectionStart();
-        int selEnd = node.getTextSelectionEnd();
-        if (selStart >= 0 && selEnd >= 0) {
-            if (selStart == 0 && selEnd == 0 && looksLikeShortFieldLabel(text)) {
-                return true;
-            }
-            return false;
-        }
-        // Selection unknown (-1): treat the existing text as REAL content, not a
-        // placeholder — otherwise setText would rebuild from "" and overwrite the
-        // user's existing text instead of appending. Real hints are already caught
-        // above via getHintText()/getContentDescription().
+        // Anything else is REAL content — never guess. A "looks like a label"
+        // heuristic used to live here and it silently WIPED user text (e.g.
+        // "Salom Aziz" with the cursor at position 0 was treated as a
+        // placeholder, so setText rebuilt from "" and the user's text was
+        // lost). Real hints are already caught above via getHintText() /
+        // getContentDescription(); when in doubt we append, never rebuild.
         return false;
-    }
-
-    private boolean looksLikeShortFieldLabel(String text) {
-        String t = text != null ? text.trim() : "";
-        if (t.isEmpty() || t.length() > 36) return false;
-        if (t.contains(".") || t.contains(",") || t.contains("?") || t.contains("!")) return false;
-        if (t.split("\\s+").length > 4) return false;
-        return Character.isUpperCase(t.charAt(0));
     }
 
     private boolean shouldAddSpace(String current, int selStart, int selEnd, String newText) {

@@ -33,7 +33,7 @@ DEFAULT_CONFIG = {
     "api_key": "",
     "model": "gemini-3-flash-preview",
     "language_mode": "uz_en_ru",
-    "hotkey": "right ctrl",
+    "hotkey": "right cmd",
 }
 
 # Primary is gemini-3.5-flash; on error (busy/quota/not available) retry once
@@ -364,7 +364,7 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes):
 
 
 # ---------------------------------------------------------------------------
-# Hotkey parsing (pynput) — right Ctrl by default; edit config.json to change.
+# Hotkey parsing (pynput) — right Cmd by default; edit config.json to change.
 # ---------------------------------------------------------------------------
 
 _NAMED_KEYS = {
@@ -383,6 +383,9 @@ _NAMED_KEYS = {
     "f1": Key.f1, "f2": Key.f2, "f3": Key.f3, "f4": Key.f4,
     "f5": Key.f5, "f6": Key.f6, "f7": Key.f7, "f8": Key.f8,
     "f9": Key.f9, "f10": Key.f10, "f11": Key.f11, "f12": Key.f12,
+    "right cmd": Key.cmd_r,
+    "left cmd": Key.cmd_l,
+    "cmd": Key.cmd_r,
 }
 
 
@@ -396,6 +399,9 @@ _HOTKEY_ALIASES = {
     "lctrl": "left ctrl", "rctrl": "right ctrl",
     "lshift": "left shift", "rshift": "right shift",
     "lalt": "left alt", "ralt": "right alt",
+    "command": "cmd", "right command": "right cmd", "left command": "left cmd",
+    "command right": "right cmd", "command left": "left cmd",
+    "rcmd": "right cmd", "lcmd": "left cmd",
 }
 
 
@@ -409,7 +415,7 @@ def parse_hotkey(hotkey_str):
     if len(s) == 1:
         return s
     # fall back to default
-    return Key.ctrl_r
+    return Key.cmd_r
 
 
 def key_matches(pressed_key, target):
@@ -439,6 +445,8 @@ class GeminiMicApp(rumps.App):
         self.cfg = load_config()
         self.lock = threading.Lock()
         self.recording = False
+        self.record_gen = 0  # increments per recording; stale watchdogs check it
+        self.hotkey_down = False  # physical key state; guards the press/release race
         self.frames = []
         self.stream = None
         self.record_start = 0.0
@@ -573,6 +581,8 @@ class GeminiMicApp(rumps.App):
             if self.recording:
                 return
             self.recording = True
+            self.record_gen += 1
+            gen = self.record_gen
             self.frames = []
             self.record_start = time.monotonic()
         self.set_state("recording")
@@ -606,12 +616,17 @@ class GeminiMicApp(rumps.App):
                 pass
             return
 
+        if not self.hotkey_down:
+            # key released before the mic finished opening — abort this recording
+            self.stop_recording_and_transcribe()
+            return
+
         play_sound(SOUND_START)  # audio cue: recording started (confirms the hotkey works)
 
         # auto-stop watchdog
         def watchdog():
             time.sleep(AUTO_STOP_SEC)
-            if self.recording:
+            if self.recording and self.record_gen == gen:
                 self.stop_recording_and_transcribe()
 
         threading.Thread(target=watchdog, daemon=True).start()
@@ -703,6 +718,7 @@ class GeminiMicApp(rumps.App):
 
     def _on_press(self, key):
         if key_matches(key, self.hotkey_target):
+            self.hotkey_down = True
             # Dispatch off the pynput listener thread so a slow mic init
             # can't block key-event delivery (incl. the matching release).
             if not self.recording:
@@ -711,6 +727,7 @@ class GeminiMicApp(rumps.App):
 
     def _on_release(self, key):
         if key_matches(key, self.hotkey_target):
+            self.hotkey_down = False
             if self.recording:
                 threading.Thread(target=self.stop_recording_and_transcribe, daemon=True).start()
 
