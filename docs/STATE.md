@@ -33,8 +33,10 @@ mixed Uzbek/English/Russian, the text lands in the focused field — free
 - All 3 rebuilt GREEN (Android run 28918771980, Mac 28918771923, local exe) and
   the FIXES VERIFIED INSIDE the shipped zip (read the java/py back out of it).
   Desktop refreshed: GeminiMic-android.apk + GeminiMic-share.zip (46.1 MB).
-  Desktop GeminiMic.exe still the OLD running copy (file-locked) — owner must
-  close it and take windows/dist/GeminiMic.exe (or from the zip).
+  Desktop GeminiMic.exe + GeminiMic-windows.exe NOW REPLACED with the fixed
+  build (owner closed it → stopped/copied/relaunched, hashes verified match
+  windows/dist/GeminiMic.exe, running PID confirmed). All 3 Desktop deliverables
+  current.
 - **Review findings left OPEN (owner not yet asked / next batch candidates):**
   (F6) finishReason/MAX_TOKENS never checked → long fast speech silently
   truncates mid-sentence (all 3 platforms; cheap fix: maxOutputTokens 4096 +
