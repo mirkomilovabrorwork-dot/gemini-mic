@@ -87,6 +87,8 @@ final class GeminiClient {
         return "Transcribe this audio for direct typing. "
                 + languageInstruction(ctx)
                 + "\n\nRules:\n"
+                + "- Transcribe ONLY speech that is actually audible in THIS audio clip. If the audio is silent, only background noise or music, or has no intelligible speech, output EXACTLY the token NO_SPEECH and nothing else.\n"
+                + "- NEVER invent, guess, or fill in a greeting, a speech, a sample text, or an essay that is not clearly spoken in the audio. It is better to output NO_SPEECH than to output words that were not said.\n"
                 + "- Write only the words that were actually spoken. Do not invent, replace, translate, or paraphrase words.\n"
                 + "- Do not add timestamps, numbers, bullets, speaker labels, headings, explanations, quotes, or markdown.\n"
                 + "- Add natural punctuation and capitalization so the text is easy to read: start each sentence with a capital letter and end it with a period, question mark, or exclamation mark.\n"
@@ -247,11 +249,23 @@ final class GeminiClient {
                 throw e;
             }
         }
-        String transcript = formatParagraphs(cleanTranscript(extractText(raw)));
+        String cleaned = cleanTranscript(extractText(raw));
+        if (isNoSpeech(cleaned)) {
+            throw new IllegalStateException("Ovoz eshitilmadi");
+        }
+        String transcript = formatParagraphs(cleaned);
         if (transcript.isEmpty()) {
-            throw new IllegalStateException("Empty transcript");
+            throw new IllegalStateException("Ovoz eshitilmadi");
         }
         return transcript;
+    }
+
+    // The model is told to emit the token NO_SPEECH when the audio has no
+    // intelligible speech (instead of hallucinating a fake transcript). Match
+    // it after stripping punctuation/markup so wrappers like [NO_SPEECH]. count.
+    private static boolean isNoSpeech(String text) {
+        if (text == null) return true;
+        return text.replaceAll("[^A-Za-z]", "").equalsIgnoreCase("NOSPEECH");
     }
 
     // Groups the transcript into short paragraphs for readability:

@@ -83,6 +83,8 @@ def save_config(cfg):
 # ---------------------------------------------------------------------------
 
 _TRANSCRIPT_RULES = (
+    "- Transcribe ONLY speech that is actually audible in THIS audio clip. If the audio is silent, only background noise or music, or has no intelligible speech, output EXACTLY the token NO_SPEECH and nothing else.\n"
+    "- NEVER invent, guess, or fill in a greeting, a speech, a sample text, or an essay that is not clearly spoken in the audio. It is better to output NO_SPEECH than to output words that were not said.\n"
     "- Write only the words that were actually spoken. Do not invent, replace, translate, or paraphrase words.\n"
     "- Do not add timestamps, numbers, bullets, speaker labels, headings, explanations, quotes, or markdown.\n"
     "- Add natural punctuation and capitalization so the text is easy to read: start each sentence with a capital letter and end it with a period, question mark, or exclamation mark.\n"
@@ -357,9 +359,14 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes):
         else:
             raise
 
-    transcript = format_paragraphs(clean_transcript(text))
+    cleaned = clean_transcript(text)
+    # The model emits NO_SPEECH for silent/unintelligible audio instead of
+    # hallucinating a fake transcript; treat that (and wrappers of it) as empty.
+    if re.sub(r"[^A-Za-z]", "", cleaned).upper() == "NOSPEECH":
+        raise GeminiError("Ovoz eshitilmadi")
+    transcript = format_paragraphs(cleaned)
     if not transcript:
-        raise GeminiError("Empty transcript")
+        raise GeminiError("Ovoz eshitilmadi")
     return transcript
 
 
