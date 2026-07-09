@@ -18,6 +18,23 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
+## STATUS (resume board) — 2026-07-09 (v6)
+- **Hallucination fix (owner-reported, the worst dictation bug)**: pressing
+  without clear speech / noisy audio made Gemini FABRICATE a whole invented
+  speech (e.g. a "personal branding" talk never said). Fixed on all 3 platforms
+  (commit 305143b): prompt now orders the model to output token NO_SPEECH for
+  silent/unintelligible audio and never invent content; code detects the
+  sentinel (strip non-letters → match NOSPEECH) + empty → "Ovoz eshitilmadi",
+  types nothing. Matcher verified: rejects real speech, catches [NO_SPEECH].
+  MITIGATION not a 100% guarantee (generative model can still occasionally
+  confabulate) — owner verifies live. Lesson saved: [[playbook_gotchas_llm]].
+- Rebuilt all 3 GREEN (Android 29032947054, Mac 29032947304, local exe) and the
+  fix VERIFIED INSIDE the shipped zip + APK (read back out). Desktop refreshed:
+  APK + exe (running, PID replaced) + GeminiMic-share.zip (46.1 MB).
+- Still-open review findings (next batch when owner says): F6 finishReason/
+  MAX_TOKENS truncation, F9 arm-notif needs POST_NOTIFICATIONS, F4 desktop
+  clipboard image-loss/restore-race, F8 "No audio" toast while busy (Android).
+
 ## STATUS (resume board) — 2026-07-08 (v5)
 - **Senior-review pass done (owner asked "critical analiz")**: independent
   adversarial review of the whole product graded it C and found real bugs.
