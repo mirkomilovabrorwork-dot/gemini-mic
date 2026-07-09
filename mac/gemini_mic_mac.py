@@ -51,7 +51,7 @@ LANGUAGE_CHOICES = [
 SAMPLE_RATE = 16000
 MIN_DURATION_SEC = 0.65
 AUTO_STOP_SEC = 60
-SILENCE_PEAK_THRESHOLD = 500  # abs int16 sample amplitude
+SILENCE_RMS_THRESHOLD = 200  # avg int16 energy; below this = silence/noise -> don't send to AI
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
 GEMINI_CONNECT_TIMEOUT = 15
@@ -663,7 +663,12 @@ class GeminiMicApp(rumps.App):
 
         wav_bytes, audio = frames_to_wav_bytes(frames)
 
-        if audio.size == 0 or int(np.max(np.abs(audio))) < SILENCE_PEAK_THRESHOLD:
+        # Energy-based silence gate (RMS, not a single peak): a click/breath spikes
+        # the peak but has low RMS, and desktop mics are noisier than phone mics —
+        # so a peak gate let near-silence reach the model, which then hallucinated a
+        # whole fake transcript. RMS reliably separates real speech from noise.
+        rms = float(np.sqrt(np.mean(audio.astype(np.float64) ** 2))) if audio.size else 0.0
+        if rms < SILENCE_RMS_THRESHOLD:
             self.set_state("idle")
             self._set_status_text("Ovoz eshitilmadi")
             return
