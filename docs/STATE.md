@@ -18,6 +18,25 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
+## STATUS (resume board) — 2026-07-09 (v7)
+- **Desktop hallucination root-cause fix** (owner: "Android eshitilmadi deb AI'ga
+  yubormaydi, Windows hali ham to'qiyapti"): Android's LOCAL amplitude gate
+  rejects silence before the API call; the desktop port used a single-PEAK gate
+  (500 int16) that noisier PC mics exceed on a quiet room → silence reached
+  Gemini → fake transcript. The NO_SPEECH prompt is only a backstop (can't save
+  noisy-but-not-silent audio — model returns invented words, not the token).
+  Fix (commit 91d3e88, windows + mac): replaced peak gate with an **RMS energy
+  gate at 200** — noise(rms~80) rejected, speech(rms~1500) sent. Threshold is a
+  single tunable knob if a mic differs. Android unchanged (its gate already
+  works per owner). Both selftests pass; RMS separation verified.
+- Rebuilt: Windows exe (RMS build, **hash-confirmed = the running Desktop
+  GeminiMic.exe**, PID relaunched), Mac .app (CI 29035931250 from 91d3e88).
+  GeminiMic-share.zip refreshed (46.1 MB) — mac .app binary + all source carry
+  the RMS gate (verified inside zip). Lesson: [[playbook_gotchas_llm]].
+- If it STILL fabricates on Windows with THIS build: the mic's noise floor is
+  above rms 200 → raise SILENCE_RMS_THRESHOLD (windows/mac line ~54). If it now
+  rejects the owner's real quiet speech → lower it. One-number autoresearch loop.
+
 ## STATUS (resume board) — 2026-07-09 (v6)
 - **Hallucination fix (owner-reported, the worst dictation bug)**: pressing
   without clear speech / noisy audio made Gemini FABRICATE a whole invented
