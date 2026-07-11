@@ -31,14 +31,14 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-3-flash-preview",
+    "model": "gemini-3.5-flash",
     "language_mode": "uz_en_ru",
     "hotkey": "right cmd",
 }
 
-# Primary is gemini-3.5-flash; on error (busy/quota/not available) retry once
-# with a DIFFERENT model (separate quota) so a 429 rarely reaches the user.
-FALLBACK_MODEL = "gemini-3.5-flash"
+# Primary is gemini-3.5-flash (more accurate on mixed uz/en); on error
+# (busy/quota/not available) retry once with a DIFFERENT model (separate quota).
+FALLBACK_MODEL = "gemini-3-flash-preview"
 FALLBACK_STATUSES = (0, 404, 429, 500, 503)
 
 LANGUAGE_CHOICES = [
@@ -86,6 +86,7 @@ _TRANSCRIPT_RULES = (
     "- Transcribe ONLY speech that is actually audible in THIS audio clip. If the audio is silent, only background noise or music, or has no intelligible speech, output EXACTLY the token NO_SPEECH and nothing else.\n"
     "- NEVER invent, guess, or fill in a greeting, a speech, a sample text, or an essay that is not clearly spoken in the audio. It is better to output NO_SPEECH than to output words that were not said.\n"
     "- Write only the words that were actually spoken. Do not invent, replace, translate, or paraphrase words.\n"
+    "- CRITICAL: This is transcription, NOT translation. NEVER translate speech from one language to another. If the speaker talks in English, write the English words in normal English spelling; NEVER rewrite English using Uzbek/Latin phonetic spelling and NEVER replace an English word with its Uzbek meaning. A whole sentence may be entirely English or entirely Russian — keep it in that language. Write every word in the exact language and script it was actually spoken in.\n"
     "- Do not add timestamps, numbers, bullets, speaker labels, headings, explanations, quotes, or markdown.\n"
     "- Add natural punctuation and capitalization so the text is easy to read: start each sentence with a capital letter and end it with a period, question mark, or exclamation mark.\n"
     "- Do not summarize, rewrite, or turn speech into a task list.\n"
@@ -102,7 +103,7 @@ _TRANSCRIPT_RULES = (
 
 def language_instruction(language_mode):
     if language_mode == "uz_en":
-        return "The speaker usually mixes Uzbek and English. Preserve both languages exactly as spoken."
+        return "The speaker mixes Uzbek and English, but a sentence may also be entirely English or entirely Uzbek. Transcribe each word in the exact language it was spoken in — never translate or romanize."
     elif language_mode == "uz_ru":
         return "The speaker usually mixes Uzbek and Russian. Preserve both languages exactly as spoken."
     else:

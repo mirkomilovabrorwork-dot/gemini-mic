@@ -30,14 +30,14 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-3-flash-preview",
+    "model": "gemini-3.5-flash",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
 }
 
-# Primary gemini-3-flash-preview (good quality, ~3x cheaper than 3.5-flash); on
-# error (busy/quota/timeout) retry once with gemini-3.5-flash (separate quota).
-FALLBACK_MODEL = "gemini-3.5-flash"
+# Primary gemini-3.5-flash (more accurate on mixed uz/en — owner report); on
+# error (busy/quota/timeout) retry once with gemini-3-flash-preview (separate quota).
+FALLBACK_MODEL = "gemini-3-flash-preview"
 # 0 = a network/timeout error (retryable → try the other model too).
 FALLBACK_STATUSES = (0, 404, 429, 500, 503)
 
