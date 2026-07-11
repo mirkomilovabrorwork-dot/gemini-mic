@@ -22,6 +22,30 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
+## STATUS (resume board) — 2026-07-11 (v9)
+- **MODEL SWAP: primary is now gemini-3.5-flash** (owner: 3-flash-preview
+  mis-transcribes his mixed uz/en — Uzbek↔English swaps). Fallback →
+  gemini-3-flash-preview (different model = separate 429 quota). All 3 platforms
+  + the owner's saved Windows config.json (a default change alone wouldn't reach
+  a saved config). Commit 7ed1125; Android CI 29167414378, Mac 29167414367,
+  Windows exe rebuilt (hash-match running). Live sanity: 3.5 keeps clean English.
+- **Language-preservation prompt fix now on ALL 3** (was Windows-only in v8):
+  softer uz_en hint + CRITICAL "transcription not translation, never romanize
+  English" rule. Bundled into this rebuild.
+- **Owner key strategy = ONE PAID key, 3.5 primary** (his choice). KEY FACT
+  taught: Gemini free vs paid is per-PROJECT/billing, not a per-call switch —
+  enabling billing deletes the free tier; 'free-first-then-paid' would need TWO
+  keys. He picked single-paid for simplicity (his volume cost ≈ cents/mo).
+  Lesson: [[playbook_gotchas_llm]].
+- Share zip refreshed (46.1 MB) — 3.5-primary + anti-translate verified INSIDE
+  zip source + APK. Desktop apk/exe current.
+- **OWNER TODO: to actually get the reliable PAID tier, enable billing on the
+  Gemini project for his key (aistudio.google.com → billing). Until then the key
+  is free-tier 3.5 (daily-limited).** The app needs NO change for paid — same key.
+- STILL VERIFY (owner, his real voice): does 3.5 fix the uz↔en language errors?
+  If yes → done. If still wrong → next lever (dedicated language modes / test 3.5
+  vs 3-flash A/B on his voice). Open review findings from v5 remain (F6/F9/F4/F8).
+
 ## STATUS (resume board) — 2026-07-11 (v8)
 - **English-spoken-comes-out-Uzbek fix (Windows, owner report)**: on Windows,
   speaking English sometimes got translated to Uzbek or romanized in Uzbek Latin.
