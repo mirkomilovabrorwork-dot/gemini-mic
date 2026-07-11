@@ -22,6 +22,24 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
+## STATUS (resume board) — 2026-07-11 (v10)
+- **Desktop no-speech hallucination — real root cause found + fixed** (owner:
+  press-without-speaking still fabricated a story on desktop; Android is fine).
+  MEASURED his mic (sounddevice, local): true silence rms<80 (already rejected by
+  the old gate), but a single keyboard click clips one 0.1s window to full-scale
+  and the old WHOLE-CLIP-AVERAGE RMS gate let that lone transient inflate the
+  average past threshold → noise reached Gemini → hallucination.
+  Fix (commit b431240, windows + mac): replaced the average-RMS gate with
+  has_speech() — a mini energy-VAD that counts 0.2s windows clearing rms 250 and
+  requires ≥3 (~0.6s sustained). Verified: speech=True, silence=False,
+  single-click=False, short-0.7s-word=True. Android untouched (its gate works).
+  Both selftests pass; Windows exe rebuilt (hash-match running), Mac CI
+  29168390715, zip refreshed (46.1 MB) — gate verified INSIDE zip source.
+  Lesson: [[playbook_gotchas_llm]] (avg RMS also fooled by a lone transient).
+- Params if tuning needed: VOICE_RMS_THRESHOLD=250, MIN_VOICED_WINDOWS=3,
+  VOICE_WINDOW_SEC=0.20 (windows+mac, near line ~54). Raise MIN_VOICED to reject
+  more; lower VOICE_RMS if it rejects the owner's real quiet speech.
+
 ## STATUS (resume board) — 2026-07-11 (v9)
 - **MODEL SWAP: primary is now gemini-3.5-flash** (owner: 3-flash-preview
   mis-transcribes his mixed uz/en — Uzbek↔English swaps). Fallback →
