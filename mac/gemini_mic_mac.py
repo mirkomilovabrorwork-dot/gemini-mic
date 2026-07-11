@@ -51,7 +51,14 @@ LANGUAGE_CHOICES = [
 SAMPLE_RATE = 16000
 MIN_DURATION_SEC = 0.65
 AUTO_STOP_SEC = 60
-SILENCE_RMS_THRESHOLD = 200  # avg int16 energy; below this = silence/noise -> don't send to AI
+# Speech gate: count 0.2s windows whose RMS clears VOICE_RMS and require several,
+# so a lone transient (keyboard click, thud) — which inflates the whole-clip RMS
+# and used to trigger a hallucinated transcript — is rejected while sustained real
+# speech passes. Measured on the owner's mic: true silence rms<80, a click spikes
+# ONE window, speech fills many.
+VOICE_RMS_THRESHOLD = 250
+VOICE_WINDOW_SEC = 0.20
+MIN_VOICED_WINDOWS = 3
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
 GEMINI_CONNECT_TIMEOUT = 15
@@ -275,6 +282,22 @@ def frames_to_wav_bytes(frames, sample_rate=SAMPLE_RATE):
         wf.setframerate(sample_rate)
         wf.writeframes(audio.tobytes())
     return buf.getvalue(), audio
+
+
+def has_speech(audio):
+    """True only if the clip holds SUSTAINED voice, not silence or a lone
+    transient. A single keyboard click inflates the whole-clip RMS but fills just
+    one window, so counting voiced windows (not averaging the whole clip) rejects
+    it while keeping real speech."""
+    win = int(VOICE_WINDOW_SEC * SAMPLE_RATE)
+    if audio.size < win:
+        return False
+    voiced = 0
+    for i in range(0, audio.size - win + 1, win):
+        seg = audio[i:i + win].astype(np.float64)
+        if np.sqrt(np.mean(seg ** 2)) >= VOICE_RMS_THRESHOLD:
+            voiced += 1
+    return voiced >= MIN_VOICED_WINDOWS
 
 
 # ---------------------------------------------------------------------------
@@ -668,8 +691,7 @@ class GeminiMicApp(rumps.App):
         # the peak but has low RMS, and desktop mics are noisier than phone mics —
         # so a peak gate let near-silence reach the model, which then hallucinated a
         # whole fake transcript. RMS reliably separates real speech from noise.
-        rms = float(np.sqrt(np.mean(audio.astype(np.float64) ** 2))) if audio.size else 0.0
-        if rms < SILENCE_RMS_THRESHOLD:
+        if not has_speech(audio):
             self.set_state("idle")
             self._set_status_text("Ovoz eshitilmadi")
             return
