@@ -22,6 +22,22 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
+## STATUS (resume board) — 2026-07-11 (v8)
+- **English-spoken-comes-out-Uzbek fix (Windows, owner report)**: on Windows,
+  speaking English sometimes got translated to Uzbek or romanized in Uzbek Latin.
+  LIVE A/B (Windows-SAPI English clip, old vs new prompt) showed BOTH prompts
+  keep CLEAN English perfect → the real trigger is the owner's ACCENTED English
+  that the Uzbek-primed prompt nudges toward Uzbek; TTS can't reproduce it.
+  Fix (commit 38ad573, **Windows only so far**): de-primed the uz_en hint ("a
+  sentence may be entirely English or Uzbek; never translate or romanize") + a
+  CRITICAL "transcription NOT translation, never rewrite English in Uzbek
+  spelling" rule. Verified NEUTRAL on clean English; UNVERIFIED for the accented
+  case → owner tests his real voice. Windows exe rebuilt + running (hash-match).
+  **PENDING: if it helps on his voice → mirror the same 2 prompt edits to
+  GeminiClient.java (Android) + mac/gemini_mic_mac.py, rebuild, refresh zip.**
+  Lesson: [[playbook_gotchas_llm]] (clean TTS test can't repro accented ASR bug).
+- Share zip NOT yet refreshed for this change (Windows-only, pending confirm).
+
 ## STATUS (resume board) — 2026-07-09 (v7)
 - **Desktop hallucination root-cause fix** (owner: "Android eshitilmadi deb AI'ga
   yubormaydi, Windows hali ham to'qiyapti"): Android's LOCAL amplitude gate
