@@ -2,6 +2,10 @@
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
 
+## STATUS (resume board) - 2026-07-11
+- Docs-only maintenance: corrected `CLAUDE.md` typo `selftest` -> `self-test`.
+- Product code unchanged. Next: resume the previously planned product work.
+
 ## What this is
 System-wide voice keyboard for Android: hold a floating mic → record → Gemini
 transcribes (mixed Uzbek/English/Russian) → text is auto-typed into the focused
