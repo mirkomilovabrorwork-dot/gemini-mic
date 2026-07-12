@@ -22,6 +22,27 @@ Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
 (Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
+## STATUS (resume board) — 2026-07-12 (v11)
+- **Windows now auto-inserts WITHOUT clicking the field first** (owner wanted
+  phone-parity). Added UI Automation (desktop cousin of Android accessibility):
+  before pasting, if no editable is already focused, walk the FOREGROUND window
+  for an editable control and SetFocus it, then the existing Ctrl+V lands there.
+  Strictly additive/no-regression: existing focus is respected (not hijacked);
+  UIA miss/error → plain paste as before. Bounded walk (depth 18, 1.5s).
+  Commit 30bc4d2. New dep `uiautomation` (comtypes); requirements.txt + build.bat
+  updated with --collect-all comtypes/uiautomation (build.bat was ALSO missing
+  the pre-existing sounddevice/pynput flags → would've built a broken exe → fixed).
+- VERIFIED hard (import is behind try/except = silent-off risk): e2e on Notepad
+  no-click → focus=True + text landed; and a FROZEN probe exe proved uiautomation
+  imports + GetForegroundControl works when packaged (yinkaisheng lib needs no
+  runtime typelib codegen). Windows exe rebuilt 33.1 MB (hash-match running),
+  zip refreshed (47.4 MB, feature verified in zip source). Lesson: [[playbook_gotchas_windows_ps]].
+- **Mac still needs a click** (uiautomation is Windows-only; mac parity would need
+  the macOS AXUIElement accessibility API — separate future work). Android already
+  inserts without a click. So: Android ✅, Windows ✅ (new), Mac ⏳.
+- OWNER TODO unchanged: enable billing for reliable paid 3.5 (optional). Open
+  review findings F6/F9/F4/F8 from v5 still queued.
+
 ## STATUS (resume board) — 2026-07-11 (v10)
 - **Desktop no-speech hallucination — real root cause found + fixed** (owner:
   press-without-speaking still fabricated a story on desktop; Android is fine).
