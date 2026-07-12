@@ -395,19 +395,54 @@ def _uia_is_editable(ctrl):
         return False
 
 
-def _uia_find_editable(ctrl, deadline, depth=0):
-    if ctrl is None or depth > 18 or time.monotonic() > deadline:
-        return None
-    if _uia_is_editable(ctrl):
-        return ctrl
+def _uia_collect_editables(ctrl, deadline, in_document, out, depth=0):
+    """Collect ALL visible editable candidates, remembering whether each sits
+    inside a Document (= web/app content area). Taking the FIRST hit was wrong:
+    in Chrome that's the address bar, in Electron apps it can be an invisible
+    helper input — text then 'pastes' somewhere the user never sees."""
+    if ctrl is None or depth > 18 or len(out) >= 12 or time.monotonic() > deadline:
+        return
     try:
-        for child in ctrl.GetChildren():
-            found = _uia_find_editable(child, deadline, depth + 1)
-            if found is not None:
-                return found
+        if ctrl.ControlType == _uia.ControlType.DocumentControl:
+            in_document = True
+        if _uia_is_editable(ctrl) and not ctrl.IsOffscreen:
+            r = ctrl.BoundingRectangle
+            area = max(0, r.width()) * max(0, r.height())
+            if area > 0:
+                is_edit = ctrl.ControlType == _uia.ControlType.EditControl
+                out.append((ctrl, is_edit, in_document, area))
     except Exception:
         pass
-    return None
+    try:
+        for child in ctrl.GetChildren():
+            _uia_collect_editables(child, deadline, in_document, out, depth + 1)
+    except Exception:
+        pass
+
+
+def _uia_find_editable(ctrl, deadline):
+    candidates = []
+    _uia_collect_editables(ctrl, deadline, False, candidates)
+    if not candidates:
+        return None
+    # Prefer a real Edit control over a whole Document (a web page IS a
+    # Document — focusing it pastes nowhere; Documents are only right for
+    # Notepad-style editors with no Edit child). Among those, prefer one inside
+    # the content Document (not a browser address bar); largest area wins ties.
+    # Junk filter: a tiny Edit is a hidden helper input, and a small Document
+    # fragment (e.g. a 'Loading…' block on a news page) is not a text box —
+    # hijacking focus onto those loses the paste. Better to return None and let
+    # the caller paste into whatever already has focus.
+    candidates = [c for c in candidates
+                  if (c[1] and c[3] >= 900) or (not c[1] and c[3] >= 50_000)]
+    if not candidates:
+        log("uia: only junk candidates -> not hijacking focus")
+        return None
+    candidates.sort(key=lambda t: (t[1], t[2], t[3]), reverse=True)
+    best, is_edit, in_doc, area = candidates[0]
+    log("uia: %d candidates, best name=%r edit=%s inDocument=%s area=%d" % (
+        len(candidates), (getattr(best, "Name", "") or "")[:50], is_edit, in_doc, area))
+    return best
 
 
 def focus_foreground_editable():
