@@ -44,6 +44,16 @@ mixed Uzbek/English/Russian, the text lands in the focused field — free
   (%APPDATA%\...\Startup\GeminiMic.lnk → Desktop exe) so it launches on every
   boot. Relaunched, stable 12s+, hash = new build. TODO next zip refresh: add a
   "put a shortcut in shell:startup" line to HOW-TO-USE.txt for the friend.
+- **2nd "ishlamadi" (2026-07-12) SOLVED VIA THE NEW LOG — clipboard-paste race
+  (reviewer's F4) was the real killer**: log proved the whole chain worked
+  (record→Gemini transcript→UIA focused the Electron editable→Ctrl+V sent 4×)
+  yet no text appeared — the app restored the OLD clipboard 0.15s after Ctrl+V,
+  and Electron windows read the clipboard AFTER that → transcript vanished.
+  (Notepad pastes instantly, so the earlier e2e falsely passed.) Fix commit
+  03ea17c (win+mac): hold clipboard 1.2s before restore + 0.15s settle after
+  SetFocus. Exe rebuilt+running (hash match). AWAITING owner retest.
+  Note: dictating while an Electron app (e.g. Claude) is foreground correctly
+  pastes INTO that app's input — text lands wherever the front window is.
 - **Mac still needs a click** (uiautomation is Windows-only; mac parity would need
   the macOS AXUIElement accessibility API — separate future work). Android already
   inserts without a click. So: Android ✅, Windows ✅ (new), Mac ⏳.
