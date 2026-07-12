@@ -63,8 +63,17 @@ mixed Uzbek/English/Russian, the text lands in the focused field — free
   area tiebreak; junk-filter tiny edits (<900px²)/small fragments (<50k px²,
   "Loading…" case seen live) → only junk = DON'T hijack, plain paste as before.
   Live-verified: Chrome textarea received the marker with new scoring (address
-  bar with old). Exe rebuilt+running (hash match). AWAITING owner retest —
-  next diagnostic is his log's "best name=... edit=... area=..." line.
+  bar with old). Exe rebuilt+running (hash match).
+- **FINAL VERDICT on no-click (owner CLOSED it 2026-07-12: "ishlamasa, mayli,
+  kerak emas")**: latest log shows the scoring works, but in ELECTRON apps
+  (Claude etc.) UIA sees NO real editable at all ("no editable found") —
+  Electron doesn't expose its inputs to Windows accessibility unless forced
+  (per-app --force-renderer-accessibility tricks = deep fragile rabbit hole).
+  So: no-click WORKS in Chrome/Notepad-class apps, NOT in Electron; falls back
+  harmlessly (no hijack, plain paste). Owner accepted click-first as the way.
+  DO NOT reopen this without new evidence — the whole 3-round debug ladder
+  (clipboard race → wrong-editable → Electron-no-a11y) is documented in
+  [[playbook_gotchas_windows_ps]].
 - **Mac still needs a click** (uiautomation is Windows-only; mac parity would need
   the macOS AXUIElement accessibility API — separate future work). Android already
   inserts without a click. So: Android ✅, Windows ✅ (new), Mac ⏳.
