@@ -20,6 +20,11 @@ import time
 import wave
 from io import BytesIO
 
+try:
+    import uiautomation as _uia  # optional: focus the foreground text field w/o a click
+except Exception:
+    _uia = None
+
 # ---------------------------------------------------------------------------
 # Paths / config
 # ---------------------------------------------------------------------------
@@ -346,6 +351,70 @@ def has_speech(audio):
         if np.sqrt(np.mean(seg ** 2)) >= VOICE_RMS_THRESHOLD:
             voiced += 1
     return voiced >= MIN_VOICED_WINDOWS
+
+
+# ---------------------------------------------------------------------------
+# Auto-focus a text field (UI Automation) — the desktop cousin of Android's
+# accessibility service, so dictation lands in the foreground app's text box
+# even when the user did not click into it first. Strictly best-effort: any
+# failure just leaves focus untouched and the plain Ctrl+V paste runs as before.
+# ---------------------------------------------------------------------------
+
+def _uia_is_editable(ctrl):
+    try:
+        if ctrl.ControlType not in (_uia.ControlType.EditControl, _uia.ControlType.DocumentControl):
+            return False
+        if not ctrl.IsEnabled:
+            return False
+        try:
+            vp = ctrl.GetValuePattern()
+            if vp is not None and vp.IsReadOnly:
+                return False
+        except Exception:
+            pass
+        return True
+    except Exception:
+        return False
+
+
+def _uia_find_editable(ctrl, deadline, depth=0):
+    if ctrl is None or depth > 18 or time.monotonic() > deadline:
+        return None
+    if _uia_is_editable(ctrl):
+        return ctrl
+    try:
+        for child in ctrl.GetChildren():
+            found = _uia_find_editable(child, deadline, depth + 1)
+            if found is not None:
+                return found
+    except Exception:
+        pass
+    return None
+
+
+def focus_foreground_editable():
+    """If the user has NOT already put the cursor in a text field, find an
+    editable control in the foreground window and focus it. Returns True if an
+    editable is (now) focused. Never raises — any problem returns False and the
+    caller falls back to a plain paste into whatever currently has focus."""
+    if _uia is None:
+        return False
+    try:
+        focused = _uia.GetFocusedControl()
+        if focused is not None and _uia_is_editable(focused):
+            return True  # user already chose a field — respect it, don't hijack
+    except Exception:
+        pass
+    try:
+        top = _uia.GetForegroundControl()
+        editable = _uia_find_editable(top, time.monotonic() + 1.5)
+        if editable is not None:
+            editable.SetFocus()
+            time.sleep(0.05)
+            return True
+    except Exception:
+        pass
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -880,6 +949,10 @@ class GeminiMicApp:
     # -- paste ----------------------------------------------------------
 
     def paste_text(self, text):
+        # If the user didn't click a text field, try to focus one in the
+        # foreground window (like the phone) so the paste has a target.
+        focus_foreground_editable()
+
         try:
             saved_clipboard = pyperclip.paste()
         except Exception:

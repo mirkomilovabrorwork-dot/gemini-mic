@@ -5,3 +5,4 @@ pynput
 pystray
 pillow
 pyperclip
+uiautomation
