@@ -74,6 +74,13 @@ mixed Uzbek/English/Russian, the text lands in the focused field — free
   DO NOT reopen this without new evidence — the whole 3-round debug ladder
   (clipboard race → wrong-editable → Electron-no-a11y) is documented in
   [[playbook_gotchas_windows_ps]].
+- **Owner-approved consolation (commit 2a5b281, Windows)**: when no text field
+  is confirmed, the transcript now STAYS in the clipboard + balloon "Matn
+  clipboardga yozildi — kerakli joyga Ctrl+V bosing" (previously the restore
+  destroyed it — a 13s dictation was lost). Confirmed-target path unchanged.
+  Exe rebuilt + running (hash match). Desktop exe copies current; share zip
+  NOT yet refreshed with this build (do together with next zip refresh, along
+  with the HOW-TO autostart line).
 - **Mac still needs a click** (uiautomation is Windows-only; mac parity would need
   the macOS AXUIElement accessibility API — separate future work). Android already
   inserts without a click. So: Android ✅, Windows ✅ (new), Mac ⏳.
