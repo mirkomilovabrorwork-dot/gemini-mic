@@ -54,6 +54,17 @@ mixed Uzbek/English/Russian, the text lands in the focused field — free
   SetFocus. Exe rebuilt+running (hash match). AWAITING owner retest.
   Note: dictating while an Electron app (e.g. Claude) is foreground correctly
   pastes INTO that app's input — text lands wherever the front window is.
+- **3rd "ishlamadi" (2026-07-12) — REAL bug found by live Chrome experiment:
+  first-hit editable selection pasted into the WRONG field** (Chrome: the
+  ADDRESS BAR got the marker; Electron: an invisible helper input, name='' in
+  the owner's log — chain looked green 7×, text landed where nobody looks).
+  Fix commit 4a4fc2d: collect ≤12 visible candidates, score Edit>Document
+  (a web page IS a Document — focusing it pastes nowhere), in-content>chrome,
+  area tiebreak; junk-filter tiny edits (<900px²)/small fragments (<50k px²,
+  "Loading…" case seen live) → only junk = DON'T hijack, plain paste as before.
+  Live-verified: Chrome textarea received the marker with new scoring (address
+  bar with old). Exe rebuilt+running (hash match). AWAITING owner retest —
+  next diagnostic is his log's "best name=... edit=... area=..." line.
 - **Mac still needs a click** (uiautomation is Windows-only; mac parity would need
   the macOS AXUIElement accessibility API — separate future work). Android already
   inserts without a click. So: Android ✅, Windows ✅ (new), Mac ⏳.
