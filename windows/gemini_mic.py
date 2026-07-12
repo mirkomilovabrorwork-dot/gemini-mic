@@ -440,7 +440,7 @@ def focus_foreground_editable():
             editable = _uia_find_editable(top, time.monotonic() + 1.5)
             if editable is not None:
                 editable.SetFocus()
-                time.sleep(0.05)
+                time.sleep(0.15)  # let slower (Electron/browser) windows settle focus
                 log("uia: focused editable %r" % (getattr(editable, "Name", "?")[:60],))
                 return True
             log("uia: no editable found in foreground window")
@@ -1017,7 +1017,13 @@ class GeminiMicApp:
             log("paste: error %r" % (e,))
             self.notify(f"Paste error: {e}")
 
-        time.sleep(0.15)
+        # Give the target app time to actually PROCESS the paste before the
+        # clipboard is restored. Electron/browser windows handle Ctrl+V
+        # asynchronously — at 0.15s they often read the clipboard AFTER the
+        # restore, so the transcript vanished and the OLD clipboard pasted
+        # (or nothing). Diagnosed from the owner's log: whole chain OK, paste
+        # sent, yet no text appeared in the Electron foreground app.
+        time.sleep(1.2)
 
         if saved_clipboard is not None:
             try:

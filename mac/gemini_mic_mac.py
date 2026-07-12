@@ -741,7 +741,11 @@ class GeminiMicApp(rumps.App):
         except Exception as e:
             self.notify(f"Paste error: {e}")
 
-        time.sleep(0.15)
+        # Give the target app time to actually PROCESS the paste before the
+        # clipboard is restored — Electron/browser windows handle the paste
+        # asynchronously and at 0.15s they often read the clipboard AFTER the
+        # restore (transcript vanishes, old clipboard pastes instead).
+        time.sleep(1.2)
 
         if saved_clipboard is not None:
             try:
