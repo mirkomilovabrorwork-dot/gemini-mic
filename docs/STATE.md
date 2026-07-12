@@ -37,6 +37,13 @@ mixed Uzbek/English/Russian, the text lands in the focused field — free
   imports + GetForegroundControl works when packaged (yinkaisheng lib needs no
   runtime typelib codegen). Windows exe rebuilt 33.1 MB (hash-match running),
   zip refreshed (47.4 MB, feature verified in zip source). Lesson: [[playbook_gotchas_windows_ps]].
+- **"Ishlamadi" false alarm (2026-07-12): the app simply WASN'T RUNNING** when
+  the owner tested (no crash in Event Log — PC likely rebooted; Windows had no
+  autostart, so unlike Android there wasn't even a notification). Fixed the
+  class: **Startup shortcut added** on the owner's machine
+  (%APPDATA%\...\Startup\GeminiMic.lnk → Desktop exe) so it launches on every
+  boot. Relaunched, stable 12s+, hash = new build. TODO next zip refresh: add a
+  "put a shortcut in shell:startup" line to HOW-TO-USE.txt for the friend.
 - **Mac still needs a click** (uiautomation is Windows-only; mac parity would need
   the macOS AXUIElement accessibility API — separate future work). Android already
   inserts without a click. So: Android ✅, Windows ✅ (new), Mac ⏳.
