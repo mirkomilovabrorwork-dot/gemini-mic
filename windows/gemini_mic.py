@@ -32,6 +32,24 @@ except Exception:
 APP_NAME = "GeminiMic"
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "GeminiMic")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
+LOG_PATH = os.path.join(CONFIG_DIR, "log.txt")
+
+
+def log(msg):
+    """Append a timestamped line to %APPDATA%\\GeminiMic\\log.txt so a failed
+    dictation can be diagnosed from the file instead of guesswork. Never raises;
+    truncates when the file grows past ~200 KB."""
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        try:
+            if os.path.getsize(LOG_PATH) > 200_000:
+                os.replace(LOG_PATH, LOG_PATH + ".old")
+        except OSError:
+            pass
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S") + " " + msg + "\n")
+    except Exception:
+        pass
 
 DEFAULT_CONFIG = {
     "api_key": "",
@@ -398,23 +416,39 @@ def focus_foreground_editable():
     editable is (now) focused. Never raises — any problem returns False and the
     caller falls back to a plain paste into whatever currently has focus."""
     if _uia is None:
+        log("uia: library not available")
         return False
+    # This runs on a worker thread; UIA/COM must be initialized per-thread in
+    # that case (per the uiautomation docs) or calls can fail with COM errors.
+    thread_init = None
     try:
-        focused = _uia.GetFocusedControl()
-        if focused is not None and _uia_is_editable(focused):
-            return True  # user already chose a field — respect it, don't hijack
-    except Exception:
-        pass
+        thread_init = _uia.UIAutomationInitializerInThread()
+    except Exception as e:
+        log("uia: thread init failed: %r" % (e,))
     try:
-        top = _uia.GetForegroundControl()
-        editable = _uia_find_editable(top, time.monotonic() + 1.5)
-        if editable is not None:
-            editable.SetFocus()
-            time.sleep(0.05)
-            return True
-    except Exception:
-        pass
-    return False
+        try:
+            focused = _uia.GetFocusedControl()
+            if focused is not None and _uia_is_editable(focused):
+                log("uia: user-focused editable, respecting it")
+                return True  # user already chose a field — respect it, don't hijack
+        except Exception as e:
+            log("uia: GetFocusedControl error: %r" % (e,))
+        try:
+            top = _uia.GetForegroundControl()
+            log("uia: foreground window=%r class=%r" % (
+                getattr(top, "Name", "?")[:60], getattr(top, "ClassName", "?")))
+            editable = _uia_find_editable(top, time.monotonic() + 1.5)
+            if editable is not None:
+                editable.SetFocus()
+                time.sleep(0.05)
+                log("uia: focused editable %r" % (getattr(editable, "Name", "?")[:60],))
+                return True
+            log("uia: no editable found in foreground window")
+        except Exception as e:
+            log("uia: search/focus error: %r" % (e,))
+        return False
+    finally:
+        del thread_init
 
 
 # ---------------------------------------------------------------------------
@@ -908,7 +942,10 @@ class GeminiMicApp:
         except Exception:
             pass
 
+        log("record stop: dur=%.2fs" % duration)
+
         if duration < MIN_DURATION_SEC:
+            log("gate: too short -> rejected")
             self.set_state("idle")
             self._tooltip("Gemini Mic — hold longer")
             return
@@ -920,6 +957,7 @@ class GeminiMicApp:
         # peak gate let near-silence reach the model, which then hallucinated a
         # whole fake transcript. RMS reliably separates real speech from noise.
         if not has_speech(audio):
+            log("gate: no sustained speech -> rejected")
             self.set_state("idle")
             self._tooltip("Gemini Mic — ovoz eshitilmadi")
             return
@@ -929,17 +967,21 @@ class GeminiMicApp:
         def worker():
             try:
                 cfg = self.get_config()
+                log("gemini: calling model=%s" % cfg.get("model", DEFAULT_CONFIG["model"]))
                 transcript = gemini_transcribe(
                     cfg.get("api_key", ""),
                     cfg.get("model", DEFAULT_CONFIG["model"]),
                     cfg.get("language_mode", DEFAULT_CONFIG["language_mode"]),
                     wav_bytes,
                 )
+                log("gemini: transcript %d chars" % len(transcript))
                 self.paste_text(transcript)
                 beep(660, 90)  # audio cue: transcript pasted (done)
             except GeminiError as e:
+                log("gemini: error %r" % (e,))
                 self.notify(str(e))
             except Exception as e:
+                log("worker: unexpected %r" % (e,))
                 self.notify(f"Unexpected error: {e}")
             finally:
                 self.set_state("idle")
@@ -970,7 +1012,9 @@ class GeminiMicApp:
             kb.press("v")
             kb.release("v")
             kb.release(Key.ctrl)
+            log("paste: Ctrl+V sent")
         except Exception as e:
+            log("paste: error %r" % (e,))
             self.notify(f"Paste error: {e}")
 
         time.sleep(0.15)
