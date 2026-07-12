@@ -1028,7 +1028,7 @@ class GeminiMicApp:
     def paste_text(self, text):
         # If the user didn't click a text field, try to focus one in the
         # foreground window (like the phone) so the paste has a target.
-        focus_foreground_editable()
+        target_confirmed = focus_foreground_editable()
 
         try:
             saved_clipboard = pyperclip.paste()
@@ -1059,6 +1059,14 @@ class GeminiMicApp:
         # (or nothing). Diagnosed from the owner's log: whole chain OK, paste
         # sent, yet no text appeared in the Electron foreground app.
         time.sleep(1.2)
+
+        if not target_confirmed:
+            # No confirmed text field (e.g. Electron apps hide theirs from UIA):
+            # the Ctrl+V may have landed nowhere. Don't destroy the transcript —
+            # leave it in the clipboard and tell the user how to get it.
+            log("paste: no confirmed target -> transcript kept in clipboard")
+            self.notify("Matn clipboardga yozildi — kerakli joyga Ctrl+V bosing")
+            return
 
         if saved_clipboard is not None:
             try:
