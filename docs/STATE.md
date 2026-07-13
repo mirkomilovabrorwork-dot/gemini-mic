@@ -17,6 +17,20 @@ Original Codex-built project source was lost (not on D:/C:/GitHub). Reconstructe
 1:1 by decompiling `GeminiMic-Simple-Android-debug.apk` (androguard) into a clean
 Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimic-recovered\`.
 
+## KNOWN LIMITATION — deferred by owner 2026-07-13
+- **Accented loanwords get normalized to formal Uzbek synonyms** (owner: says
+  "kontrolni tekshirish" → model writes "nazoratni tekshirish"). Root cause:
+  generative-LLM ASR "cleans up" accented speech toward formal language; when a
+  loanword is pronounced with an Uzbek accent the model perceives it as Uzbek
+  and swaps it for the dictionary equivalent. A/B on English-voice TTS did NOT
+  reproduce it (model kept control/process/result — clean audio isn't
+  ambiguous), and a blind "VERBATIM, don't swap synonyms + kontrol≠nazorat
+  example" prompt rule did NOT help on the testable clip and even added a
+  spurious word. The only real fix path = A/B on the OWNER'S real voice (prompt
+  vs prompt, 3.5 vs 3-flash-preview). **Owner declined the 30-sec voice capture
+  ("kerak emas") → deferred. Do NOT ship a blind prompt change.** Reopen only
+  with his real audio. Harness ready: scratchpad/ab_verbatim.py.
+
 ## GOAL (owner's words)
 Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
 mixed Uzbek/English/Russian, the text lands in the focused field — free
