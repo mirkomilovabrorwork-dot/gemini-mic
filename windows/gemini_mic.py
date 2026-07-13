@@ -1061,11 +1061,12 @@ class GeminiMicApp:
         time.sleep(1.2)
 
         if not target_confirmed:
-            # No confirmed text field (e.g. Electron apps hide theirs from UIA):
-            # the Ctrl+V may have landed nowhere. Don't destroy the transcript —
-            # leave it in the clipboard and tell the user how to get it.
-            log("paste: no confirmed target -> transcript kept in clipboard")
-            self.notify("Matn clipboardga yozildi — kerakli joyga Ctrl+V bosing")
+            # No confirmed text field (e.g. Electron apps hide theirs from UIA).
+            # Whether the Ctrl+V actually landed is NOT detectable for opaque
+            # apps, so — per owner — don't nag every time. Silently leave the
+            # transcript in the clipboard: the start/done beeps already signal a
+            # dictation happened, and a missed paste is one Ctrl+V away.
+            log("paste: no confirmed target -> transcript kept in clipboard (silent)")
             return
 
         if saved_clipboard is not None:
