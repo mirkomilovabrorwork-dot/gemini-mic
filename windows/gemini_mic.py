@@ -79,7 +79,7 @@ AUTO_STOP_SEC = 60
 # and used to trigger a hallucinated transcript — is rejected while sustained real
 # speech passes. Measured on the owner's mic: true silence rms<80, a click spikes
 # ONE window, speech fills many.
-VOICE_RMS_THRESHOLD = 250
+VOICE_RMS_THRESHOLD = 120
 VOICE_WINDOW_SEC = 0.20
 MIN_VOICED_WINDOWS = 3
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
