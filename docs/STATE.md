@@ -17,6 +17,16 @@ Original Codex-built project source was lost (not on D:/C:/GitHub). Reconstructe
 1:1 by decompiling `GeminiMic-Simple-Android-debug.apk` (androguard) into a clean
 Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimic-recovered\`.
 
+## FIX 2026-07-13: "spoke but nothing, not even in clipboard"
+- Log showed the has_speech gate rejected 19 REAL dictations ("no sustained
+  speech", e.g. a 2.98s utterance) — quiet/far speech fell under VOICE_RMS=250.
+  Lowered to 120 (his silence floor rms<80 → safe margin; verified silence+click
+  still rejected, quiet speech passes). Commit 6e0dab2, win+mac, exe rebuilt.
+  If silence starts hallucinating again → nudge back up; if still eats speech →
+  lower more. The two other "not working" causes are separate: (a) Electron
+  (Claude) flaky UIA → auto-paste inconsistent, use Ctrl+V / click field first;
+  (b) [[below]] loanword normalization.
+
 ## KNOWN LIMITATION — deferred by owner 2026-07-13
 - **Accented loanwords get normalized to formal Uzbek synonyms** (owner: says
   "kontrolni tekshirish" → model writes "nazoratni tekshirish"). Root cause:
