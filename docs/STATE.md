@@ -3,6 +3,7 @@
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
 
 ## STATUS (resume board) - 2026-07-11
+- **Merge-commit hook tracked (2026-07-18):** `.githooks/pre-merge-commit` is now in git too. It was created but untracked, so a clone carried only half the protection - git routes a MERGE through that hook, and that path would have been silently unguarded.
 - **Native git pre-commit hook (2026-07-18):** `.githooks/pre-commit` runs this repo's own `.claude/gate.cmd` before any commit, so a commit from a terminal, an IDE or another agent is checked too - previously only commits made through Claude's own tools were. Proven BOTH ways before landing: a deliberate breakage blocked the commit with the real failure, and reverting it let the same commit through. Escape hatch `SKIP_GATE=1` (deliberately loud). **After a fresh clone it is INERT until you run `git config core.hooksPath .githooks`** - that setting is local git config and does not travel with the repo.
 - Done-gate added 2026-07-13: `.claude/gate.cmd` (py_compile win+mac sources + windows --selftest) now guards every commit via the global gate-before-commit hook.
 - Docs-only maintenance: corrected `CLAUDE.md` typo `selftest` -> `self-test`.
