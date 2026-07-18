@@ -1,0 +1,56 @@
+#!/bin/sh
+# Native git pre-commit hook. Runs THIS repo's quality gate before any commit is created.
+#
+# Why this exists (both independent audits, 2026-07-18): the Claude-side done-gate only sees
+# commits made through Claude's own tools. A commit from a terminal, an IDE, or another agent
+# bypassed every check. Enforcement has to live in the repo, not in one client.
+#
+# The gate itself stays in .claude/gate.cmd so there is ONE definition of "green" that both the
+# Claude hook and this git hook run - two definitions would drift apart within a week.
+#
+# Escape hatch: SKIP_GATE=1 git commit ...   It is deliberately loud and leaves a trace in the
+# terminal, because a silent bypass is how a gate quietly stops existing.
+
+if [ -n "$SKIP_GATE" ]; then
+	echo "pre-commit: GATE SKIPPED via SKIP_GATE=1 - this commit is UNVERIFIED."
+	exit 0
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+gate="$repo_root/.claude/gate.cmd"
+
+if [ ! -f "$gate" ]; then
+	echo "pre-commit: no .claude/gate.cmd in this repo - nothing verified this commit."
+	exit 0
+fi
+
+echo "pre-commit: running $gate ..."
+# Windows: the gate is a cmd script, so invoke it through cmd.exe. Convert the path if we are in
+# Git Bash (MSYS) so cmd.exe gets a Windows path rather than /d/...
+if command -v cygpath >/dev/null 2>&1; then
+	gate_win=$(cygpath -w "$gate")
+	root_win=$(cygpath -w "$repo_root")
+else
+	gate_win="$gate"
+	root_win="$repo_root"
+fi
+
+# Run from the repo root, then hand the gate to cmd.exe. Keep this ONE command: an earlier version
+# wrapped it in `pushd ... && "gate"` and cmd could not parse the nested quoting, so the hook failed
+# with a path error and blocked EVERY commit - a gate that always denies gets disabled within a day,
+# which is worse than no gate at all. Verified: this form really executes the gate and returns its
+# exit code (proved by watching a deliberately broken test turn it red, then green again).
+cd "$repo_root" || exit 1
+cmd //c "$gate_win" </dev/null
+status=$?
+
+if [ $status -ne 0 ]; then
+	echo ""
+	echo "pre-commit: GATE FAILED (exit $status). The commit was NOT created."
+	echo "Fix the failures, then commit again. If this is genuinely not gateable, say why in the"
+	echo "commit message and re-run with: SKIP_GATE=1 git commit ..."
+	exit 1
+fi
+
+echo "pre-commit: gate passed."
+exit 0
