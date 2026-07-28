@@ -2,6 +2,17 @@
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
 
+## NEXT STEP (2026-07-28)
+
+**Rebuild `GeminiMic-share.zip` from the current source, then hand it to the friend.**
+Why this and not something else: a wave-audit on 2026-07-28 searched Desktop, Downloads and both project
+folders and found **no `*share*.zip` anywhere** - the only Desktop artefact is `GeminiMic.exe` (33.1 MB,
+2026-07-13). The board below still describes the zip as if it exists on the Desktop. So the thing the
+friend is supposed to receive does not currently exist, and every "refresh the zip" note below is really
+"build the zip".
+Gate before handing it over: `.claude\gate.cmd` (py_compile of the win+mac sources + the Windows
+self-test) - verified green 2026-07-28. Owner action needed: none until the zip exists.
+
 ## STATUS (resume board) - 2026-07-11
 - **Merge-commit hook tracked (2026-07-18):** `.githooks/pre-merge-commit` is now in git too. It was created but untracked, so a clone carried only half the protection - git routes a MERGE through that hook, and that path would have been silently unguarded.
 - **Native git pre-commit hook (2026-07-18):** `.githooks/pre-commit` runs this repo's own `.claude/gate.cmd` before any commit, so a commit from a terminal, an IDE or another agent is checked too - previously only commits made through Claude's own tools were. Proven BOTH ways before landing: a deliberate breakage blocked the commit with the real failure, and reverting it let the same commit through. Escape hatch `SKIP_GATE=1` (deliberately loud). **After a fresh clone it is INERT until you run `git config core.hooksPath .githooks`** - that setting is local git config and does not travel with the repo.
