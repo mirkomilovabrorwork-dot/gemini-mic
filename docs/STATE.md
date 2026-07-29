@@ -133,6 +133,17 @@ metric = how many of {delegatsiya, thinking budget, workflow} survive verbatim.
   help. REJECTED, prompt kept as-is.
 - Head-to-head 3-flash-preview vs 3.5-flash on 4 segments: **4 : 2** for
   3-preview; 3.5 once emitted an ENTIRE segment in Cyrillic. Confirms the owner.
+- **Owner's idea: run with NO prompt at all (maybe the rules are what make it
+  "edit") — TESTED, disproven, and the reason matters.** With no text part the
+  model does not transcribe AT ALL, it ANSWERS the audio: "Delegatsiya va
+  avtomatlashtirish o'rtasidagi farqni…", "Ushbu videoda gapirayotgan shaxs…",
+  "Albatta, OpenAI tomonidan taqdim etilgan o1-preview…". It scored 7/9 only
+  because the marker words appear inside that commentary — **the metric lies on
+  this variant; do not read that 7 as a tie.** With a bare "Transcribe this
+  audio." it does transcribe but prepends "Albatta, mana audio transkripsiyasi:",
+  and once emitted Kazakh Cyrillic and once timestamps. 3.5-flash with the bare
+  line scored **2/9**. CONCLUSION: the long prompt is load-bearing — it is what
+  keeps the output a clean transcript — and it is NOT the cause of substitution.
 - **Fable's 4 API-level ideas (owner asked for Fable + Codex) — ALL TESTED, ALL
   LOST to the baseline's 7/9.** Its root-cause frame is worth keeping: Gemini is
   an audio-conditioned LANGUAGE MODEL, so at each token it blends weak acoustic
