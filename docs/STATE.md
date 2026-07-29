@@ -133,6 +133,10 @@ metric = how many of {delegatsiya, thinking budget, workflow} survive verbatim.
   help. REJECTED, prompt kept as-is.
 - Head-to-head 3-flash-preview vs 3.5-flash on 4 segments: **4 : 2** for
   3-preview; 3.5 once emitted an ENTIRE segment in Cyrillic. Confirms the owner.
+- **Owner's counter-idea: maybe ustoz's "correct an unclear word from context"
+  rule HELPS rather than hurts** — tested as a softened variant ("choose the
+  reading that fits the context rather than a phonetically similar word that
+  makes no sense"): **7→5, WORSE.** REJECTED.
 - **Vocabulary hint (list of the speaker's own terms appended to the prompt):
   the ONLY thing that measurably WORKED** — score 7→8, and the segment that
   produced "sening byudjeting" every time became "Thinking budget" **3/3 with
