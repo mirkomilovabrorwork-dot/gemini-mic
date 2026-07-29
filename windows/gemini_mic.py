@@ -364,11 +364,21 @@ def has_speech(audio):
     if audio.size < win:
         return False
     voiced = 0
+    loudest = 0.0
     for i in range(0, audio.size - win + 1, win):
         seg = audio[i:i + win].astype(np.float64)
-        if np.sqrt(np.mean(seg ** 2)) >= VOICE_RMS_THRESHOLD:
+        rms = np.sqrt(np.mean(seg ** 2))
+        loudest = max(loudest, rms)
+        if rms >= VOICE_RMS_THRESHOLD:
             voiced += 1
-    return voiced >= MIN_VOICED_WINDOWS
+    ok = voiced >= MIN_VOICED_WINDOWS
+    if not ok:
+        # Log the numbers so a rejection can be told apart from "he never spoke":
+        # loudest far under the threshold = real silence; loudest near it = the
+        # gate is too strict for this mic/distance and should be lowered.
+        log("gate detail: voiced=%d/%d loudest_rms=%d threshold=%d"
+            % (voiced, MIN_VOICED_WINDOWS, loudest, VOICE_RMS_THRESHOLD))
+    return ok
 
 
 # ---------------------------------------------------------------------------
