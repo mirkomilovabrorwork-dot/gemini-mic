@@ -31,7 +31,29 @@ Original Codex-built project source was lost (not on D:/C:/GitHub). Reconstructe
 1:1 by decompiling `GeminiMic-Simple-Android-debug.apk` (androguard) into a clean
 Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimic-recovered\`.
 
-## 2026-07-29 — MODEL SWITCHED to gemini-3.6-flash (Windows + Android)
+## 2026-07-29 (FINAL) — model is gemini-3-flash-preview; 3.6 REJECTED
+- **The owner was right and my 3.6 switch was wrong.** He said "narx va sifat
+  menimcha hali ham 3" — and I had never A/B'd the cheap incumbent against 3.6,
+  only 3.5-vs-3.6 and 3.6-vs-pro. Measured on 4 segments of his own recording:
+  · **3-flash-preview: correct EVERY time** ("delegatsiya", "thinking budget"),
+    ~2.3–4.5s, **$0.39/mo** at 30/day.
+  · 3.6-flash: wrote "relokatsiya", and on **2 of 3 segments emitted its own
+    REASONING instead of the transcript** ("Using explicit rules for mixed
+    Uzbek/English speech transcription…") → unusable for dictation.
+  · 3.1-pro-preview: most accurate but 9.2s on a 12s clip (~3x the wait) and
+    $1.55/mo — owner first chose it, then reversed on price/quality.
+  **FINAL: primary `gemini-3-flash-preview`, fallback `gemini-3.5-flash`.**
+  Commit f15ca32 (+ e37e2cc), Android CI 30480877402 GREEN, APK on Desktop,
+  Windows app restarted, config.json set. **DO NOT re-"upgrade" to 3.6** — the
+  reason is commented at the constant in both platforms.
+- KEPT from the 3.6 round (good regardless): maxOutputTokens 4096, per-model
+  thinking config, `finishReason != STOP` logging, gate-rejection rms logging.
+- **VTT leak fixed** (e37e2cc): a dictation came back as subtitle cues
+  ("00:03.000-->00:08.500 …"); the cleaner only knew the `[00:01]` form. Now
+  strips the arrow form too — marker only, sentence preserved; normal spoken
+  times ("Soat 10:30", "09:00 --> 10:00") untouched.
+
+## 2026-07-29 (superseded) — MODEL SWITCHED to gemini-3.6-flash (Windows + Android)
 - **Settled by A/B on the OWNER'S OWN recorded voice** (60s captured locally,
   `scratchpad/owner_voice.wav`): 3.5-flash wrote his spoken "thinking budget" as
   **"sinking budget"**; **3.6-flash got it right** — exactly the defect class he
