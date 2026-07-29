@@ -53,13 +53,15 @@ def log(msg):
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-3.5-flash",
+    "model": "gemini-3.6-flash",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
 }
 
-# Primary gemini-3.5-flash (more accurate on mixed uz/en — owner report); on
-# error (busy/quota/timeout) retry once with gemini-3-flash-preview (separate quota).
+# Primary gemini-3.6-flash: on the owner's own recorded voice it kept the English
+# term "thinking budget" that 3.5-flash mangled into "sinking budget", at the same
+# latency (~2s) and slightly cheaper ($7.50 vs $9.00 per 1M output). On error
+# (busy/quota/timeout) retry once with gemini-3-flash-preview (separate quota).
 FALLBACK_MODEL = "gemini-3-flash-preview"
 # 0 = a network/timeout error (retryable → try the other model too).
 FALLBACK_STATUSES = (0, 404, 429, 500, 503)
@@ -543,6 +545,22 @@ def _call_gemini(api_key, model, body):
     return "".join(p.get("text", "") for p in parts)
 
 
+def generation_config(model):
+    """Per-model generation settings.
+
+    `thinkingConfig.thinkingBudget` is rejected by the 3.6 generation with a
+    generic 400 (the error does not name the field), but the older models NEED
+    it: without it they turn thinking on and a 10s clip goes 2.0s -> 3.1s
+    (3.5-flash) / 4.7s (3-flash-preview), which is felt in dictation. 3.6 is
+    already ~2.2s with thinking left at its default, and `thinkingLevel: low`
+    measurably worsened its text, so it simply gets no thinking config.
+    """
+    cfg = {"temperature": 0, "maxOutputTokens": 1024}
+    if not model.startswith("gemini-3.6"):
+        cfg["thinkingConfig"] = {"thinkingBudget": 0}
+    return cfg
+
+
 def gemini_transcribe(api_key, model, language_mode, wav_bytes):
     if not api_key:
         raise GeminiError("Missing Gemini API key")
@@ -565,17 +583,14 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes):
                 ]
             }
         ],
-        "generationConfig": {
-            "temperature": 0,
-            "maxOutputTokens": 1024,
-            "thinkingConfig": {"thinkingBudget": 0},
-        },
+        "generationConfig": generation_config(model),
     }
 
     try:
         text = _call_gemini(api_key, model, body)
     except GeminiError as e:
         if getattr(e, "status", None) in FALLBACK_STATUSES and model != FALLBACK_MODEL:
+            body["generationConfig"] = generation_config(FALLBACK_MODEL)
             text = _call_gemini(api_key, FALLBACK_MODEL, body)
         else:
             raise

@@ -83,6 +83,21 @@ final class GeminiClient {
         }
     }
 
+    // Per-model generation settings. thinkingConfig.thinkingBudget is REJECTED by
+    // the 3.6 generation with a generic 400 (the error never names the field),
+    // but the older models need it: without it they enable thinking and a 10s
+    // clip goes ~2s -> 3.1s (3.5-flash) / 4.7s (3-flash-preview), which is felt
+    // in dictation. 3.6 is already ~2.2s with thinking at its default.
+    private static JSONObject generationConfig(String model) throws Exception {
+        JSONObject cfg = new JSONObject()
+                .put("temperature", 0)
+                .put("maxOutputTokens", 1024);
+        if (!model.startsWith("gemini-3.6")) {
+            cfg.put("thinkingConfig", new JSONObject().put("thinkingBudget", 0));
+        }
+        return cfg;
+    }
+
     private static String transcriptionPrompt(Context ctx) {
         return "Transcribe this audio for direct typing. "
                 + languageInstruction(ctx)
@@ -229,22 +244,21 @@ final class GeminiClient {
         content.put("parts", parts);
         contents.put(content);
         request.put("contents", contents);
-        request.put("generationConfig", new JSONObject()
-                .put("temperature", 0)
-                .put("maxOutputTokens", 1024)
-                .put("thinkingConfig", new JSONObject().put("thinkingBudget", 0)));
         String model = Prefs.model(ctx);
+        request.put("generationConfig", generationConfig(model));
         String raw;
         try {
             raw = postGenerateContent(key, model, request, 30000);
         } catch (IllegalStateException e) {
             if (isRetryable(e) && !FALLBACK_MODEL.equals(model)) {
+                request.put("generationConfig", generationConfig(FALLBACK_MODEL));
                 raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
             } else {
                 throw e;
             }
         } catch (java.io.IOException e) {
             if (!FALLBACK_MODEL.equals(model)) {
+                request.put("generationConfig", generationConfig(FALLBACK_MODEL));
                 raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
             } else {
                 throw e;

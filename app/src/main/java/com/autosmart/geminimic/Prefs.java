@@ -26,7 +26,7 @@ final class Prefs {
     }
 
     static String model(Context ctx) {
-        return get(ctx).getString("model", "gemini-3.5-flash");
+        return get(ctx).getString("model", "gemini-3.6-flash");
     }
 
     static String languageMode(Context ctx) {
