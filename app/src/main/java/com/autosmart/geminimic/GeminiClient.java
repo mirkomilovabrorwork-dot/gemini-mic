@@ -18,7 +18,11 @@ import java.nio.file.Files;
 
 final class GeminiClient {
 
-    private static final String FALLBACK_MODEL = "gemini-3-flash-preview";
+    // Primary is gemini-3-flash-preview (owner's call, backed by measurement on
+    // his own voice: correct on every segment, same latency, 1/3 the price).
+    // DO NOT "upgrade" to 3.6-flash — it emitted its own reasoning instead of the
+    // transcript on 2 of 3 segments. Fallback is a DIFFERENT model = separate quota.
+    private static final String FALLBACK_MODEL = "gemini-3.5-flash";
 
     private GeminiClient() {
     }

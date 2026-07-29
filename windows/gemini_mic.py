@@ -53,16 +53,20 @@ def log(msg):
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-3.6-flash",
+    "model": "gemini-3-flash-preview",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
 }
 
-# Primary gemini-3.6-flash: on the owner's own recorded voice it kept the English
-# term "thinking budget" that 3.5-flash mangled into "sinking budget", at the same
-# latency (~2s) and slightly cheaper ($7.50 vs $9.00 per 1M output). On error
-# (busy/quota/timeout) retry once with gemini-3-flash-preview (separate quota).
-FALLBACK_MODEL = "gemini-3-flash-preview"
+# Primary gemini-3-flash-preview — the owner's own call, and the measurement on
+# his recorded voice backed it: across 4 segments it transcribed correctly every
+# time (kept "delegatsiya" and "thinking budget"), at the same latency, for 1/3
+# the price ($0.50/$3.00 per 1M vs $1.50/$7.50). DO NOT "upgrade" to 3.6-flash:
+# on 2 of 3 segments it emitted its own REASONING instead of the transcript
+# ("Using explicit rules for mixed Uzbek/English speech transcription…") — a
+# newer model is not automatically better for this task. On error
+# (busy/quota/timeout) retry once with gemini-3.5-flash (separate quota).
+FALLBACK_MODEL = "gemini-3.5-flash"
 # 0 = a network/timeout error (retryable → try the other model too).
 FALLBACK_STATUSES = (0, 404, 429, 500, 503)
 
