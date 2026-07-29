@@ -49,6 +49,18 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
   3-flash-preview fallback compiled in) and copied to Desktop; Windows app
   restarted on the new code; owner's config.json set to 3.6. E2E re-verified on
   his voice through the real app path.
+- **REGRESSION from that switch, found + fixed same session (commit 3c0e24e):**
+  owner reported "spoke a long time, not even a third got written" — his log
+  showed a 50.6s dictation → 110 chars (old model: 60.8s → 584). Cause: 3.6
+  rejects `thinkingBudget`, so I dropped it — which left 3.6's thinking ON, and
+  thinking tokens bill against `maxOutputTokens`: on an identical 45s clip 3.6
+  spent 984 of 1024 on thoughts and returned `finishReason=MAX_TOKENS` with 97
+  chars, cut mid-sentence — as a normal HTTP 200, so nothing looked wrong.
+  FIX: 3.6 gets `thinkingLevel: "low"` (→ 320 chars/STOP, same as the 3.5
+  baseline, and still keeps "thinking budget" that 3.5 mangles); maxOutputTokens
+  1024→**4096** on all models; Windows now LOGS any `finishReason != STOP` with
+  usageMetadata so silent truncation can't hide again. E2E on his voice: 332
+  chars, 2.3s. Android CI 30478552394 GREEN, APK verified + on Desktop.
 - **OWNER TODO: install the new APK on the phone** (Desktop `GeminiMic-android.apk`).
 - Share zip still NOT refreshed (carries the old model + pre-SAC exe + no
   autostart line in HOW-TO). Do all three at the next zip refresh.
