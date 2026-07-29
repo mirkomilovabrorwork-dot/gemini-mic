@@ -154,6 +154,14 @@ metric = how many of {delegatsiya, thinking budget, workflow} survive verbatim.
   not worth it) · per-word [timestamps] to force acoustic alignment (stripped
   after) **5/9**. Harness: `scratchpad/test_deep2.py`. **Running total: 18
   experiments; software levers inside 3-flash are EXHAUSTED.**
+- **Mic level checked programmatically (owner asked, 2026-07-29 late): the
+  Windows capture level was ALREADY 100%** (pycaw, IAudioEndpointVolume; dB
+  range -96..+30 so scalar 1.0 includes the boost ceiling). Nothing to raise in
+  settings → the -28 dBFS quietness comes from DISTANCE / the laptop's AMD mic
+  array itself. So the one remaining physical lever is: **speak closer to the
+  mic**, then re-record the 60s reference ("boshla") and re-run the harness
+  (best variants: baseline + A-DOMAIN). pycaw now installed in windows/.venv
+  (test tool only, not a runtime dependency of the app).
 - **The remaining lever is PHYSICAL, not software: capture SNR.** Key insight —
   the stubborn failure is PHONETIC, not semantic: accented "thinking" ≈
   "sening" (th→s), and his recording's speech RMS is only **-28 dBFS** (peak
