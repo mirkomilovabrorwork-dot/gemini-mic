@@ -142,6 +142,20 @@ metric = how many of {delegatsiya, thinking budget, workflow} survive verbatim.
   failed to flag when proposing it. Reverted, not shipped. Only revisit if he
   asks, and only with a false-positive test (feed speech that does NOT contain
   the listed words and check none are injected).
+- **Cross-checked against the ustoz project** (owner asked; independent agent read
+  `ustoz-github/apps/web/lib/gemini-transcribe.ts`). ustoz runs the SAME model
+  (gemini-3-flash-preview) and the same single-pass shape; it has NO lexical
+  post-processing that could reverse a substitution. Two transferable candidates
+  found, both TESTED HERE AND REJECTED:
+  · **bold-mark every foreign word** (`**deadline**`, stripped later so the user
+    never sees it) — 7→**6**, and it caused a NEW failure, pulling the Uzbek
+    loanword "delegatsiya" into English "dedication".
+  · **temperature 0.1** (ustoz's value, unexamined there) — 7→**6**. Keep 0.
+  Two useful NEGATIVES from ustoz's own history: (1) its prompt rule 7 says "if a
+  word is unclear, correct it from context" — that LICENSES exactly this bug; do
+  not port it. (2) ustoz already tried a second "clean/refine" LLM pass over a
+  finished transcript and abandoned it as DATA-LOSING
+  (`CLAUDE_TO_CODEX_REFINED_DATA_LOSS_2026-07-04.md`) — do not build one here.
 - Model scoreboard on the same 4 segments (metric = {delegatsiya, thinking
   budget, workflow} surviving): **3-flash-preview 7/9 @2.0s** · 3.1-pro 6/9
   @10.1s · 3.5-flash 2/4 on the head-to-head (once wrote a whole segment in
