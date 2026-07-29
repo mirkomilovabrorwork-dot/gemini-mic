@@ -31,6 +31,27 @@ Original Codex-built project source was lost (not on D:/C:/GitHub). Reconstructe
 1:1 by decompiling `GeminiMic-Simple-Android-debug.apk` (androguard) into a clean
 Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimic-recovered\`.
 
+## 2026-07-29 — app was BLOCKED by Windows, + model survey
+- **ROOT CAUSE of "ishlamayapti" (2026-07-28): Windows Smart App Control is ON
+  (VerifiedAndReputablePolicyState=1) and blocks the unsigned GeminiMic.exe** —
+  "An Application Control policy has blocked this file". Nothing wrong with the
+  code. WORKAROUND IN PLACE: run from source via the venv's `pythonw.exe
+  gemini_mic.py` (python is signed → allowed); the Startup shortcut was
+  REPOINTED to that. Consequence: **the .exe is dead on this machine — edit the
+  .py and just restart the process, no PyInstaller rebuild needed.** (Other
+  routes if ever wanted: sign the exe, or turn SAC off — irreversible without a
+  Windows reinstall, so not done.) The share-zip friend is unaffected unless he
+  also has SAC on; note it in HOW-TO at next zip refresh.
+- **Model survey (owner asked about "new Gemini 1.5" — that is a 2024 model,
+  two generations BEHIND).** Queried the models API: newest flash on his key is
+  **gemini-3.6-flash** (app runs 3.5-flash). A/B on TTS clips: 3.6 ≈ 3.5, NO
+  measurable gain (3.6 with thinkingLevel:low was slightly WORSE — turned
+  "kontrol"→"control"). **3.6 rejects `thinkingConfig.thinkingBudget` with a
+  generic 400** — must drop it or use `thinkingLevel`. NOT switched: no evidence.
+  Real test needs the owner's accented voice (see KNOWN LIMITATION below).
+- Gate rejections now log `voiced=N/3 loudest_rms=X threshold=Y` (commit
+  ebc86c8) so "he spoke quietly" is distinguishable from "he never spoke".
+
 ## FIX 2026-07-13: "spoke but nothing, not even in clipboard"
 - Log showed the has_speech gate rejected 19 REAL dictations ("no sustained
   speech", e.g. a 2.98s utterance) — quiet/far speech fell under VOICE_RMS=250.
