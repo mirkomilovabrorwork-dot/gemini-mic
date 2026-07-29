@@ -47,8 +47,12 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
   **gemini-3.6-flash** (app runs 3.5-flash). A/B on TTS clips: 3.6 ≈ 3.5, NO
   measurable gain (3.6 with thinkingLevel:low was slightly WORSE — turned
   "kontrol"→"control"). **3.6 rejects `thinkingConfig.thinkingBudget` with a
-  generic 400** — must drop it or use `thinkingLevel`. NOT switched: no evidence.
-  Real test needs the owner's accented voice (see KNOWN LIMITATION below).
+  generic 400** — must drop it or use `thinkingLevel`. Verified ALL THREE
+  platforms send `thinkingBudget: 0` (GeminiClient.java:235, windows:571,
+  mac:374) → a 3.6 switch is a 3-file change, not a config flip. NOT switched:
+  no evidence of gain.
+  Real test needs the owner's accented voice (see KNOWN LIMITATION below);
+  owner AGREED 2026-07-29 to record 20s → A/B 3.5 vs 3.6 on his real voice.
 - Gate rejections now log `voiced=N/3 loudest_rms=X threshold=Y` (commit
   ebc86c8) so "he spoke quietly" is distinguishable from "he never spoke".
 
