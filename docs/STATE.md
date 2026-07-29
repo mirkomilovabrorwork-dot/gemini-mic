@@ -133,6 +133,20 @@ metric = how many of {delegatsiya, thinking budget, workflow} survive verbatim.
   help. REJECTED, prompt kept as-is.
 - Head-to-head 3-flash-preview vs 3.5-flash on 4 segments: **4 : 2** for
   3-preview; 3.5 once emitted an ENTIRE segment in Cyrillic. Confirms the owner.
+- **"Deep think" round (owner: make 3-flash itself verbatim) — 3 mechanically
+  new levers, ALL measured, none beat baseline 7/9:** domain-context line
+  ("software developer dictating, English jargon expected") **7/9** tie ·
+  pause-aware ~12s chunking, parallel **5/9** (short chunks lose context and
+  hurt) · 3-sample vote at temp 0.7, medoid pick **5/9** (substitution is NOT
+  random on the hard spot — all 3 samples agree on the wrong word, so voting
+  can't fix it; that's also why temp changes do nothing). Harness:
+  `scratchpad/test_deep.py`. **Total 16 experiments. The "thinking budget"
+  passage at ~30-55s fails in EVERY configuration — for 3-flash the acoustic
+  evidence there genuinely reads as Uzbek "sening byudjeting"; this is the
+  model's ceiling on this clip, not a settings problem.** The ONLY in-Gemini
+  lever that ever scored above baseline remains the vocabulary hint (8/9),
+  rejected for false-positive risk; its safe re-entry test (feed speech WITHOUT
+  the listed words, verify none get injected) is written above.
 - **Owner's idea: run with NO prompt at all (maybe the rules are what make it
   "edit") — TESTED, disproven, and the reason matters.** With no text part the
   model does not transcribe AT ALL, it ANSWERS the audio: "Delegatsiya va
