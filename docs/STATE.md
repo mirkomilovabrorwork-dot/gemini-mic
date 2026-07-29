@@ -31,6 +31,28 @@ Original Codex-built project source was lost (not on D:/C:/GitHub). Reconstructe
 1:1 by decompiling `GeminiMic-Simple-Android-debug.apk` (androguard) into a clean
 Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimic-recovered\`.
 
+## 2026-07-29 — MODEL SWITCHED to gemini-3.6-flash (Windows + Android)
+- **Settled by A/B on the OWNER'S OWN recorded voice** (60s captured locally,
+  `scratchpad/owner_voice.wav`): 3.5-flash wrote his spoken "thinking budget" as
+  **"sinking budget"**; **3.6-flash got it right** — exactly the defect class he
+  had been complaining about. Rest equivalent. HE judged the two transcripts
+  (only the speaker knows ground truth). Latency equal (~2.0 vs ~2.2s on 10s).
+- **Cheaper too**: 3.6 output $7.50/1M vs 3.5's $9.00 (input both $1.50).
+  Measured real usage = 710 in / 25 out tokens per 10s dictation → **~$1.13/mo
+  at 30/day** (3.5 ≈ $1.16, 3-flash-preview ≈ $0.39 — 3x cheaper but it is the
+  model that made the language errors, so not worth 74¢/mo).
+- **Mac deliberately NOT switched** — owner scoped it to Windows+Android.
+- Implementation: `generationConfig` is now PER-MODEL on both platforms and the
+  fallback path rebuilds it (3.6 rejects `thinkingBudget`; the older models NEED
+  it or they enable thinking: 10s clip 2s → 3.1s on 3.5, 4.7s on 3-preview).
+  Commit 491d9e4; Android CI 30477745813 GREEN, APK verified (3.6 primary +
+  3-flash-preview fallback compiled in) and copied to Desktop; Windows app
+  restarted on the new code; owner's config.json set to 3.6. E2E re-verified on
+  his voice through the real app path.
+- **OWNER TODO: install the new APK on the phone** (Desktop `GeminiMic-android.apk`).
+- Share zip still NOT refreshed (carries the old model + pre-SAC exe + no
+  autostart line in HOW-TO). Do all three at the next zip refresh.
+
 ## 2026-07-29 — app was BLOCKED by Windows, + model survey
 - **ROOT CAUSE of "ishlamayapti" (2026-07-28): Windows Smart App Control is ON
   (VerifiedAndReputablePolicyState=1) and blocks the unsigned GeminiMic.exe** —
