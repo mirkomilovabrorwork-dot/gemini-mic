@@ -133,6 +133,21 @@ metric = how many of {delegatsiya, thinking budget, workflow} survive verbatim.
   help. REJECTED, prompt kept as-is.
 - Head-to-head 3-flash-preview vs 3.5-flash on 4 segments: **4 : 2** for
   3-preview; 3.5 once emitted an ENTIRE segment in Cyrillic. Confirms the owner.
+- **Fable's 4 API-level ideas (owner asked for Fable + Codex) — ALL TESTED, ALL
+  LOST to the baseline's 7/9.** Its root-cause frame is worth keeping: Gemini is
+  an audio-conditioned LANGUAGE MODEL, so at each token it blends weak acoustic
+  evidence against its own fluent-text prior; substitution happens in DECODING,
+  below the level prompt text operates on — which is why 7 wording attempts all
+  plateaued. Results:
+  · gain-normalize + high-pass the audio (his mic peaks at -9 dBFS, speech RMS
+    -28, so this was a fair shot): **5/9**, 2.3s
+  · audio part FIRST + rules moved to `system_instruction` (recency, not
+    wording): **6/9**, 1.8s
+  · `responseMimeType: application/json` + `responseSchema` of {start,text}
+    segments, to break prose-momentum decoding: **5/9**, 2.4s
+  · `thinkingBudget: 512` (revise-before-emit while audio is still in context,
+    with thought-parts filtered out of the join): **6/9**, 1.9s
+  Harness: `scratchpad/test_fable.py`.
 - **Owner's counter-idea: maybe ustoz's "correct an unclear word from context"
   rule HELPS rather than hurts** — tested as a softened variant ("choose the
   reading that fits the context rather than a phonetically similar word that
