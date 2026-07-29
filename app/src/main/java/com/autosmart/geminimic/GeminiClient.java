@@ -32,6 +32,13 @@ final class GeminiClient {
             String s = p8.trim()
                     .replace("```", "").trim()
                     .replace("**", "").trim()
+                    // Subtitle cue markers ("00:03.000 --> 00:08.500"): the prompt
+                    // forbids them, but a model that drifts into subtitle mode
+                    // emits them and the [00:01] patterns below don't match the
+                    // arrow form. Strip ONLY the marker — the speech text usually
+                    // follows it on the same line.
+                    .replaceAll("\\d{1,2}:\\d{2}(?::\\d{2})?[.,]\\d{1,3}\\s*-->\\s*"
+                            + "\\d{1,2}:\\d{2}(?::\\d{2})?[.,]\\d{1,3}\\s*", "")
                     .replaceAll("(?m)^\\s*\\[\\d{1,2}:\\d{2}(?::\\d{2})?\\]\\s*", "")
                     .replaceAll("\\[\\d{1,2}:\\d{2}(?::\\d{2})?\\]\\s*", "")
                     .replaceAll("(?m)^\\s*\\d+[.)]\\s+", "")

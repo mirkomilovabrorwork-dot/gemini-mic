@@ -162,6 +162,13 @@ def transcription_prompt(language_mode):
 _TIMESTAMP_LINE_START_RE = re.compile(r"^\s*\[\d{1,2}:\d{2}(?::\d{2})?\]\s*", re.MULTILINE)
 _TIMESTAMP_INLINE_RE = re.compile(r"\[\d{1,2}:\d{2}(?::\d{2})?\]\s*")
 _LIST_MARKER_RE = re.compile(r"^\s*\d+[.)]\s+", re.MULTILINE)
+# Subtitle-cue timestamps: "00:03.000 --> 00:08.500". The prompt forbids these,
+# but a model that drifts into subtitle mode emits them and the [00:01] patterns
+# above don't match the arrow form — the owner got a whole dictation back as VTT.
+# Only the cue marker is removed, never the rest of the line — the speech text
+# usually follows it on the same line.
+_VTT_CUE_RE = re.compile(
+    r"\d{1,2}:\d{2}(?::\d{2})?[.,]\d{1,3}\s*-->\s*\d{1,2}:\d{2}(?::\d{2})?[.,]\d{1,3}\s*")
 
 _PREFIXES = [
     "transcript:",
@@ -179,6 +186,7 @@ def clean_transcript(text):
     s = text.strip()
     s = s.replace("```", "").strip()
     s = s.replace("**", "").strip()
+    s = _VTT_CUE_RE.sub("", s)
     s = _TIMESTAMP_LINE_START_RE.sub("", s)
     s = _TIMESTAMP_INLINE_RE.sub("", s)
     s = _LIST_MARKER_RE.sub("", s)
