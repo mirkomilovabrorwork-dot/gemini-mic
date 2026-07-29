@@ -122,6 +122,36 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
   (Claude) flaky UIA → auto-paste inconsistent, use Ctrl+V / click field first;
   (b) [[below]] loanword normalization.
 
+## PROMPT EXPERIMENTS ALREADY RUN AND REJECTED (2026-07-29) — do not repeat
+Scored on 3-4 segments of the owner's own recording (`scratchpad/owner_voice.wav`),
+metric = how many of {delegatsiya, thinking budget, workflow} survive verbatim.
+- **Stronger "VERBATIM / you are a microphone, not an editor" rule with explicit
+  examples (terminal≠ilova, kontrol≠nazorat)**: NO gain — 1/1/2 → 1/1/1. REJECTED.
+- **Owner's hypothesis: the per-language script rules ("Uzbek Latin, English in
+  English, Russian in Cyrillic") confuse the model into substituting words** —
+  tested a minimal prompt with those rules removed: **WORSE, 7 → 5**. The rules
+  help. REJECTED, prompt kept as-is.
+- Head-to-head 3-flash-preview vs 3.5-flash on 4 segments: **4 : 2** for
+  3-preview; 3.5 once emitted an ENTIRE segment in Cyrillic. Confirms the owner.
+- **Vocabulary hint (list of the speaker's own terms appended to the prompt):
+  the ONLY thing that measurably WORKED** — score 7→8, and the segment that
+  produced "sening byudjeting" every time became "Thinking budget" **3/3 with
+  the list vs 0/3 without**. **OWNER REJECTED IT anyway (2026-07-29): a bias
+  list can pull DIFFERENT words INTO the listed ones** ("boshqa asoslar
+  aytganimda o'z-o'ziga aylantirib qo'yishi mumkin") — a false-positive risk I
+  failed to flag when proposing it. Reverted, not shipped. Only revisit if he
+  asks, and only with a false-positive test (feed speech that does NOT contain
+  the listed words and check none are injected).
+- Model scoreboard on the same 4 segments (metric = {delegatsiya, thinking
+  budget, workflow} surviving): **3-flash-preview 7/9 @2.0s** · 3.1-pro 6/9
+  @10.1s · 3.5-flash 2/4 on the head-to-head (once wrote a whole segment in
+  Cyrillic). 3-preview wins accuracy AND speed AND price — nothing to change.
+Remaining defect = word SUBSTITUTION by meaning ("terminal" → "ilova"), which is
+not a mishearing (the words sound nothing alike). Every available lever has been
+measured: 3 prompt variants, 4 models, vocabulary bias. Current config is the
+best measured; the residual is a limitation of generative-LLM ASR on accented
+mixed speech. Do NOT burn another session re-testing these.
+
 ## KNOWN LIMITATION — deferred by owner 2026-07-13
 - **Accented loanwords get normalized to formal Uzbek synonyms** (owner: says
   "kontrolni tekshirish" → model writes "nazoratni tekshirish"). Root cause:
