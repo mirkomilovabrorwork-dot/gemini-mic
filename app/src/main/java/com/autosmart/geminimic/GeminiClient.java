@@ -83,16 +83,22 @@ final class GeminiClient {
         }
     }
 
-    // Per-model generation settings. thinkingConfig.thinkingBudget is REJECTED by
-    // the 3.6 generation with a generic 400 (the error never names the field),
-    // but the older models need it: without it they enable thinking and a 10s
-    // clip goes ~2s -> 3.1s (3.5-flash) / 4.7s (3-flash-preview), which is felt
-    // in dictation. 3.6 is already ~2.2s with thinking at its default.
+    // Per-model generation settings. Thinking MUST be held down on every model,
+    // just by different keys: 3.6 REJECTS thinkingBudget with a generic 400 (the
+    // error never names the field), and the older models don't understand
+    // thinkingLevel. Leaving 3.6's thinking at its DEFAULT truncated a 50s
+    // dictation to 110 chars — thinking burned 984 of 1024 output tokens and the
+    // reply came back finishReason=MAX_TOKENS, cut mid-sentence. With
+    // thinkingLevel:low the same clip returns full text. maxOutputTokens is 4096
+    // so a long dictation can't be starved; output bills per token produced, so
+    // the higher ceiling costs nothing.
     private static JSONObject generationConfig(String model) throws Exception {
         JSONObject cfg = new JSONObject()
                 .put("temperature", 0)
-                .put("maxOutputTokens", 1024);
-        if (!model.startsWith("gemini-3.6")) {
+                .put("maxOutputTokens", 4096);
+        if (model.startsWith("gemini-3.6")) {
+            cfg.put("thinkingConfig", new JSONObject().put("thinkingLevel", "low"));
+        } else {
             cfg.put("thinkingConfig", new JSONObject().put("thinkingBudget", 0));
         }
         return cfg;

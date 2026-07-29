@@ -537,6 +537,16 @@ def _call_gemini(api_key, model, body):
     if not candidates:
         raise GeminiError("No transcript returned")
 
+    # A truncated answer still arrives as a normal 200 with a partial transcript,
+    # so without this the user just silently loses the tail of a long dictation
+    # (that is exactly how the 3.6 thinking regression hid: 50s of speech came
+    # back as 110 chars). Log it rather than raise — a partial transcript still
+    # beats nothing.
+    finish = candidates[0].get("finishReason")
+    if finish and finish != "STOP":
+        log("gemini: finishReason=%s (transcript may be CUT) usage=%s"
+            % (finish, data.get("usageMetadata")))
+
     try:
         parts = candidates[0]["content"]["parts"]
     except (KeyError, IndexError, TypeError):
@@ -548,15 +558,20 @@ def _call_gemini(api_key, model, body):
 def generation_config(model):
     """Per-model generation settings.
 
-    `thinkingConfig.thinkingBudget` is rejected by the 3.6 generation with a
-    generic 400 (the error does not name the field), but the older models NEED
-    it: without it they turn thinking on and a 10s clip goes 2.0s -> 3.1s
-    (3.5-flash) / 4.7s (3-flash-preview), which is felt in dictation. 3.6 is
-    already ~2.2s with thinking left at its default, and `thinkingLevel: low`
-    measurably worsened its text, so it simply gets no thinking config.
+    Thinking MUST be held down on every model, just by different keys:
+    3.6 rejects `thinkingBudget` with a generic 400, and the older models don't
+    understand `thinkingLevel`. Leaving 3.6's thinking at its DEFAULT is what
+    broke a 50s dictation down to 110 chars: thinking burned 984 of the 1024
+    output tokens and the response came back finishReason=MAX_TOKENS, cut
+    mid-sentence. With `thinkingLevel: low` the same 45s clip returns the full
+    320 chars (identical to 3.5) and still keeps English terms 3.5 mangles.
+    maxOutputTokens is 4096 so a long dictation can never be starved again —
+    output is billed per token produced, so the higher ceiling costs nothing.
     """
-    cfg = {"temperature": 0, "maxOutputTokens": 1024}
-    if not model.startswith("gemini-3.6"):
+    cfg = {"temperature": 0, "maxOutputTokens": 4096}
+    if model.startswith("gemini-3.6"):
+        cfg["thinkingConfig"] = {"thinkingLevel": "low"}
+    else:
         cfg["thinkingConfig"] = {"thinkingBudget": 0}
     return cfg
 
