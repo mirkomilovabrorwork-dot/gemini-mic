@@ -1,0 +1,88 @@
+GEMINI MIC — voice to text (Uzbek + English + Russian)
+=======================================================
+Speak, and your words are typed into whatever text field is focused.
+Works on Android, Windows and macOS. Uses Google Gemini.
+
+The app picks the transcription model itself — nothing to choose.
+If the main model is busy it automatically retries with a second one.
+
+YOU NEED A FREE GEMINI API KEY (each person uses their OWN):
+  https://aistudio.google.com/apikey   (sign in with Google -> Create API key -> copy)
+  A key WITHOUT billing enabled is free but rate-limited per day. Enabling billing
+  makes it fast and unlimited, and costs roughly a few cents per month at normal
+  dictation volume. NOTE: free and paid are not switchable per request — enabling
+  billing on a project removes its free tier entirely.
+
+
+ANDROID  (ready-to-use/GeminiMic-android.apk)
+---------------------------------------------
+1. Copy the .apk to the phone and open it. Allow "install from unknown sources".
+2. Open the app and follow the on-screen checklist:
+   - Paste the Gemini API key -> Save
+   - Grant: Microphone, and Auto input (Accessibility)
+   - Tap the big button "Mikrofonni yoqish".
+3. TO TALK: in any app, focus a text field, then HOLD the VOLUME-DOWN button and
+   speak; release -> the text is typed. (A short press still lowers the volume.)
+4. AFTER A REBOOT: Android does not allow the mic service to auto-start, so a
+   notification "Gemini Mic — Yoqish uchun bosing" appears. Tap it once to re-arm.
+
+
+WINDOWS  (ready-to-use/GeminiMic-windows.exe)
+---------------------------------------------
+1. Double-click GeminiMic-windows.exe. If SmartScreen warns: "More info" -> "Run anyway".
+
+   IF NOTHING HAPPENS AT ALL and you see "An Application Control policy has
+   blocked this file": Windows 11 "Smart App Control" is blocking unsigned apps.
+   Two options:
+     a) Run it from the Python source instead (see SOURCE CODE below) — the
+        Python launcher is signed, so it is allowed; or
+     b) Settings -> Privacy & security -> Windows Security -> App & browser
+        control -> Smart App Control -> Off.
+        (Warning: once turned off it cannot be turned back on without
+        reinstalling Windows. Option (a) is safer.)
+
+2. A mic icon appears in the tray (near the clock; it may hide under the ^ arrow —
+   drag it onto the taskbar). Settings opens on first run: paste the API key -> Save.
+3. Click into any text field, HOLD Right Ctrl (short beep = recording), speak,
+   release (lower beep) -> text is pasted. Change the hotkey in Settings.
+4. START IT AUTOMATICALLY WITH WINDOWS: press Win+R, type  shell:startup , Enter,
+   then drop a shortcut to the app into that folder. Otherwise it will not be
+   running after a reboot and the hotkey will do nothing.
+5. IF THE TEXT DOES NOT APPEAR: some apps (Slack, Discord, Claude and other
+   Electron apps) hide their text box from Windows, so the app cannot place the
+   text by itself. The transcript stays in the clipboard — just press Ctrl+V.
+   Clicking into the text field BEFORE speaking always works.
+6. If something misbehaves, the app writes a diagnostic log to
+   %APPDATA%\GeminiMic\log.txt
+
+
+macOS  (ready-to-use/GeminiMic-mac.zip)   [Apple Silicon Macs: M1/M2/M3/M4]
+---------------------------------------------------------------------------
+1. Unzip GeminiMic-mac.zip -> "Gemini Mic.app". First open: RIGHT-CLICK the app ->
+   Open -> Open (it is unsigned, this is normal).
+2. Grant permissions in System Settings -> Privacy & Security:
+   Microphone, Accessibility, and Input Monitoring -> enable "Gemini Mic".
+3. A mic icon appears in the menu bar. Click it -> "API key kiritish" -> paste -> Save.
+4. Click into any text field, HOLD the RIGHT CMD (⌘) key and speak, release ->
+   text is pasted. (MacBook keyboards have no right Ctrl, so the default is
+   right Cmd; change it in config.json if you use an external keyboard.)
+   Menu-bar icon: mic = ready, red = recording, hourglass = working.
+   (Intel Macs: build from source — see mac/README.md.)
+
+
+TIPS FOR BETTER ACCURACY
+------------------------
+- Speak at a normal pace and finish the sentence before releasing the key.
+- Very quiet or very short bursts are ignored on purpose (so a stray key press
+  cannot make the AI invent text).
+- The AI occasionally swaps a technical word for a synonym. This is a limitation
+  of the speech model, not a setting — check important terms after dictating.
+
+
+SOURCE CODE (the friend can continue developing)
+------------------------------------------------
+- Android : app/            (Java; builds via .github/workflows/build.yml -> assembleDebug)
+- Windows : windows/gemini_mic.py   (Python; build the .exe with windows/build.bat,
+            or just run it directly:  pythonw gemini_mic.py )
+- macOS   : mac/gemini_mic_mac.py   (Python/rumps; builds via .github/workflows/build-mac.yml)
+Repo: https://github.com/mirkomilovabrorwork-dot/gemini-mic
