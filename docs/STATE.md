@@ -147,6 +147,21 @@ metric = how many of {delegatsiya, thinking budget, workflow} survive verbatim.
   lever that ever scored above baseline remains the vocabulary hint (8/9),
   rejected for false-positive risk; its safe re-entry test (feed speech WITHOUT
   the listed words, verify none get injected) is written above.
+- **Deep-think round 2 (owner repeated the directive) — 2 more levers, both
+  measured, neither beat 7/9:** two-pass verify WITH AUDIO in the second call
+  (draft + "fix only mismatches"; distinct from ustoz's failed text-only refine)
+  **7/9 tie at 3.7s** (double latency, adds "Albatta, mana…" preamble noise —
+  not worth it) · per-word [timestamps] to force acoustic alignment (stripped
+  after) **5/9**. Harness: `scratchpad/test_deep2.py`. **Running total: 18
+  experiments; software levers inside 3-flash are EXHAUSTED.**
+- **The remaining lever is PHYSICAL, not software: capture SNR.** Key insight —
+  the stubborn failure is PHONETIC, not semantic: accented "thinking" ≈
+  "sening" (th→s), and his recording's speech RMS is only **-28 dBFS** (peak
+  -9). The model may genuinely be hearing "sening" on quiet audio. Post-hoc
+  software gain already failed (amplifies noise equally, 5/9) — the fix must be
+  at CAPTURE: raise the Windows microphone input level / speak closer, then
+  re-record the 60s reference and re-run the harness. If the score doesn't move
+  on louder audio either → that is the model's true ceiling, said plainly.
 - **Owner's idea: run with NO prompt at all (maybe the rules are what make it
   "edit") — TESTED, disproven, and the reason matters.** With no text part the
   model does not transcribe AT ALL, it ANSWERS the audio: "Delegatsiya va
