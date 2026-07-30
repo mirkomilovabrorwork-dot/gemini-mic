@@ -43,6 +43,16 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
   device unplug → lazy reopen (stream.active check). Verified: selftest, ring
   math unit-check, app restarted, log line "mic stream opened (persistent…)".
   Android has the same latency class (MediaRecorder) — NOT built, candidate only.
+- **2026-07-30 late: BT headset test IN PROGRESS.** Owner enabled the Sony
+  WH-1000XM5 Hands-Free endpoint (it was disabled — only visible as a WDM-KS
+  driver node, direct probe returned 0x48F until he allowed it in Sound
+  settings) and set it as DEFAULT input; app restarted so the persistent stream
+  binds it. **Beep softened same commit (691ac1e)**: winsound.Beep (fixed
+  full-volume square) → 12%-amplitude sine, 5ms fades, PlaySound SND_MEMORY.
+  AWAITING: one dictation from him over BT → then read the log (gate detail /
+  transcript length) and give him the honest BT-vs-external quality verdict
+  (expectation set: HFP 16kHz is telephone-grade, likely worse accuracy).
+  Rollback = pick MICUSB1 back in Sound settings + app restart.
 - **NEXT STEP: owner tests first-words capture** (speak immediately on press —
   beginning should now be in the text). Then his OPEN QUESTION: use the
   BLUETOOTH HEADSET mic instead of the external mic. Facts for that decision:
