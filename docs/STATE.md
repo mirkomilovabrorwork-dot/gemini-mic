@@ -31,6 +31,31 @@ Original Codex-built project source was lost (not on D:/C:/GitHub). Reconstructe
 1:1 by decompiling `GeminiMic-Simple-Android-debug.apk` (androguard) into a clean
 Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimic-recovered\`.
 
+## 2026-07-30 — FIRST-WORDS FIX SHIPPED (Windows); NEXT STEP below
+- **Owner: "boshidagi gapim yozilmayapti" — ROOT CAUSE + FIX (commit fc44961):**
+  the input stream was opened ON key-down (~0.2-0.5s on Windows) so capture
+  started late and the first words were dropped; the start beep honestly fired
+  after the late open. NOW: persistent mic stream (opened at app start, 1.5s RAM
+  ring, 0.1s blocks) + key-down seeds the recording with the last 0.6s
+  (pre-roll) → capture is instant, speech at/just-before the press survives,
+  beep fires immediately. Audio never leaves the machine outside a dictation.
+  Tradeoff: Windows mic-in-use indicator stays on. quit() closes the stream;
+  device unplug → lazy reopen (stream.active check). Verified: selftest, ring
+  math unit-check, app restarted, log line "mic stream opened (persistent…)".
+  Android has the same latency class (MediaRecorder) — NOT built, candidate only.
+- **NEXT STEP: owner tests first-words capture** (speak immediately on press —
+  beginning should now be in the text). Then his OPEN QUESTION: use the
+  BLUETOOTH HEADSET mic instead of the external mic. Facts for that decision:
+  the app follows the WINDOWS DEFAULT input device (no picker in-app yet), and
+  BT is a real fork — BT headset mic runs in hands-free mode: EITHER keep the
+  persistent stream (first words safe) and ALL his audio/music sounds like a
+  phone call while the app runs, OR open-on-demand for BT (music stays hi-fi)
+  and the first-words loss RETURNS (BT HFP wake adds ~0.5-1s). BT mic quality
+  (tinny 16kHz) also likely WORSENS the word-substitution defect. Options put
+  to him: (a) try by switching Windows default input when wearing the headset,
+  (b) I build an in-app device picker + BT-aware mode, (c) stay on external mic
+  for accuracy. AWAITING his pick.
+
 ## 2026-07-29 (FINAL) — model is gemini-3-flash-preview; 3.6 REJECTED
 - **The owner was right and my 3.6 switch was wrong.** He said "narx va sifat
   menimcha hali ham 3" — and I had never A/B'd the cheap incumbent against 3.6,
