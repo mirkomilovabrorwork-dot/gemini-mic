@@ -935,6 +935,7 @@ class GeminiMicApp:
         self.frames = []
         self.stream = None  # persistent input stream (opened once, kept for app lifetime)
         self.ring = collections.deque(maxlen=max(1, int(RING_SEC / (STREAM_BLOCK / SAMPLE_RATE))))
+        self.last_block = 0.0  # when the callback last delivered audio; stale = dead stream
         self.record_start = 0.0
         self.hotkey_target = parse_hotkey(self.cfg.get("hotkey", DEFAULT_CONFIG["hotkey"]))
         self.kb_controller = KeyboardController()
@@ -1035,6 +1036,7 @@ class GeminiMicApp:
 
     def _audio_callback(self, indata, frames_count, time_info, status):
         block = indata[:, 0].copy()
+        self.last_block = time.monotonic()
         self.ring.append(block)
         if self.recording:
             self.frames.append(block)
@@ -1059,13 +1061,28 @@ class GeminiMicApp:
         """Open (or re-open) the persistent mic stream. Returns True when live."""
         s = self.stream
         if s is not None:
+            # "active" alone is a LIE after a BT device dies mid-session: the
+            # stream object stays active but the callback silently stops. The
+            # truthful health signal is whether audio blocks are still arriving.
+            fresh = (time.monotonic() - self.last_block) < 1.0
             try:
-                if s.active:
+                if s.active and fresh:
                     return True
                 s.close()
             except Exception:
                 pass
             self.stream = None
+            if not fresh:
+                # The device vanished while we ran — PortAudio's cached device
+                # list is stale too, so re-initialize before rescanning, exactly
+                # like the tray "Mikrofonni qayta ulash" button does.
+                try:
+                    sd._terminate()
+                    sd._initialize()
+                    log("mic stream dead (no audio blocks) -> PortAudio re-initialized, auto-switching")
+                except Exception as e:
+                    log("mic auto-heal: reinit failed %r" % (e,))
+        self.ring.clear()  # never seed a new device's recording with old/dead blocks
         device = self.resolve_input_device()
         for dev in ([device, None] if device is not None else [None]):
             try:
@@ -1079,6 +1096,7 @@ class GeminiMicApp:
                 )
                 s.start()
                 self.stream = s
+                self.last_block = time.monotonic()  # grace until the first callback lands
                 name = "system default" if dev is None else sd.query_devices(dev)["name"][:60]
                 log("mic stream opened on %s (persistent, ring %.1fs, preroll %.1fs)"
                     % (name, RING_SEC, PRE_ROLL_SEC))
