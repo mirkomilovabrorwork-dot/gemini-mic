@@ -957,6 +957,7 @@ class GeminiMicApp:
 
     def _build_menu(self):
         return pystray.Menu(
+            pystray.MenuItem("Mikrofonni qayta ulash", self.reconnect_mic),
             pystray.MenuItem("Settings…", lambda: self.settings_window.open()),
             pystray.MenuItem(
                 "Start with Windows",
@@ -965,6 +966,41 @@ class GeminiMicApp:
             ),
             pystray.MenuItem("Quit", self.quit),
         )
+
+    def reconnect_mic(self, *_args):
+        """Tray action: rebind the mic NOW (e.g. the BT headset was just put on).
+        PortAudio caches the device list from process start, so a device that
+        appeared later is invisible until the library is re-initialized — that is
+        why a plain ensure_stream() isn't enough here."""
+        def _do():
+            if self.recording:
+                self.notify("Yozish paytida almashtirib bo'lmaydi")
+                return
+            with self.lock:
+                s, self.stream = self.stream, None
+            try:
+                if s is not None:
+                    s.stop(); s.close()
+            except Exception:
+                pass
+            try:
+                sd._terminate()
+                sd._initialize()
+                log("mic reconnect: PortAudio re-initialized (device list refreshed)")
+            except Exception as e:
+                log("mic reconnect: reinit failed %r" % (e,))
+            if self.ensure_stream():
+                try:
+                    name = "?"
+                    if self.stream is not None:
+                        dev = self.stream.device
+                        name = sd.query_devices(dev)["name"][:50]
+                except Exception:
+                    name = "ulandi"
+                self.notify("Mikrofon: " + name)
+            else:
+                self.notify("Mikrofon ochilmadi — qurilmalarni tekshiring")
+        threading.Thread(target=_do, daemon=True).start()
 
     def set_state(self, state):
         """state: 'idle' | 'recording' | 'transcribing'"""
