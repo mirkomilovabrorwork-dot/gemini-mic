@@ -303,13 +303,37 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 
+BEEP_VOLUME = 0.12  # 0..1 — winsound.Beep was a full-volume square wave; the
+                    # owner reported it painfully loud (especially on a BT
+                    # headset). A quiet sine with fade edges is generated per
+                    # call and played from memory instead.
+
+
 def beep(freq, duration):
-    """Short non-blocking tone for audio feedback (recording start / done)."""
+    """Short non-blocking soft tone for audio feedback (recording start / done)."""
     def _b():
         try:
-            winsound.Beep(freq, duration)
+            sr = 22050
+            n = max(1, int(sr * duration / 1000))
+            t = np.arange(n) / sr
+            tone = np.sin(2 * np.pi * freq * t)
+            fade = min(n // 4, int(0.005 * sr))  # 5ms edges: no click
+            if fade:
+                env = np.ones(n)
+                env[:fade] = np.linspace(0, 1, fade)
+                env[-fade:] = np.linspace(1, 0, fade)
+                tone *= env
+            pcm = (tone * 32767 * BEEP_VOLUME).astype(np.int16)
+            buf = BytesIO()
+            with wave.open(buf, "wb") as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+                w.writeframes(pcm.tobytes())
+            winsound.PlaySound(buf.getvalue(), winsound.SND_MEMORY)
         except Exception:
-            pass
+            try:
+                winsound.Beep(freq, duration)
+            except Exception:
+                pass
     threading.Thread(target=_b, daemon=True).start()
 
 
