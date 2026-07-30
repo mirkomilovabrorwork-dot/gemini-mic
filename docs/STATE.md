@@ -43,6 +43,19 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
   device unplug → lazy reopen (stream.active check). Verified: selftest, ring
   math unit-check, app restarted, log line "mic stream opened (persistent…)".
   Android has the same latency class (MediaRecorder) — NOT built, candidate only.
+- **2026-07-30 22:52 (commit 35e562a): AUTO-HEAL — dead mic self-repairs at
+  key-down.** Owner hit the predicted edge (BT off mid-session → every
+  dictation "Ovoz eshitilmadi" until manual restart) and rightly asked "bu auto
+  bo'lishi kerak emasmidi??". Root cause: a PortAudio stream stays `active=True`
+  after its device dies while the callback silently stops. Fix: callback stamps
+  `last_block`; ensure_stream (runs on every key press) treats >1s without
+  blocks as dead → close + PortAudio reinit (cached device list is stale) +
+  ring cleared (never seed a new device with dead silence) + re-pin with
+  default fallback. One-time ~0.5s cost on the healing press. Deliberately NOT
+  auto: switching TO the headset when it reappears (tray button "Mikrofonni
+  qayta ulash" / restart covers it). App currently on MICUSB1 via fallback
+  (headset BT off). NEXT: owner dictates once over headset when he wants the
+  BT quality verdict (gate-detail log will show real rms).
 - **2026-07-30 22:06 (commit 577b410): tray button "Mikrofonni qayta ulash"** —
   owner asked for one-tap switching instead of app restarts. One click: closes
   the stream, RE-INITIALIZES PortAudio (its device list is cached from process
