@@ -43,6 +43,15 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
   device unplug → lazy reopen (stream.active check). Verified: selftest, ring
   math unit-check, app restarted, log line "mic stream opened (persistent…)".
   Android has the same latency class (MediaRecorder) — NOT built, candidate only.
+- **2026-07-30 22:06 (commit 577b410): tray button "Mikrofonni qayta ulash"** —
+  owner asked for one-tap switching instead of app restarts. One click: closes
+  the stream, RE-INITIALIZES PortAudio (its device list is cached from process
+  start — a later-connected headset is invisible without reinit; the reason a
+  plain reopen can't work), re-runs the name-fragment pin (headset present →
+  headset; absent → system default) and notifies which mic is live. Refuses
+  mid-recording. App restarted on this code; log confirms headset KS node bound.
+  NOT done (STATE-only candidate, owner never asked): fully-automatic
+  device-watch (WM_DEVICECHANGE) — the button covers the need.
 - **2026-07-30 ~22:00 RESOLUTION (commit 6c99b87): headset now records via the
   RAW DRIVER PATH.** Full diagnosis chain, all measured: endpoint was MUTED
   (unmuted via pycaw) → still zeros on WASAPI/MME/DirectSound even with phone
