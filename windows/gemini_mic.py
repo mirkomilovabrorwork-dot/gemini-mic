@@ -9,6 +9,7 @@ Self-test: python gemini_mic.py --selftest
 """
 
 import base64
+import collections
 import ctypes
 import json
 import os
@@ -88,6 +89,17 @@ AUTO_STOP_SEC = 60
 VOICE_RMS_THRESHOLD = 120
 VOICE_WINDOW_SEC = 0.20
 MIN_VOICED_WINDOWS = 3
+# The mic stream stays open for the app's lifetime and feeds a small ring
+# buffer. Opening a Windows input stream takes ~0.2-0.5s, and recording used to
+# begin only after that — the first words of every dictation were simply lost
+# ("boshidagi gapim yozilmayapti"). With the ring, key-down starts capture
+# INSTANTLY and is seeded with the last PRE_ROLL_SEC of audio, so speech that
+# began at (or just before) the press survives. Audio never leaves the machine
+# unless a dictation is in progress; the ring holds ~RING_SEC and is overwritten
+# continuously. Cost: the Windows "microphone in use" indicator stays on.
+STREAM_BLOCK = 1600            # 0.1s per callback block at 16 kHz
+RING_SEC = 1.5
+PRE_ROLL_SEC = 0.6
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
 GEMINI_CONNECT_TIMEOUT = 15
@@ -889,7 +901,8 @@ class GeminiMicApp:
         self.record_gen = 0  # increments per recording; stale watchdogs check it
         self.hotkey_down = False  # physical key state; guards the press/release race
         self.frames = []
-        self.stream = None
+        self.stream = None  # persistent input stream (opened once, kept for app lifetime)
+        self.ring = collections.deque(maxlen=max(1, int(RING_SEC / (STREAM_BLOCK / SAMPLE_RATE))))
         self.record_start = 0.0
         self.hotkey_target = parse_hotkey(self.cfg.get("hotkey", DEFAULT_CONFIG["hotkey"]))
         self.kb_controller = KeyboardController()
@@ -953,55 +966,65 @@ class GeminiMicApp:
     # -- recording ----------------------------------------------------------
 
     def _audio_callback(self, indata, frames_count, time_info, status):
+        block = indata[:, 0].copy()
+        self.ring.append(block)
         if self.recording:
-            self.frames.append(indata[:, 0].copy())
+            self.frames.append(block)
 
-    def start_recording(self):
-        with self.lock:
-            if self.recording:
-                return
-            self.recording = True
-            self.record_gen += 1
-            gen = self.record_gen
-            self.frames = []
-            self.record_start = time.monotonic()
-        self.set_state("recording")
+    def ensure_stream(self):
+        """Open (or re-open) the persistent mic stream. Returns True when live."""
+        s = self.stream
+        if s is not None:
+            try:
+                if s.active:
+                    return True
+                s.close()
+            except Exception:
+                pass
+            self.stream = None
         try:
-            stream = sd.InputStream(
+            s = sd.InputStream(
                 samplerate=SAMPLE_RATE,
                 channels=1,
                 dtype="int16",
+                blocksize=STREAM_BLOCK,
                 callback=self._audio_callback,
             )
-            stream.start()
+            s.start()
+            self.stream = s
+            log("mic stream opened (persistent, ring %.1fs, preroll %.1fs)"
+                % (RING_SEC, PRE_ROLL_SEC))
+            return True
         except Exception as e:
-            with self.lock:
-                self.recording = False
-            self.set_state("idle")
-            self.notify(f"Microphone error: {e}")
-            return
+            log("mic stream open failed: %r" % (e,))
+            return False
 
-        with self.lock:
-            if not self.recording:
-                # released before the mic finished opening — discard this stream
-                stray = stream
-            else:
-                self.stream = stream
-                stray = None
-        if stray is not None:
-            try:
-                stray.stop()
-                stray.close()
-            except Exception:
-                pass
+    def start_recording(self):
+        # The stream normally already runs; this only repairs it (device
+        # unplugged, first run) — the instant-start property comes from the ring.
+        if not self.ensure_stream():
+            self.set_state("idle")
+            self.notify("Microphone error — mikrofon ochilmadi")
             return
+        preroll = max(0, round(PRE_ROLL_SEC / (STREAM_BLOCK / SAMPLE_RATE)))
+        with self.lock:
+            if self.recording:
+                return
+            self.record_gen += 1
+            gen = self.record_gen
+            # Seed with the last PRE_ROLL_SEC from the ring so speech that began
+            # at (or just before) the key press is not lost.
+            self.frames = list(self.ring)[-preroll:] if preroll else []
+            self.recording = True
+            self.record_start = time.monotonic()
+        self.set_state("recording")
 
         if not self.hotkey_down:
-            # key released before the mic finished opening — abort this recording
+            # tap-release race: key already up — discard via the duration gate
             self.stop_recording_and_transcribe()
             return
 
-        beep(1000, 80)  # audio cue: recording started (confirms the hotkey works)
+        beep(1000, 80)  # audio cue: capture is live (it actually started ~PRE_ROLL_SEC ago)
 
         # auto-stop watchdog
         def watchdog():
@@ -1019,15 +1042,7 @@ class GeminiMicApp:
             duration = time.monotonic() - self.record_start
             frames = self.frames
             self.frames = []
-            stream = self.stream
-            self.stream = None
-
-        try:
-            if stream is not None:
-                stream.stop()
-                stream.close()
-        except Exception:
-            pass
+        # the persistent stream stays open — only the recording flag flips
 
         log("record stop: dur=%.2fs" % duration)
 
@@ -1171,6 +1186,9 @@ class GeminiMicApp:
         if not self.cfg.get("api_key"):
             self.settings_window.open()
 
+        # Open the persistent mic stream up front so the very first dictation
+        # already has the ring (and its pre-roll) behind it.
+        self.ensure_stream()
         self.start_hotkey_listener()
 
         self.icon = pystray.Icon(
