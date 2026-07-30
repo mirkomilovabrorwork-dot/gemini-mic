@@ -43,7 +43,18 @@ Java Gradle project. Decompiled reference + spec live in `D:\vibecoding\geminimi
   device unplug → lazy reopen (stream.active check). Verified: selftest, ring
   math unit-check, app restarted, log line "mic stream opened (persistent…)".
   Android has the same latency class (MediaRecorder) — NOT built, candidate only.
-- **2026-07-30 late: BT headset test IN PROGRESS.** Owner enabled the Sony
+- **2026-07-30 ~22:00 RESOLUTION (commit 6c99b87): headset now records via the
+  RAW DRIVER PATH.** Full diagnosis chain, all measured: endpoint was MUTED
+  (unmuted via pycaw) → still zeros on WASAPI/MME/DirectSound even with phone
+  BT off (multipoint ruled out) → Audiosrv restart needs admin → but the WDM-KS
+  node ("bthhfenum") captures REAL audio (rms=22). Fix: new config key
+  `input_device` (name fragment, empty = default) + resolver + fallback-to-
+  default in ensure_stream; owner's config pinned to "bthhfenum"; log confirms
+  the stream bound the headset KS node at 16 kHz. AWAITING his first dictation
+  over the headset — gate-detail log will show real rms. Honest expectation:
+  telephone-grade quality, accuracy may dip vs MICUSB1. Rollback = set
+  "input_device": "" (or "MICUSB1") in config + restart app.
+- **2026-07-30 late: BT headset test IN PROGRESS (superseded by RESOLUTION above).** Owner enabled the Sony
   WH-1000XM5 Hands-Free endpoint (it was disabled — only visible as a WDM-KS
   driver node, direct probe returned 0x48F until he allowed it in Sound
   settings) and set it as DEFAULT input; app restarted so the persistent stream
