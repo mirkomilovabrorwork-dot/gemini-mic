@@ -57,6 +57,14 @@ DEFAULT_CONFIG = {
     "model": "gemini-3-flash-preview",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
+    # Name fragment of the mic to record from; empty = system default input.
+    # Born from the BT-headset episode: the Sony WH-1000XM5 hands-free mic
+    # delivers pure ZEROS through every high-level path (WASAPI/MME/DirectSound
+    # endpoints — a broken Windows audio-engine endpoint), while the raw
+    # WDM-KS driver node ("...bthhfenum...") captures real audio. Pinning by
+    # fragment lets the app open the path that actually works, independent of
+    # the Windows default-input setting.
+    "input_device": "",
 }
 
 # Primary gemini-3-flash-preview — the owner's own call, and the measurement on
@@ -995,6 +1003,22 @@ class GeminiMicApp:
         if self.recording:
             self.frames.append(block)
 
+    def resolve_input_device(self):
+        """Config 'input_device' name fragment -> device index, or None for the
+        system default (also on no match, logged)."""
+        frag = (self.cfg.get("input_device") or "").strip().lower()
+        if not frag:
+            return None
+        try:
+            for i, d in enumerate(sd.query_devices()):
+                if d["max_input_channels"] > 0 and frag in d["name"].lower():
+                    log("mic pin: %r -> [%d] %s" % (frag, i, d["name"][:60]))
+                    return i
+        except Exception as e:
+            log("mic pin: device scan failed %r" % (e,))
+        log("mic pin: no device matches %r -> using system default" % (frag,))
+        return None
+
     def ensure_stream(self):
         """Open (or re-open) the persistent mic stream. Returns True when live."""
         s = self.stream
@@ -1006,22 +1030,26 @@ class GeminiMicApp:
             except Exception:
                 pass
             self.stream = None
-        try:
-            s = sd.InputStream(
-                samplerate=SAMPLE_RATE,
-                channels=1,
-                dtype="int16",
-                blocksize=STREAM_BLOCK,
-                callback=self._audio_callback,
-            )
-            s.start()
-            self.stream = s
-            log("mic stream opened (persistent, ring %.1fs, preroll %.1fs)"
-                % (RING_SEC, PRE_ROLL_SEC))
-            return True
-        except Exception as e:
-            log("mic stream open failed: %r" % (e,))
-            return False
+        device = self.resolve_input_device()
+        for dev in ([device, None] if device is not None else [None]):
+            try:
+                s = sd.InputStream(
+                    samplerate=SAMPLE_RATE,
+                    channels=1,
+                    dtype="int16",
+                    blocksize=STREAM_BLOCK,
+                    device=dev,
+                    callback=self._audio_callback,
+                )
+                s.start()
+                self.stream = s
+                name = "system default" if dev is None else sd.query_devices(dev)["name"][:60]
+                log("mic stream opened on %s (persistent, ring %.1fs, preroll %.1fs)"
+                    % (name, RING_SEC, PRE_ROLL_SEC))
+                return True
+            except Exception as e:
+                log("mic stream open failed on %r: %r" % (dev, e))
+        return False
 
     def start_recording(self):
         # The stream normally already runs; this only repairs it (device
