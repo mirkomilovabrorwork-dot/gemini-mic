@@ -329,6 +329,24 @@ mixed speech. Do NOT burn another session re-testing these.
   ("kerak emas") → deferred. Do NOT ship a blind prompt change.** Reopen only
   with his real audio. Harness ready: scratchpad/ab_verbatim.py.
 
+## 2026-08-03 23:44 — BT HEADSET MIC VERDICT: unusable quality; reverted to MICUSB1
+- Owner: "umuman boshqa gaplar yozyapti — modeldami, promptdami?" **Neither.**
+  Log A/B settles it: same model+prompt the same evening — accurate transcripts
+  at 23:06–23:09 on MICUSB1 (system-default fallback, BT was off), garbage from
+  23:14 on, when every dictation went through the headset KS node (bound
+  23:13:05). The XM5 hands-free channel is telephone-grade/garbled → the model
+  reconstructs invented speech from mushy audio (the known degraded-audio
+  failure mode; the warned risk, now measured in practice).
+- ACTION: config `input_device` pinned back to **"MICUSB1"**, app restarted,
+  log confirms "mic stream opened on Microphone (MICUSB1)". Headset stays fine
+  for LISTENING (music channel unaffected) — only the mic comes from the desk.
+  Headset-mic idea = CLOSED unless the owner explicitly reopens it (re-pair /
+  LE-audio experiments are a rabbit hole with telephone-grade ceiling anyway).
+- **OWNER CONFIRMED 23:47 ("bu tashqi mikrofonda xatosiz yozdi, deyarli
+  xatosiz")** → verdict closed: mic was the cause; model+prompt healthy.
+  Still open: the >60s chain retest (unverified live — his next long dictation
+  in normal use will prove it; the log's auto-rollover lines will show).
+
 ## 2026-08-03 23:13 (commit 12911cb): >60s DICTATIONS NOW CHAIN — owner-reported loss fixed
 - Owner: "bir daqiqadan keyingi gaplarim yo'q" — log proof: 23:06:47
   `dur=60.12s` auto-stop, speech after the mark unrecorded. Fix: at the 60s
