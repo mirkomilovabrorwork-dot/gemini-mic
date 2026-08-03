@@ -677,3 +677,11 @@ mixed speech. Do NOT burn another session re-testing these.
 ## Notes / gotchas hit
 - AAPT rejects raw-hex flag values in `accessibility_service_config.xml` → use named flags.
 - `javac` rejects UTF-8 BOM → keep `.java` files BOM-free.
+
+## 2026-08-04 00:05 — mic level guidance settled
+- Owner asked the right knob level for MICUSB1: **hardware knob ~70-80%,
+  Windows level stays 100%, speak 20-30 cm away** — tonight's "deyarli
+  xatosiz" run was at this setup, don't re-tune. Standing offer: he types
+  "o'lcha" while at the mic → run the beep-delimited 10s measure script
+  (worked; two attempts hit silence only because he wasn't speaking in the
+  window) and give the number+verdict once.
