@@ -12,6 +12,7 @@ import base64
 import collections
 import ctypes
 import json
+import queue
 import os
 import re
 import sys
@@ -89,6 +90,13 @@ LANGUAGE_CHOICES = [
 SAMPLE_RATE = 16000
 MIN_DURATION_SEC = 0.65
 AUTO_STOP_SEC = 60
+# When the key is STILL HELD at the 60s mark, the recording no longer just
+# stops (the owner lost everything he said after minute one): the finished
+# chunk is queued for transcription and a NEW chunk starts seamlessly, seeded
+# with the ring's pre-roll so the word spanning the boundary survives. Chunks
+# paste in spoken order via a single FIFO worker. The chain cap only guards a
+# physically stuck key — 10 chunks ≈ 10 minutes of continuous speech.
+MAX_CHUNK_CHAIN = 10
 # Speech gate: count 0.2s windows whose RMS clears VOICE_RMS and require several,
 # so a lone transient (keyboard click, thud) — which inflates the whole-clip RMS
 # and used to trigger a hallucinated transcript — is rejected while sustained real
@@ -937,6 +945,12 @@ class GeminiMicApp:
         self.ring = collections.deque(maxlen=max(1, int(RING_SEC / (STREAM_BLOCK / SAMPLE_RATE))))
         self.last_block = 0.0  # when the callback last delivered audio; stale = dead stream
         self.record_start = 0.0
+        self.chunk_chain = 0  # consecutive auto-rollovers while the key stays held
+        # One FIFO worker: chunks must PASTE in spoken order, and parallel
+        # threads could finish out of order (chunk 2's Gemini call beating
+        # chunk 1's would swap his sentences).
+        self.jobs = queue.Queue()
+        threading.Thread(target=self._job_worker, daemon=True).start()
         self.hotkey_target = parse_hotkey(self.cfg.get("hotkey", DEFAULT_CONFIG["hotkey"]))
         self.kb_controller = KeyboardController()
         self.icon = None
@@ -1132,10 +1146,20 @@ class GeminiMicApp:
 
         beep(1000, 80)  # audio cue: capture is live (it actually started ~PRE_ROLL_SEC ago)
 
-        # auto-stop watchdog
+        # auto-stop watchdog — rolls into a NEW chunk when the key is still held
         def watchdog():
             time.sleep(AUTO_STOP_SEC)
-            if self.recording and self.record_gen == gen:
+            if not (self.recording and self.record_gen == gen):
+                return
+            if self.hotkey_down and self.chunk_chain < MAX_CHUNK_CHAIN:
+                self.chunk_chain += 1
+                log("auto-rollover: chunk %d finished at %ds, key still held -> next chunk"
+                    % (self.chunk_chain, AUTO_STOP_SEC))
+                self.stop_recording_and_transcribe()
+                self.start_recording()  # ring pre-roll bridges the boundary word
+            else:
+                if self.hotkey_down:
+                    log("auto-stop: chunk chain cap %d reached (stuck key?)" % MAX_CHUNK_CHAIN)
                 self.stop_recording_and_transcribe()
 
         threading.Thread(target=watchdog, daemon=True).start()
@@ -1170,9 +1194,15 @@ class GeminiMicApp:
             self._tooltip("Gemini Mic — ovoz eshitilmadi")
             return
 
-        self.set_state("transcribing")
+        if not self.recording:
+            # during a rollover the next chunk is already recording — keep that state
+            self.set_state("transcribing")
+        self.jobs.put(wav_bytes)
 
-        def worker():
+    def _job_worker(self):
+        """Single FIFO consumer: transcribe+paste chunks strictly in spoken order."""
+        while True:
+            wav_bytes = self.jobs.get()
             try:
                 cfg = self.get_config()
                 log("gemini: calling model=%s" % cfg.get("model", DEFAULT_CONFIG["model"]))
@@ -1192,9 +1222,8 @@ class GeminiMicApp:
                 log("worker: unexpected %r" % (e,))
                 self.notify(f"Unexpected error: {e}")
             finally:
-                self.set_state("idle")
-
-        threading.Thread(target=worker, daemon=True).start()
+                if not self.recording:
+                    self.set_state("idle")
 
     # -- paste ----------------------------------------------------------
 
@@ -1262,6 +1291,7 @@ class GeminiMicApp:
     def _on_release(self, key):
         if key_matches(key, self.hotkey_target):
             self.hotkey_down = False
+            self.chunk_chain = 0  # a real release ends any auto-rollover chain
             if self.recording:
                 threading.Thread(target=self.stop_recording_and_transcribe, daemon=True).start()
 
