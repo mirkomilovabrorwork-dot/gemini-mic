@@ -329,6 +329,19 @@ mixed speech. Do NOT burn another session re-testing these.
   ("kerak emas") → deferred. Do NOT ship a blind prompt change.** Reopen only
   with his real audio. Harness ready: scratchpad/ab_verbatim.py.
 
+## 2026-08-03 23:13 (commit 12911cb): >60s DICTATIONS NOW CHAIN — owner-reported loss fixed
+- Owner: "bir daqiqadan keyingi gaplarim yo'q" — log proof: 23:06:47
+  `dur=60.12s` auto-stop, speech after the mark unrecorded. Fix: at the 60s
+  watchdog, if the key is STILL HELD → queue the finished chunk for
+  transcription and start the next chunk seamlessly (persistent-ring 0.6s
+  pre-roll bridges the boundary word); a real release resets the chain;
+  chain cap 10 (~10 min) guards only a stuck key. Transcribe+paste moved to a
+  SINGLE FIFO worker so chunks paste in spoken order (parallel threads could
+  finish out of order). What he SEES on a long dictation: a soft beep at each
+  minute boundary (new chunk), then the text arriving piece by piece, in
+  order. App restarted on this code (headset KS node bound per log).
+  AWAITING his >60s retest.
+
 ## STATUS (resume board) — 2026-07-12 (v11)
 - **Windows now auto-inserts WITHOUT clicking the field first** (owner wanted
   phone-parity). Added UI Automation (desktop cousin of Android accessibility):
