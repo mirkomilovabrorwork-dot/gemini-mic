@@ -329,6 +329,20 @@ mixed speech. Do NOT burn another session re-testing these.
   ("kerak emas") → deferred. Do NOT ship a blind prompt change.** Reopen only
   with his real audio. Harness ready: scratchpad/ab_verbatim.py.
 
+## 2026-08-03 ~23:55 — owner asked "which model? are OUR prompts wrong? want best uz VTT"
+- Answered with the measured record: gemini-3-flash-preview + our prompt =
+  winner of 20 measured variants on his voice; prompts NOT the fault (no-prompt
+  → model answers instead of transcribing; minimal prompt 5/9). Residual ~2/9 =
+  measured Gemini-family ceiling on accented mixed speech.
+- **gemini-omni-flash-preview tested and DEAD**: 400 Bad Request on
+  generateContent with/without thinking config (likely Live-API-only). Crossed
+  off — do not retry.
+- "data365 gemini" — owner mentioned, identity unknown; asked him, he DISMISSED
+  the question (with the mohir.ai trial proposal too) → both PARKED, do not
+  nag; revisit only if he brings it up.
+- Genuine next candidate for "best uz VTT" remains mohir.ai (Uzbek-first ASR,
+  from memory playbook) — NOT started, owner consent pending (parked above).
+
 ## 2026-08-03 23:44 — BT HEADSET MIC VERDICT: unusable quality; reverted to MICUSB1
 - Owner: "umuman boshqa gaplar yozyapti — modeldami, promptdami?" **Neither.**
   Log A/B settles it: same model+prompt the same evening — accurate transcripts
