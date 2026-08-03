@@ -2,16 +2,30 @@
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
 
-## NEXT STEP (2026-07-28)
+## GOAL (owner's words)
+Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
+mixed Uzbek/English/Russian, the text lands in the focused field — free
+(Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
+Owner's later recorded refinements (his words, not scope invention):
+- 2026-07-29 quality bar: "aytgan so'zimni aytganimdek yozish kerak" — verbatim,
+  no word substitution (best measured config = 7/9 on his voice; ceiling and
+  every rejected lever documented below).
+- 2026-07-29 key strategy: ONE key for simplicity ("1 pulli kalit" choice); the
+  "free tier" wording above predates that decision.
+- 2026-07-30: dictate through the BT headset when practical ("headphones yoza
+  olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
+  caveat stands.
 
-**Rebuild `GeminiMic-share.zip` from the current source, then hand it to the friend.**
-Why this and not something else: a wave-audit on 2026-07-28 searched Desktop, Downloads and both project
-folders and found **no `*share*.zip` anywhere** - the only Desktop artefact is `GeminiMic.exe` (33.1 MB,
-2026-07-13). The board below still describes the zip as if it exists on the Desktop. So the thing the
-friend is supposed to receive does not currently exist, and every "refresh the zip" note below is really
-"build the zip".
-Gate before handing it over: `.claude\gate.cmd` (py_compile of the win+mac sources + the Windows
-self-test) - verified green 2026-07-28. Owner action needed: none until the zip exists.
+## NEXT STEP (single queue, oldest first)
+1. **Build `GeminiMic-share.zip` from current source and hand it to the friend**
+   (2026-07-28 audit: no share zip exists anywhere on disk — every older
+   "refresh the zip" note is really "build it"). Gate first: `.claude\gate.cmd`.
+   Include: fresh APK + exe, canonical `docs/HOW-TO-USE.txt` (has the SAC-block
+   and shell:startup sections).
+2. **Owner tests** (30s, when he wants): first-words capture on the external
+   mic; optionally the BT headset via tray "Mikrofonni qayta ulash" + one
+   dictation — reply "ishladi/yo'q", the gate-detail log gives the quality
+   number.
 
 ## STATUS (resume board) - 2026-07-11
 - **Merge-commit hook tracked (2026-07-18):** `.githooks/pre-merge-commit` is now in git too. It was created but untracked, so a clone carried only half the protection - git routes a MERGE through that hook, and that path would have been silently unguarded.
@@ -314,11 +328,6 @@ mixed speech. Do NOT burn another session re-testing these.
   vs prompt, 3.5 vs 3-flash-preview). **Owner declined the 30-sec voice capture
   ("kerak emas") → deferred. Do NOT ship a blind prompt change.** Reopen only
   with his real audio. Harness ready: scratchpad/ab_verbatim.py.
-
-## GOAL (owner's words)
-Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
-mixed Uzbek/English/Russian, the text lands in the focused field — free
-(Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
 
 ## STATUS (resume board) — 2026-07-12 (v11)
 - **Windows now auto-inserts WITHOUT clicking the field first** (owner wanted
