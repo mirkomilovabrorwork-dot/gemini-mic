@@ -702,3 +702,18 @@ mixed speech. Do NOT burn another session re-testing these.
   "o'lcha" while at the mic → run the beep-delimited 10s measure script
   (worked; two attempts hit silence only because he wasn't speaking in the
   window) and give the number+verdict once.
+
+## 2026-08-05 19:2x — INVESTIGATION IN PROGRESS: app zombified after idle-release
+- Owner: "gemini nega ishlamayapti". Evidence: app PID 10828 alive but DEAD
+  inside — no log reaction even to a SYNTHETIC Right Ctrl hold, only 2 OS
+  threads left (healthy ~8), CPU≈0, py-spy cannot even read the interpreter
+  ("failed to find python version") → interpreter likely FINALIZED (main/pystray
+  thread exited) while a native thread kept the process listed. Last log line =
+  the very first idle-release (18:28:53). Restarted (PID 12428) to unblock.
+- CONTROLLED REPRO RUNNING in background: wait for this instance's idle-release
+  (~19:28), then synthetic-press probe + thread count. If it zombifies again →
+  idle-release teardown (s.stop/close from the loop thread) is the killer.
+- Planned safer fix if confirmed: NEVER close from the idle thread — use
+  s.stop() only (keeps the PortAudio object; expected to release audiodg all
+  the same — must A/B that) and s.start() on the same stream at key-down;
+  no close/open lifecycle at all.
