@@ -116,6 +116,16 @@ MIN_VOICED_WINDOWS = 3
 STREAM_BLOCK = 1600            # 0.1s per callback block at 16 kHz
 RING_SEC = 1.5
 PRE_ROLL_SEC = 0.6
+# The always-open stream has a measured cost: audiodg (the Windows audio
+# engine) burns ~a quarter of a core CONTINUOUSLY while any capture stream is
+# live (A/B on the owner's machine 2026-08-05: app running -> ~2.3%
+# machine-wide, app stopped -> 0%; the HQ heat scan found 626 cumulative
+# CPU-minutes over ~2 days). So after this many seconds with no dictation the
+# stream is released — heat/battery cost drops to zero during long idle. The
+# next key-down reopens it (ensure_stream); that one press pays the old
+# ~0.2-0.5s open latency and starts with an empty ring, which is exactly the
+# pre-ring behavior, once, after a long break.
+IDLE_RELEASE_SEC = 300
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
 GEMINI_CONNECT_TIMEOUT = 15
@@ -946,11 +956,36 @@ class GeminiMicApp:
         self.last_block = 0.0  # when the callback last delivered audio; stale = dead stream
         self.record_start = 0.0
         self.chunk_chain = 0  # consecutive auto-rollovers while the key stays held
+        self.last_dictation = time.monotonic()  # idle-release clock (see IDLE_RELEASE_SEC)
         # One FIFO worker: chunks must PASTE in spoken order, and parallel
         # threads could finish out of order (chunk 2's Gemini call beating
         # chunk 1's would swap his sentences).
         self.jobs = queue.Queue()
         threading.Thread(target=self._job_worker, daemon=True).start()
+        threading.Thread(target=self._idle_release_loop, daemon=True).start()
+
+    def _idle_release_loop(self):
+        """Release the mic stream after IDLE_RELEASE_SEC without a dictation so
+        audiodg stops burning CPU during long idle; ensure_stream reopens it on
+        the next key-down."""
+        while True:
+            time.sleep(30)
+            if self.recording or self.stream is None:
+                continue
+            if time.monotonic() - self.last_dictation < IDLE_RELEASE_SEC:
+                continue
+            with self.lock:
+                if self.recording:
+                    continue
+                s, self.stream = self.stream, None
+            try:
+                if s is not None:
+                    s.stop(); s.close()
+                    self.ring.clear()
+                    log("idle-release: mic stream closed after %ds without dictation"
+                        % IDLE_RELEASE_SEC)
+            except Exception as e:
+                log("idle-release: close failed %r" % (e,))
         self.hotkey_target = parse_hotkey(self.cfg.get("hotkey", DEFAULT_CONFIG["hotkey"]))
         self.kb_controller = KeyboardController()
         self.icon = None
@@ -1137,6 +1172,7 @@ class GeminiMicApp:
             self.frames = list(self.ring)[-preroll:] if preroll else []
             self.recording = True
             self.record_start = time.monotonic()
+            self.last_dictation = self.record_start  # idle-release clock
         self.set_state("recording")
 
         if not self.hotkey_down:
@@ -1170,6 +1206,7 @@ class GeminiMicApp:
                 return
             self.recording = False
             duration = time.monotonic() - self.record_start
+            self.last_dictation = time.monotonic()  # idle-release counts from the END
             frames = self.frames
             self.frames = []
         # the persistent stream stays open — only the recording flag flips
