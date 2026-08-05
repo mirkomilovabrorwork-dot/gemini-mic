@@ -689,9 +689,11 @@ mixed speech. Do NOT burn another session re-testing these.
   latency with an empty ring, once. Active sessions unchanged (instant +
   pre-roll). `last_dictation` stamps at start AND end so chained long
   dictations never count idle.
-- VERIFYING in background right now: after 5.5 quiet minutes the log must show
-  the idle-release line and audiodg must read ~0% with the app still running.
-  Result lands in the next session note if this session closes first.
+- **VERIFIED LIVE (18:29): all three checks green** — log shows "idle-release:
+  mic stream closed after 300s without dictation" exactly 300s after open
+  (18:23:53 → 18:28:53), audiodg measured **0%** with the app still RUNNING
+  (PID 10828). Heat cost during idle is now zero; dictation reopens the stream
+  on the next key-down. HQ item CLOSED.
 
 ## 2026-08-04 00:05 — mic level guidance settled
 - Owner asked the right knob level for MICUSB1: **hardware knob ~70-80%,
