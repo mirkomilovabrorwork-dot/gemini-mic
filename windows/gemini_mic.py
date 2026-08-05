@@ -120,11 +120,12 @@ PRE_ROLL_SEC = 0.6
 # engine) burns ~a quarter of a core CONTINUOUSLY while any capture stream is
 # live (A/B on the owner's machine 2026-08-05: app running -> ~2.3%
 # machine-wide, app stopped -> 0%; the HQ heat scan found 626 cumulative
-# CPU-minutes over ~2 days). So after this many seconds with no dictation the
-# stream is released — heat/battery cost drops to zero during long idle. The
-# next key-down reopens it (ensure_stream); that one press pays the old
-# ~0.2-0.5s open latency and starts with an empty ring, which is exactly the
-# pre-ring behavior, once, after a long break.
+# CPU-minutes over ~2 days). That cost is currently ACCEPTED: the idle-release
+# loop that closed the stream after this many quiet seconds was REVERTED the
+# same evening it shipped — tearing the stream down from a background thread
+# killed the interpreter (see the do-not-re-add NOTE in GeminiMicApp.__init__).
+# The constant stays only for a future safe design that touches the stream
+# from the key-down path alone.
 IDLE_RELEASE_SEC = 300
 MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
