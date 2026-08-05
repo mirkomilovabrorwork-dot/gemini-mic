@@ -962,30 +962,18 @@ class GeminiMicApp:
         # chunk 1's would swap his sentences).
         self.jobs = queue.Queue()
         threading.Thread(target=self._job_worker, daemon=True).start()
-        threading.Thread(target=self._idle_release_loop, daemon=True).start()
-
-    def _idle_release_loop(self):
-        """Release the mic stream after IDLE_RELEASE_SEC without a dictation so
-        audiodg stops burning CPU during long idle; ensure_stream reopens it on
-        the next key-down."""
-        while True:
-            time.sleep(30)
-            if self.recording or self.stream is None:
-                continue
-            if time.monotonic() - self.last_dictation < IDLE_RELEASE_SEC:
-                continue
-            with self.lock:
-                if self.recording:
-                    continue
-                s, self.stream = self.stream, None
-            try:
-                if s is not None:
-                    s.stop(); s.close()
-                    self.ring.clear()
-                    log("idle-release: mic stream closed after %ds without dictation"
-                        % IDLE_RELEASE_SEC)
-            except Exception as e:
-                log("idle-release: close failed %r" % (e,))
+        # NOTE (2026-08-05): an idle-release loop lived here for a few hours —
+        # after 300s without dictation it stop()+close()d the stream from this
+        # background thread to silence audiodg (~1/4 core while any capture
+        # stream is live). REVERTED the same evening: on BOTH instances the app
+        # went dead minutes after the release fired (hotkeys unanswered, thread
+        # count collapsed, interpreter unreadable by py-spy — the owner's
+        # "gemini ishlamayapti"). Tearing down a PortAudio stream from a
+        # background thread is a known hazard (python-sounddevice #78/#187).
+        # The audiodg idle cost is ACCEPTED until a safe design exists
+        # (candidates in STATE: stop/start only from the key-down path, or a
+        # subprocess-owned stream). Do not re-add a timer that touches the
+        # stream from its own thread.
         self.hotkey_target = parse_hotkey(self.cfg.get("hotkey", DEFAULT_CONFIG["hotkey"]))
         self.kb_controller = KeyboardController()
         self.icon = None
