@@ -17,15 +17,32 @@ Owner's later recorded refinements (his words, not scope invention):
   caveat stands.
 
 ## NEXT STEP (single queue, oldest first)
-1. **Build `GeminiMic-share.zip` from current source and hand it to the friend**
-   (2026-07-28 audit: no share zip exists anywhere on disk — every older
-   "refresh the zip" note is really "build it"). Gate first: `.claude\gate.cmd`.
-   Include: fresh APK + exe, canonical `docs/HOW-TO-USE.txt` (has the SAC-block
-   and shell:startup sections).
-2. **Owner tests** (30s, when he wants): first-words capture on the external
-   mic; optionally the BT headset via tray "Mikrofonni qayta ulash" + one
-   dictation — reply "ishladi/yo'q", the gate-detail log gives the quality
-   number.
+1. **Owner tests** (30s, when he wants): first-words capture + one >60s
+   dictation on the external mic — reply "ishladi/yo'q", the gate-detail log
+   gives the quality number.
+OWNER TODO: send `Desktop\GeminiMic-share.zip` to the friend (Telegram file
+   send); done when he replies it arrived/opens; if it misbehaves on his
+   machine, HOW-TO-USE.txt inside covers SAC-block + autostart — else report
+   back here. (since 2026-07-28)
+
+## 2026-08-05 20:00 — GeminiMic-share.zip BUILT (queue item open since 07-28) — ON DESKTOP
+- Gate passed first (`.claude\gate.cmd` EXIT 0). Contents verified FROM INSIDE
+  the zip (read back out, hashes compared): `ready-to-use/GeminiMic-windows.exe`
+  34.8MB, PyInstaller 6.21 from HEAD 2413bcc, hash == dist build ·
+  `ready-to-use/GeminiMic-android.apk` 35KB from CI run 31031289507 (today's
+  HEAD; 35KB IS the real size — zero-dependency app, dex+manifest+icons only) ·
+  `ready-to-use/GeminiMic-mac.zip` .app from run 29276771369 = last mac-source
+  commit 6e0dab2 · root `HOW-TO-USE.txt` + full source tree. Key-leak scan
+  clean (no `AIza` match in staged source; config.json untracked by design).
+- Layout matches what HOW-TO itself tells the friend (`ready-to-use/` folder,
+  source at root as `app/`, `windows/`, `mac/`) — earlier plans staged source
+  under `source/`, which would have contradicted the text he reads first.
+- Desktop `GeminiMic-android.apk` refreshed from the same CI artifact.
+- Commit 2413bcc (same session): the idle-release HEADER comment still
+  described the reverted behavior as live ("stream is released") 800 lines from
+  the do-not-re-add NOTE — retold in past tense. Lesson merged into
+  [[feedback_blast_radius]]: a revert's dependents include the feature's own
+  narrative elsewhere in code/docs.
 
 ## STATUS (resume board) - 2026-07-11
 - **Merge-commit hook tracked (2026-07-18):** `.githooks/pre-merge-commit` is now in git too. It was created but untracked, so a clone carried only half the protection - git routes a MERGE through that hook, and that path would have been silently unguarded.
