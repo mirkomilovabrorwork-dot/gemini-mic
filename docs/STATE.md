@@ -703,7 +703,24 @@ mixed speech. Do NOT burn another session re-testing these.
   (worked; two attempts hit silence only because he wasn't speaking in the
   window) and give the number+verdict once.
 
-## 2026-08-05 19:2x — INVESTIGATION IN PROGRESS: app zombified after idle-release
+## 2026-08-05 19:40 — RESOLVED (commit b8ec360): idle-release REVERTED, app verified alive
+- Repro CONFIRMED on both instances: minutes after "idle-release" fired, the
+  interpreter died (hotkeys unanswered, threads collapsed, py-spy unreadable).
+  Killer = stop()+close() of the PortAudio stream from a background timer
+  thread (known hazard, python-sounddevice #78/#187). REVERTED to the
+  always-open stream; do-not-re-add comment at the spot. audiodg idle cost
+  (~1/4 core) ACCEPTED until a safe design (touch the stream only from the
+  key-down path, or subprocess-owned stream) — HQ heat item reopened as
+  "accepted cost, redesign queued", NOT silently regressed.
+- VERIFIED after revert: clean start, synthetic 2s Right Ctrl → "record stop:
+  dur=2.00s" + gate lines in the log — listener+recorder alive. Owner's other
+  hypotheses answered by evidence: NOT the key's money (failure was before any
+  API call; 18:18 dictation succeeded), NOT mic contention (stream opened fine;
+  the dead layer was the keyboard hook of the dead interpreter).
+- Diagnosis pearl recorded in memory: venv pythonw = shim parent + real child
+  (a small-thread "twin" is normal; zombie = shim outliving its dead child).
+
+## 2026-08-05 19:2x — superseded by RESOLVED above: app zombified after idle-release
 - Owner: "gemini nega ishlamayapti". Evidence: app PID 10828 alive but DEAD
   inside — no log reaction even to a SYNTHETIC Right Ctrl hold, only 2 OS
   threads left (healthy ~8), CPU≈0, py-spy cannot even read the interpreter
