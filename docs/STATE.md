@@ -734,3 +734,16 @@ mixed speech. Do NOT burn another session re-testing these.
   s.stop() only (keeps the PortAudio object; expected to release audiodg all
   the same — must A/B that) and s.start() on the same stream at key-down;
   no close/open lifecycle at all.
+
+## 2026-08-05 19:55 — "Telegram ovozsiz" ROOT CAUSE: phantom output endpoint
+- Owner: video/music silent. Cause: the MICUSB1 USB mic exposes a PHANTOM
+  "Speakers (MICUSB1)" render endpoint (no physical speaker — owner confirmed);
+  when the BT headset dropped, Windows made THAT phantom the default output, so
+  all playback went into a dead hole. NOT our app (its only render use is the
+  soft beep).
+- FIX (programmatic, no owner taps): default output switched to "Speakers
+  (Realtek(R) Audio)" via IPolicyConfig SetDefaultEndpoint (all 3 roles) —
+  audible TTS test played; then the phantom endpoint DISABLED via
+  SetEndpointVisibility(0) so Windows can never auto-pick it again (reversible:
+  Sound settings → Show disabled devices). Mic input (MICUSB1) untouched and
+  verified still default-input; app log clean.
