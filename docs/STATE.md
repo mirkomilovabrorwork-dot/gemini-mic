@@ -678,6 +678,21 @@ mixed speech. Do NOT burn another session re-testing these.
 - AAPT rejects raw-hex flag values in `accessibility_service_config.xml` → use named flags.
 - `javac` rejects UTF-8 BOM → keep `.java` files BOM-free.
 
+## 2026-08-05 18:30 — HQ heat scan traced to US; idle-release shipped (commit eba1cfa)
+- HQ relay: `audiodg` at ~¼ core with no recording (626 CPU-min over ~2 days).
+  **A/B proved it was our always-open pre-roll stream**: app running → audiodg
+  ~2.3% machine-wide; app killed → 0.0%. The 07-30 UX feature had an unmeasured
+  continuous heat cost on a laptop the owner already thermally capped.
+- FIX: idle-release loop — 300s without a dictation → stream closed (ring
+  cleared, logged "idle-release: …"); next key-down reopens via ensure_stream.
+  Tradeoff (honest): first press after a long break pays the old ~0.2-0.5s open
+  latency with an empty ring, once. Active sessions unchanged (instant +
+  pre-roll). `last_dictation` stamps at start AND end so chained long
+  dictations never count idle.
+- VERIFYING in background right now: after 5.5 quiet minutes the log must show
+  the idle-release line and audiodg must read ~0% with the app still running.
+  Result lands in the next session note if this session closes first.
+
 ## 2026-08-04 00:05 — mic level guidance settled
 - Owner asked the right knob level for MICUSB1: **hardware knob ~70-80%,
   Windows level stays 100%, speak 20-30 cm away** — tonight's "deyarli
