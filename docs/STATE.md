@@ -20,10 +20,9 @@ Owner's later recorded refinements (his words, not scope invention):
 1. **Owner tests** (30s, when he wants): first-words capture + one >60s
    dictation on the external mic — reply "ishladi/yo'q", the gate-detail log
    gives the quality number.
-OWNER TODO: send `Desktop\GeminiMic-share.zip` to the friend (Telegram file
-   send); done when he replies it arrived/opens; if it misbehaves on his
-   machine, HOW-TO-USE.txt inside covers SAC-block + autostart — else report
-   back here. (since 2026-07-28)
+- Share-zip handover DONE (owner declared in HQ 2026-08-07; duty open since
+  2026-07-28 closed). If he later relays the friend's result (opened/failed),
+  treat it as NEW input, not this duty reopening.
 
 ## 2026-08-05 20:00 — GeminiMic-share.zip BUILT (queue item open since 07-28) — ON DESKTOP
 - Gate passed first (`.claude\gate.cmd` EXIT 0). Contents verified FROM INSIDE
