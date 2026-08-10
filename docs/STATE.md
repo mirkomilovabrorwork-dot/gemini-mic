@@ -24,6 +24,27 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-08-10 15:19 — app relaunched; Desktop exe refreshed; MICUSB1 absent → default input re-aimed
+- Owner: "ishga tushir + desktopdagi geminimicni yangila". App was NOT running
+  (no Windows crash event in the window; last log lines = a SUCCESSFUL 15:11
+  dictation into the Claude window → clipboard-only path; most likely closed by
+  hand). Relaunched from source (SAC path), PIDs + "mic stream opened" log
+  verified.
+- Desktop `GeminiMic.exe` was still the Jul-13 build → replaced with the
+  2413bcc build, hash 45A6A227 == windows/dist. (APK + share.zip were already
+  current from 08-05.)
+- **MICUSB1 is UNPLUGGED**; Windows default input had drifted to the XM5
+  hands-free mic — the measured-garbage channel (08-03 verdict). Fixed without
+  touching the app: default INPUT → "Microphone Array (AMD)" via IPolicyConfig
+  (same tool class as the 08-05 phantom-output fix; reversible in Sound
+  settings), app restarted so the persistent stream re-bound it. Config pin
+  stays "MICUSB1" ON PURPOSE — when the USB mic is replugged, one tray tap
+  ("Mikrofonni qayta ulash") or an app restart re-binds the best mic; re-pinning
+  config to the array would silently ignore MICUSB1 on replug (blast-radius).
+- Honest quality note: until MICUSB1 returns, dictation runs on the laptop
+  array — usable, but quieter (-28 dBFS class); accuracy may dip vs the desk
+  mic. The XM5 hands-free trap is dodged, not re-opened.
+
 ## 2026-08-05 20:00 — GeminiMic-share.zip BUILT (queue item open since 07-28) — ON DESKTOP
 - Gate passed first (`.claude\gate.cmd` EXIT 0). Contents verified FROM INSIDE
   the zip (read back out, hashes compared): `ready-to-use/GeminiMic-windows.exe`
