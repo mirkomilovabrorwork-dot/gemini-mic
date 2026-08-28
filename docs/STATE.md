@@ -24,6 +24,27 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-08-28 16:10 — 2nd "ishlamayapti" = app simply not running (relaunched, verified alive)
+- Owner: "ishlamayapti ishlat appni". Process was NOT running (2nd time this has
+  happened, after 2026-08-10 below — same shape: no crash, just absent).
+  Checked Application-Error events around the gap (08-27 08:16, 08-28 14:44) —
+  **unrelated**: `AcerRegistrationBackGroundTask.exe` faulting, not our process.
+  `LastBootUpTime` = Aug 20 (no reboot since); System log shows sleep/wake
+  cycles (Kernel-Power 42, Power-Troubleshooter wake ~08-27 07:55, ~08-28
+  02:29pm) but the app's own log has NO "mic stream opened" line for the
+  08-28 wake — so it was closed by hand (or a wake-time race) sometime after
+  its last good start (08-27 07:56), not killed by an event.
+  Relaunched (pythonw.exe, PIDs fresh) + verified TWO ways: log line "mic
+  stream opened on system default", then a synthetic Right-Ctrl press/release
+  (keybd_event, ~0.15s) produced "gate: too short -> rejected" — proves the
+  hotkey listener thread is alive end-to-end, not just that the process exists.
+  MICUSB1 still physically unplugged (default input = AMD array, same as
+  08-10). SAC workaround unchanged (runs from source; Desktop exe is a spare).
+  **Not yet built (his call, not mine to silently add — the goal line says
+  "just works, no fiddling" but a background watchdog is new standing
+  behavior, not a HOW-tweak): auto-relaunch if the process ever disappears.**
+  Two data points now (08-10, 08-28) — worth deciding next time he's asked.
+
 ## 2026-08-10 15:19 — app relaunched; Desktop exe refreshed; MICUSB1 absent → default input re-aimed
 - Owner: "ishga tushir + desktopdagi geminimicni yangila". App was NOT running
   (no Windows crash event in the window; last log lines = a SUCCESSFUL 15:11
@@ -784,3 +805,8 @@ mixed speech. Do NOT burn another session re-testing these.
   SetEndpointVisibility(0) so Windows can never auto-pick it again (reversible:
   Sound settings → Show disabled devices). Mic input (MICUSB1) untouched and
   verified still default-input; app log clean.
+
+## DECISIONS (owner one-tap answers - auto-appended; a decided question is never re-asked)
+- 2026-08-12 [Vidjet] Bosh ekrandagi vidjetda nima ko'rinsin? (men shunday tushundim ΓÇö shumi?) -> **Bugungi butun timebox ro'yxati**
+- 2026-08-12 [Reja] Timebox (kun rejasi) qayerda tuziladi? -> **Ikkalasida ham**
+- 2026-08-12 [Ovoz] Vidjet ovoz chiqarsinmi (blok boshlanganda/tugaganda)? -> **blok boshlanishdan 15 daqiqa oldin bildiirshnoma**
