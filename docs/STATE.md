@@ -24,6 +24,19 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-08-31 — owner-requested ADHD research doc added (NOT app scope)
+- Owner asked (in this repo's session) for deep research on ADHD productivity —
+  time/energy management, being organized — plus platform recommendations,
+  supplement/non-stimulant evidence, and the "is medication needed, or Goggins-style
+  discipline" question. Delivered as `docs/adhd-produktivlik-uz.md` (Uzbek).
+- **This is personal research for the owner, not Gemini Mic app work.** The GOAL above
+  is unchanged and this entry does not add anything to the NEXT STEP queue. Future
+  sessions: ignore this file when resuming app work.
+- Method + caveat worth knowing if it is ever revisited: 4 parallel research workflows
+  (~50 agents) with adversarial verification. The session's egress proxy blocked
+  PubMed/Cochrane/NICE (403), so figures come from search abstracts, not full texts;
+  some verify agents hit the session limit. Limitations are written in the doc itself.
+
 ## 2026-08-28 16:10 — 2nd "ishlamayapti" = app simply not running (relaunched, verified alive)
 - Owner: "ishlamayapti ishlat appni". Process was NOT running (2nd time this has
   happened, after 2026-08-10 below — same shape: no crash, just absent).
