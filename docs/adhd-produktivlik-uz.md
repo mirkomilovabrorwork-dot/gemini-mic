@@ -98,7 +98,18 @@ kechikadi. Ya'ni "kechqurun uxlolmayman, ertalab o'lik" — bu dangasalik emas, 
 - Birinchi ovqatda **oqsil + murakkab uglevod** ⚪
 - **20 daqiqalik tushdan keyingi uyqu**, budilnik bilan 🟡
 
-**Muhim:**
+**Muhim tuzatish (halollik uchun):** uyqu tuzatish **o'z-o'zicha arziydi** — energiya,
+kayfiyat, hayot sifati uchun. Lekin **ADHD belgilariga ta'siri — dorisiz yondashuvning
+eng zaif bo'g'ini.** Kooij guruhining chronoterapiya sinovida melatonin + yorqin yorug'lik
+biologik soatni **2 soatga surgan, ammo ADHD belgilarini o'zgartirmagan.** Ya'ni: uyquni
+tuzating — lekin bu belgilarni davolaydi deb kutmang.
+
+**Sport haqida ham aniqlik:** ta'sir **o'tkir** (bir martalik), **surunkali emas** —
+odatda teskarisi sotiladi. Bir martalik mashqdan keyin tormozlash nazorati g=0.55,
+asosiy belgilar g=0.23. Ya'ni sport — **o'sha kungi ish quroli**, to'planib boradigan
+davo emas. Shuning uchun uni og'ir ish *oldidan* qo'ying.
+
+**Ishlamaydi:**
 - 🔴 **«Shakar giperaktivlik keltiradi»** — 23 ta qo'sh-ko'r sinov, 1,414 bola (JAMA 1995):
   **ta'sir yo'q.** "Shakar tushishi" tushdan keyingi holsizlikni tushuntirmaydi
 - ⚪ **Melatonin** uyquni *oldinga suradi* (~30–44 daqiqa), lekin **ADHD belgilarini
@@ -250,10 +261,28 @@ targ'ibot bo'lishi uchun.
   oshiradi, lekin **to'g'riligini emas** (34 tadqiqot, 1,777 bola)
 - **Tizim qurmaydi.** Agar qo'shimcha quvvatni yo'naltiradigan kalendar/ro'yxat bo'lmasa,
   u shunchaki tarqab ketadi
+- **Hayot sifatini yaxshilamaydi.** Yig'ma sinov ma'lumotlarida dori asosiy belgilarni
+  kamaytiradi, lekin odamlar ko'proq qadrlaydigan natijani — *hayot sifatini* — siljitmaydi 🟢
 - **MTA tadqiqoti:** 14 oyda dori ustunligi katta edi — **36 oyga borib yo'qoldi**,
   8 yilda farq yo'q. *Ikkala tomon ham buni noto'g'ri o'qiydi:* bu "dori ishlamaydi"
   degani emas (kuzatuv naturalistik bo'lib qolgan), lekin "bir marta boshlasang hal"
   degani ham emas
+
+### Dorisiz yondashuvning haqiqiy shifti
+
+Halol arifmetika:
+- Dorisiz CBT-oilasi taxminan **SMD −0.45** (asosiy belgilar) 🟡
+- **Lekin eng kuchli sinovlar (Safren) allaqachon dori ichayotgan** odamlarni o'rgangan —
+  bu butun sohaning eng muhim cheklovi. Dorisiz CBT'ni ajratib o'lchagan **bittagina**
+  arzigulik sinov bor, u ham kichik va kuchsiz
+- **To'liq yig'ilgan dorisiz dastur hech qachon o'lchanmagan.** Kim biror aniq raqam
+  aytsa — bu ekstrapolyatsiya
+
+**Eng qiziq natijasi:** ko'r baholovchi bilan o'lchangan eng kuchli dorisiz natija
+**terapiya emas** — bu **tashqi strukturalash** edi (Living SMART: 33% sezilarli
+yaxshilangan, nazorat guruhida 0%). Ya'ni *ishni miyadan tashqariga chiqaradigan*
+aralashuvlar *ko'proq harakat qilishni o'rgatadiganlaridan* ustun chiqdi — bu hujjatning
+asosiy tamoyilini tasdiqlaydi.
 
 ### Eng muhim topilma
 
@@ -266,33 +295,64 @@ bu asosiy paradoks.
 
 ### Goggins savoli — halol javob
 
-Avvalo fakt: **Goggins bolaligida ADHD tashxisini olgan, lekin "Can't Hurt Me" da
-o'qish qiyinchiliklarini ADHD emas, bolalikdagi zo'ravonlikdan kelib chiqqan "toxic
-stress" bilan izohlagan.** Ya'ni u **"ADHD'ni dorisiz yenggan odam" namunasi sifatida
-ishonchli misol emas** — u o'zi tashxisni boshqacha izohlaydi.
+**Avvalo fakt — va u kutilganidan noaniqroq.** Goggins o'rganish buzilishi va ADD/ADHD
+haqida ochiq gapirgan, **lekin tashxis tarixi faqat uning o'z so'zidan ma'lum va ikkilamchi
+manbalar nima bo'lganida bir-biriga zid.** U o'zi o'qish muammolarini bolalikdagi
+zo'ravonlikdan kelgan "toxic stress" bilan ham izohlagan. Ya'ni uni **"ADHD'ni dorisiz
+yenggan odam" deb ishonchli tarzda ko'rsatib bo'lmaydi** — tashxisning o'zi tasdiqlanmagan.
 
-*(Bu ikkilamchi manbalardan; birlamchi matn tekshirilmagan.)*
+**Tekshirilgan biografiya esa ajoyib — va u "muammosiz iroda" tarixi emas, qayta-qayta
+muvaffaqiyatsizlikdan keyin qaytib kelish tarixi.** BUD/S'ni 235-sinf bilan tugatgan
+(2001-yil 10-avgust) — **uchta Hell Week**dan keyin.
 
-**Uning metodidan nima haqiqatan ishlaydi:**
-- ✅ Kunlik intensiv jismoniy mashq — 🟡 real dalil bor
-- ✅ Qattiq tashqi struktura va tartib — mos keladi
-- ✅ Darhol qaytariladigan aloqa (feedback) — mos keladi
-- ✅ "Accountability mirror" — tashqi hisobdorlik — mos keladi
-- ✅ Identifikatsiyaga asoslangan o'zgarish ("men shunday odamman")
+**Metodni ettita alohida qismga ajrating** — "intizom" deb bitta qilib qo'yish uni
+baholab bo'lmaydigan qiladi. Halol tasnif:
+
+| Qism | Baho |
+|---|---|
+| **"Agar–unda" qat'iy strukturasi** (belgilangan vaqt, joy, oldindan qaror) | 🟢 **Eng ko'chiriladigani.** 94 ta sinov, 8,000+ ishtirokchi, d=0.65 |
+| **Identifikatsiyaga asoslangan o'zgarish** ("men 6:00 da mashq qiladigan odamman") | 🟡 RCT dalili bor, 2 yil davomiyligi bilan. **Eng arzon import** |
+| **Kunlik intensiv kardio** | 🟡 Real, lekin **kichik va o'tkir** — o'rnini bosuvchi emas |
+| **Kundalik o'z-o'zini kuzatish** (accountability mirror) | 🟡 Kuzatuv qismi ishlaydi |
+| **"Taking souls" / raqobat** | ⚪ Dalil yo'q |
+| **"40% qoidasi"** | 🔴 **Ritorika, fiziologiya emas.** Hech qanday zaxira foizi o'lchanmagan — og'riq signalini bosish uchun ishlatmang |
+| **Ongni qadoqlash / azobni quchoqlash** | 🔴 Sharmandalik ramkasi — pastga qarang |
 
 **Nima o'tmaydi:**
-- ❌ **Survivorship bias** — biz muvaffaqiyat qozongan bittasini eshitamiz.
-  Xuddi shu usulni sinab, singan minglab odamning kitobi yo'q
-- ❌ **Sharmandalik asosidagi motivatsiya** — o'z-o'zini tanqid qilish qat'iyatni
-  **pasaytiradi**, oshirmaydi (self-compassion adabiyoti)
-- ❌ **"Hammasi yoki hech narsa"** modeli ADHD'ning boom-bust sikliga o'ta yomon mos keladi:
-  bitta o'tkazib yuborish → butun tizimni tashlab yuborish
+- ❌ **Survivorship bias — va maxrajlar shafqatsiz.** BUD/S'da o'rtacha **~68%** sinfdan
+  chiqib ketadi (safarbar bo'lganlarda 79% gacha). Biz o'tganini eshitamiz;
+  o'tolmagan uchdan ikki qismning kitobi yo'q. Uning natijasi metodning
+  **dalili bo'la olmaydi**
+- ❌ **Sharmandalik asosidagi motivatsiya** — to'rtta tajribada o'z-o'ziga rahm-shafqat
+  o'z-o'zini tanqiddan **ko'proq** motivatsiya bergan. Oyna kundalik aloqa vositasi
+  sifatida ishlaydi; **nafrat aloqa bo'lganda buziladi**
+- ❌ **"Hammasi yoki hech narsa"** — Lally ma'lumoti buni to'g'ridan-to'g'ri rad etadi:
+  bitta kunni o'tkazib yuborish avtomatlikning **yarim balidan kamini** yo'qotadi va
+  tiklanadi. "Bitta kun o'tkazdim = hammasi tugadi" — ma'lumotga zid
 - ❌ **Motivatsiyaga asoslangan tizim aynan belgilar kuchaygan paytda quladi** —
-  ya'ni eng kerak paytda ishlamaydi
-- ❌ U o'z sog'lig'i uchun to'lagan narxni o'zi tan oladi (operatsiyalar, jarohatlar)
+  ya'ni eng kerak paytda. **Yaxshi kunga emas, yomon kunga mo'ljallab quring**
+- ❌ **Jismoniy narx o'lchangan:** unda tug'ma yurak nuqsoni bo'lgan va 2009-yil
+  operatsiya qilingan; ultra-chidamlilikda rabdomioliz va o'tkir buyrak shikasti
+  hujjatlashtirilgan. Motivatsion kontent buni hech qachon aytmaydi
 
-**Sintez:** Gogginsdan **strukturani, kunlik harakatni va tashqi hisobdorlikni** oling.
-**O'zini jazolashni va "hammasi yoki hech narsa" ni** olmang.
+### Eng muhim topilma bu bo'limda
+
+**Dorisiz eplayotgan mashhur ADHD'lilar bir umumiy narsani baham ko'radi — va bu
+"aqliy kuch" emas: strukturani ular emas, boshqa birov ta'minlaydi.**
+
+Maykl Felps (dori ishlatmaydi) — bolalikdan murabbiy, jadval, kunlik o'lchanadigan
+natija. Mishel Karter dorini sinab, to'xtatgan — professional sport tuzilmasida.
+Ular gapiradigan **mentalitet** emas, ular ichida yashagan **muhit** ish qilgan.
+
+> **Xulosa: Goggins gapiradigan mentalitetni emas, Felps yashagan muhitni quring.**
+> Gogginsdan qat'iy "agar–unda" strukturasini, kunlik harakatni va **tashqi**
+> hisobdorlikni oling. O'zini jazolashni, "40% qoidasi"ni va "hammasi yoki hech narsa"ni
+> olmang.
+
+Va agar "dorisiz intizom" ni sinamoqchi bo'lsangiz — buni **haqiqiy tajriba** sifatida
+qiling: 2–3 ta o'lchanadigan natija tanlang, 8–12 haftaga ko'rik sanasini belgilang va
+**chegarani oldindan** yozing. Aks holda boom-bust siklining "boom" fazasi sizni
+ishlayapti deb ishontiradi.
 
 ### Qaror qanday qabul qilinadi
 
@@ -313,8 +373,36 @@ NICE (Britaniya) rasmiy ketma-ketligi kattalar uchun:
 3. **Bepul va yuqori samaralilarini avval qiling:** uyqu, yorug'lik, harakat,
    bitta kalendar, bitta kirish qutisi
 4. **Qolgan buzilishni o'lchang.** Agar u hali ham qimmatga tushayotgan bo'lsa —
-   shifokor bilan dori masalasini **tajriba sifatida** ko'ring (stimulantlar soatlar
-   ichida ta'sir qiladi va to'xtatilishi mumkin; non-stimulantlar haftalar talab qiladi)
+   shifokor bilan dori masalasini **tajriba sifatida** ko'ring: stimulantlar soatlar
+   ichida ta'sir qiladi va to'xtatilishi mumkin (non-stimulantlar haftalar talab qiladi).
+   **Doza tanlash odatda ~6 hafta**, har bir dozani kamida bir hafta ushlab turing
+5. **Chegarani birinchi dozadan OLDIN yozing:** qaysi aniq raqam, qancha, qachongacha
+   siljishi kerak va qanday yon ta'sir tajribani to'xtatadi. Oldindan yozilmasa,
+   xotira keyin o'zini aldaydi
+
+**Nega "o'zimni yaxshi his qilyapman" yetarli emas:** kattalarda ADHD sinovlarida
+**platsebo javobi 23.1%** (94 tadqiqot, 6,614 bemor). Ya'ni sezgi — yomon o'lchov asbobi.
+Shuning uchun 2-bosqichdagi raqamlar kerak.
+
+**Dorisiz kim eplaydi — va qanday narxda:**
+
+- Qo'llanmalar «ADHD = dori» demaydi. Ular **«muhit o'zgartirilgandan keyin ham qolgan
+  buzilish = dori»** deydi. Past buzilishda dorisiz boshqaruv — **rasman tan olingan yo'l** 🟢
+- **Kompensatsiya real narsa**, inkor emas: odamlar haqiqatan ishlaydigan strategiyalar
+  quradi. Yuqori aqliy qobiliyat tashxisni **yashiradi**, lekin **buzilishni yo'qotmaydi**
+- **Narxi chiqim tomonida emas, kirim tomonida.** Natija normal ko'rinishi mumkin, ammo
+  unga ketgan kuch barqaror bo'lmasligi mumkin. Adabiyotda kompensatsiya
+  *muvaffaqiyatsizlik* bilan emas, *sarflangan kuch* bilan aniqlanadi
+- **«Ishladi — keyin ishlamay qoldi» namunasi tuzilmaviy:** kompensatsiya *qarzga olingan
+  tashqi strukturaga* tayanadi. Hayot bosqichi o'zgarganda (yangi ish, lavozim, farzand)
+  o'sha struktura tortib olinadi — va tizim quladi
+- **Qo'shimcha kasallik — signal:** kattalarda ADHD bilan birga tashvish **47%**,
+  kayfiyat buzilishi **38%**. Takrorlanuvchi depressiya yoki tashvish ko'tarib yurilgan
+  buzilishning *oqibati* bo'lishi mumkin
+
+**Sinov savoli:** hozirgi faoliyatingiz aniq bir ish, aniq bir sherik, aniq bir tartib
+yoki *boshqa birov sizning ijro ishingizni bajarib berishi*ga bog'liqmi? Agar ha —
+bu **bitta nuqtali zaiflik**.
 
 **Ikki tomonlama halollik:**
 - Raqamlarni **nisbiy emas, mutlaq** ko'rinishda o'qing. "O'lim ikki barobar" —
@@ -396,7 +484,19 @@ aniqlang.
 
 **Amaliy birinchi qadam:** WHO ning **ASRS v1.1** so'rovnomasini (ruscha versiyasi bor)
 qog'ozda to'ldiring va shifokorga **olib boring**. Bu noaniq shikoyatni shifokor
-e'tibor berishi shart bo'lgan hujjatga aylantiradi. *Skrining — tashxis emas.*
+e'tibor berishi shart bo'lgan hujjatga aylantiradi.
+
+⚠️ **Lekin ASRS'ning aniqligini bilib qo'ying:** umumiy aholida **ijobiy natija
+noto'g'ri bo'lish ehtimoli ko'proq** — ijobiy bashorat qiymati atigi ~12–22%.
+**Salbiy natija ancha ishonchli** (~95%). Ya'ni ASRS — **tashxis emas, faqat
+tekshiruvga chipta**.
+
+**Haqiqiy baholash qanday ko'rinadi:** DSM-5 ning 18 mezoni bo'yicha tuzilgan suhbat —
+**ham bolalik, ham hozirgi hayot** uchun alohida (DIVA-5 yoki shunga o'xshash),
+buzilishni o'lchaydigan **alohida** vosita (WFIRS-S), qo'shimcha kasalliklar tekshiruvi
+va bolalik dalillari (maktab tavsifi, ota-ona/qarindosh guvohligi). **Biomarker yoki
+"aniq test" yo'q** — shuning uchun bolalik hujjatlari muhim. Iloji bo'lsa,
+uchrashuvga eski maktab hujjatlarini va sizni bolaligingizdan biladigan odamni oling.
 
 ---
 
@@ -423,7 +523,9 @@ Buni yashirmaslik kerak:
 
 1. **Miyangizga tayanmang — muhitga tayaning.** Ko'rinadigan vaqt, bitta kalendar,
    bitta kirish qutisi, yo'lingizdagi narsa.
-2. **Uyqudan boshlang.** Bu ro'yxatdagi eng arzon va eng ko'p qaytim beradigan narsa.
+2. **Uyqu va sportni tuzating — lekin to'g'ri sabab bilan.** Ular energiya va hayot
+   sifatiga ta'sir qiladi; ADHD belgilarini o'zi davolamaydi. Sport — o'sha kungi
+   quroling, to'planadigan davo emas.
 3. **Dori va tizim raqib emas.** Eng yaxshi natija ikkovida. Va agar tizim qulasa —
    bu sizning ayb emas, **tizim juda murakkab bo'lgan.** Qayta boshlang; qayta
    boshlashlarni sanang, uzluksiz kunlarni emas.
