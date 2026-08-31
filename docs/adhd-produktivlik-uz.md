@@ -245,6 +245,20 @@ Lekin ular **kattalarda ham real ta'sirga ega** va O'zbekiston sharoitida ancha 
 Bu bo'lim ikki tomonlama tekshiruvdan o'tkazildi — na dori reklamasi, na doriga qarshi
 targ'ibot bo'lishi uchun.
 
+> **Ikkita narsani boshidanoq aytish kerak.**
+>
+> **1. Savolning o'zi soxta qarama-qarshilik.** "Dori YOKI intizom" — bu sohada hech kim
+> taklif qilmayotgan tanlov. Barcha qo'llanmalar (NICE, Yevropa konsensusi, CADDRA)
+> **ko'p tarkibli davolashga** keladi. Kattalarda eng yaxshi hujjatlashtirilgan natija —
+> dorining strukturani yengishi ham, strukturaning dorini yengishi ham emas, **ikkovining
+> birga ishlashi**.
+>
+> **2. Hech qaysi tanlov sizning xarakteringiz haqidagi hukm emas.** ADHD uchun dori
+> kerak bo'lishi — iroda zaifligi yoki "aldash" emas. O'ylab ko'rib dorisiz qolishni
+> tanlash — inkor yoki yordamdan bosh tortish emas; qo'llanmalarning o'zi buni
+> ko'zda tutadi. ADHD **intizom yetishmovchiligi emas**: ADHD bilan yashovchi odam
+> bir xil natija uchun odatda **ko'proq** kuch sarflaydi, kamroq emas.
+
 ### Dori nima beradi (raqamlar bilan)
 
 - **Bolalarda:** metilfenidat SMD −0.78, amfetamin −1.02 — psixiatriyadagi eng katta
@@ -292,6 +306,34 @@ javob beruvchilar **23% dan 53% ga** ko'tarilgan.
 Ya'ni: **dori va tizim raqib emas.** Eng yaxshi natija — ikkovi birga.
 Dorisiz tizim esa aynan **zaiflashgan ijro funksiyasi bilan yuritilishi** kerak bo'ladi —
 bu asosiy paradoks.
+
+### Dorining zarar tomoni — bir xil aniqlik bilan
+
+Foydani uch xonagacha aniq berib, zararni bo'sh qoldirish halol emas. Shuning uchun:
+
+**Stimulantlarning keng tarqalgan ta'sirlari** (aynan shular tashlab ketishga sabab bo'ladi):
+ishtahaning pasayishi, uyquning buzilishi, yurak urishi va qon bosimining **kichik
+o'rtacha ko'tarilishi**, tashvish yoki jahldorlikning kuchayishi, hissiy "to'mtoqlashish",
+doza tugaganda **rebound** (belgilar kuchayib qaytishi), libido o'zgarishi, quruq og'iz,
+bosh og'rig'i.
+
+**Kamdan-kam, lekin jiddiy:** psixoz belgilari (amfetaminlarda metilfenidatga qaraganda
+taxminan **ikki barobar** ko'proq). Shuningdek noto'g'ri ishlatish va boshqaga berish
+xavfi — moddaga qaramlik tarixi bo'lganlarda bu alohida ahamiyatga ega.
+
+**Yurak-qon tomir signali — to'liq holicha:** uzoq muddatli qo'llashda **gipertoniya va
+arterial kasallik** ehtimoli oshgan. Lekin aritmiya, yurak yetishmovchiligi, ishemik
+yurak kasalligi, insult va tromboemboliya bo'yicha **ortish topilmagan**. Ya'ni signal
+bor, ammo tor.
+
+**Bardoshlilik — asosiy cheklov:** Cortese 2018 da kattalarda **har bir** o'rganilgan dori
+platsebodan yomonroq edi — samarasizlik sababli emas, **yon ta'sir sababli tashlab
+ketish** bo'yicha. Bir yil ichida kattalarning **taxminan yarmi** (~48% davom etadi)
+dorini tashlaydi.
+
+**Va eng qaror uchun muhim fakt:** sinovlar **o'rtachani** beradi. Shaxsiy javob
+"hayotni o'zgartiradigan"dan "hech narsa"gacha o'zgaradi — **10–15%** hech qaysi sinfga
+javob bermaydi. Buni faqat shaxsiy sinov hal qiladi, mulohaza emas.
 
 ### Goggins savoli — halol javob
 
@@ -410,8 +452,12 @@ bu **bitta nuqtali zaiflik**.
   uchun ishlatilmasligi kerak
 - Xavf **qo'shimcha kasalliklar** (moddaga qaramlik, xulq buzilishi, depressiya) bor
   odamlarda to'plangan. "ADHD yolg'iz" va "ADHD + boshqasi" — **boshqa-boshqa vaziyat**
-- Eng aniq va tez foyda — **haydash xavfsizligi** (dori ichilgan oylarda avariya xavfi
-  38–42% past). Ko'p haydasangiz, bu jiddiy argument
+- Eng aniq va tez foyda — **haydash xavfsizligi**: dori ichilgan oylarda avariya xavfi
+  38–42% past. **Dizaynni bilib qo'ying:** bu *bir odamning o'zini o'zi bilan* solishtirish
+  (within-individual) — shaxsni chalkashtiruvchi omil sifatida yaxshi olib tashlaydi,
+  lekin tasodifiylashtirilgan emas: odam dori boshlaganda hayoti yomonlashayotgan,
+  to'xtatganda yaxshilanayotgan bo'lishi mumkin. Yaxshiroq nazorat qilingan 2025-yilgi
+  tahlil ancha **kichikroq** foyda beradi (12–17%). Ko'p haydasangiz, baribir jiddiy argument
 - Aksincha: agar sizning bazaviy xavfingiz past bo'lsa, "38% kamayish" mutlaq ma'noda
   deyarli hech narsa bermaydi
 
