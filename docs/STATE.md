@@ -30,7 +30,18 @@ Owner's later recorded refinements (his words, not scope invention):
 - Extra finding: 10-02 17:38 a 2.45s press logged loudest_rms=0 (pure silence
   from the device at that moment), and 18:50 Gemini said "Ovoz eshitilmadi".
   Today default input = AMD array, 2s room probe rms=91 (live). MICUSB1 still absent.
-- 3rd occurrence -> auto-relaunch watchdog question put to owner (pending answer).
+- 3rd occurrence -> owner chose "Ha, qo'sh": auto-relaunch watchdog.
+  SCOPE: app process disappears (closed by hand / unknown) and stays dead until
+  the owner notices. METRIC: kill the app process -> a script polls and sees
+  pythonw gemini_mic.py alive again within 75s (pass/fail). DIRECTION: one
+  scheduled task (every 1 min, hidden VBS, starts the app only if absent; the
+  app's own single-instance mutex makes a double start harmless) -> measure ->
+  keep/discard. Tradeoff: tray "quit" also gets revived within a minute.
+  RESULT: KEPT. Task "GeminiMicWatchdog" (every 1 min, indefinite, battery-OK)
+  runs wscript //B windows/watchdog.vbs. 1st attempt via schtasks /tr mangled
+  the quoted path (result=1, REVIVED=False) -> re-registered via
+  Register-ScheduledTask: kill test REVIVED=True after 9s, TaskResult=0, log
+  "mic stream opened". Remove: Unregister-ScheduledTask GeminiMicWatchdog.
 
 ## 2026-08-28 16:10 — 2nd "ishlamayapti" = app simply not running (relaunched, verified alive)
 - Owner: "ishlamayapti ishlat appni". Process was NOT running (2nd time this has
@@ -818,3 +829,4 @@ mixed speech. Do NOT burn another session re-testing these.
 - 2026-08-12 [Vidjet] Bosh ekrandagi vidjetda nima ko'rinsin? (men shunday tushundim ΓÇö shumi?) -> **Bugungi butun timebox ro'yxati**
 - 2026-08-12 [Reja] Timebox (kun rejasi) qayerda tuziladi? -> **Ikkalasida ham**
 - 2026-08-12 [Ovoz] Vidjet ovoz chiqarsinmi (blok boshlanganda/tugaganda)? -> **blok boshlanishdan 15 daqiqa oldin bildiirshnoma**
+- 2026-10-06 [Qo'riqchi] App 3 marta o'zi yopiq qolib ketdi. Kichik qo'riqchi qo'shaymi: app yopilsa, 1 daqiqa ichida o'zi qayta yonadi. Qo'shmasak, har safar menga 'ishlamayapti' deb y... -> **Ha, qo'sh (Tavsiya)**
