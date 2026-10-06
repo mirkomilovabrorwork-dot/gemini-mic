@@ -24,6 +24,14 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-06 20:21 — 3rd "ishlamayapti" = again NOT RUNNING (relaunched, verified)
+- Process absent; last log 10-02 18:50. Relaunched; log "mic stream opened on
+  system default" + synthetic Right-Ctrl -> "too short -> rejected" (listener alive).
+- Extra finding: 10-02 17:38 a 2.45s press logged loudest_rms=0 (pure silence
+  from the device at that moment), and 18:50 Gemini said "Ovoz eshitilmadi".
+  Today default input = AMD array, 2s room probe rms=91 (live). MICUSB1 still absent.
+- 3rd occurrence -> auto-relaunch watchdog question put to owner (pending answer).
+
 ## 2026-08-28 16:10 — 2nd "ishlamayapti" = app simply not running (relaunched, verified alive)
 - Owner: "ishlamayapti ishlat appni". Process was NOT running (2nd time this has
   happened, after 2026-08-10 below — same shape: no crash, just absent).
