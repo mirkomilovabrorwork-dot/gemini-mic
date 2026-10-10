@@ -31,14 +31,15 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-3.5-flash",
+    "model": "gemini-3-flash-preview",
     "language_mode": "uz_en_ru",
     "hotkey": "right cmd",
 }
 
-# Primary is gemini-3.5-flash (more accurate on mixed uz/en); on error
+# Primary is gemini-3-flash-preview (best measured on the owner's uz/en voice,
+# same as Windows/Android); on error
 # (busy/quota/not available) retry once with a DIFFERENT model (separate quota).
-FALLBACK_MODEL = "gemini-3-flash-preview"
+FALLBACK_MODEL = "gemini-3.5-flash"
 FALLBACK_STATUSES = (0, 404, 429, 500, 503)
 
 LANGUAGE_CHOICES = [
@@ -370,7 +371,7 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes):
         ],
         "generationConfig": {
             "temperature": 0,
-            "maxOutputTokens": 1024,
+            "maxOutputTokens": 4096,
             "thinkingConfig": {"thinkingBudget": 0},
         },
     }

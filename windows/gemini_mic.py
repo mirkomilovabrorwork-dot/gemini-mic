@@ -1209,6 +1209,7 @@ class GeminiMicApp:
             return
 
         wav_bytes, audio = frames_to_wav_bytes(frames)
+        log("clip: rms=%d (diagnostic)" % np.sqrt(np.mean(audio.astype(np.float64) ** 2)))
 
         # Energy-based silence gate (RMS, not a single peak): a click/breath spikes
         # the peak but has low RMS, and PC mics are noisier than phone mics — so a
@@ -1239,6 +1240,7 @@ class GeminiMicApp:
                     wav_bytes,
                 )
                 log("gemini: transcript %d chars" % len(transcript))
+                log("gemini: text=%r" % transcript[:300])
                 self.paste_text(transcript)
                 beep(660, 90)  # audio cue: transcript pasted (done)
             except GeminiError as e:
