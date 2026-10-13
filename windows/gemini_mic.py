@@ -1080,19 +1080,27 @@ class GeminiMicApp:
             self.frames.append(block)
 
     def resolve_input_device(self):
-        """Config 'input_device' name fragment -> device index, or None for the
-        system default (also on no match, logged)."""
-        frag = (self.cfg.get("input_device") or "").strip().lower()
-        if not frag:
+        """Config 'input_device' name fragment(s) -> device index, or None for
+        the system default (also on no match, logged). Fragments are tried in
+        order, separated by '|' (e.g. "MICUSB1|Microphone Array"): when a BT
+        headset connects, Windows makes its Hands-Free mic the default input,
+        and that telephone-grade channel garbles dictation (2026-08-03 A/B), so
+        a fallback list keeps the app on a real mic instead of the default."""
+        frags = [f.strip().lower() for f in (self.cfg.get("input_device") or "").split("|")]
+        frags = [f for f in frags if f]
+        if not frags:
             return None
         try:
-            for i, d in enumerate(sd.query_devices()):
+            devices = list(enumerate(sd.query_devices()))
+        except Exception as e:
+            log("mic pin: device scan failed %r" % (e,))
+            return None
+        for frag in frags:
+            for i, d in devices:
                 if d["max_input_channels"] > 0 and frag in d["name"].lower():
                     log("mic pin: %r -> [%d] %s" % (frag, i, d["name"][:60]))
                     return i
-        except Exception as e:
-            log("mic pin: device scan failed %r" % (e,))
-        log("mic pin: no device matches %r -> using system default" % (frag,))
+        log("mic pin: no device matches %r -> using system default" % (frags,))
         return None
 
     def ensure_stream(self):
