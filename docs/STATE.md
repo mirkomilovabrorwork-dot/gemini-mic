@@ -20,6 +20,10 @@ Owner's later recorded refinements (his words, not scope invention):
   caveat stands.
 
 ## NEXT STEP (single queue, oldest first)
+0. **(since 2026-10-13) Owner plugs MICUSB1 back in** (noisy room, 50 cm). Then
+   verify log "mic pin: 'micusb1'" + one dictation. If calls lose the mic while
+   the app runs -> next fix = open the mic only while the hotkey is held.
+   UZ: Qiling: stol mikrofonini USB'ga ulang | Ko'rasiz: matn to'g'ri chiqadi | Nega: noutbuk mikrofoni shovqinni oladi | Vaqt: 1 daqiqa
 1. **Owner tests** (30s, when he wants): first-words capture + one >60s
    dictation on the external mic — reply "ishladi/yo'q", the gate-detail log
    gives the quality number.
@@ -42,6 +46,12 @@ Owner's later recorded refinements (his words, not scope invention):
   zip on Desktop (not run on a Mac); Windows logs `clip: rms` + `gemini: text=`.
 - OPEN: laptop array is far-field; owner A/B (same sentence, phone vs PC) would
   give the quality number. MICUSB1 still unplugged.
+- MEASURED same day: AMD array gives ~ZEROS (max 2) to a 2nd client while the
+  app's persistent stream is open, but max 4307 with the app stopped -> the
+  array behaves single-client. Explains in-app loudest_rms=0 rejections
+  (10-02, 10-11, 10-12) when another app held the mic, and the app may starve
+  Meet/Telegram calls. Owner context: speaks from ~50 cm in a noisy room with
+  teammates -> laptop array is the wrong mic; MICUSB1 is the real fix.
 
 ## 2026-10-06 20:21 — 3rd "ishlamayapti" = again NOT RUNNING (relaunched, verified)
 - Process absent; last log 10-02 18:50. Relaunched; log "mic stream opened on
