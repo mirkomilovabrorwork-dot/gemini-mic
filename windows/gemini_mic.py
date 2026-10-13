@@ -317,6 +317,12 @@ if __name__ == "__main__" and "--selftest" in sys.argv:
 
 import numpy as np
 import requests
+import socket
+import urllib3.util.connection as _u3conn
+# Force IPv4 for every HTTP call. 2026-10-13 (office Wi-Fi): IPv6 to
+# generativelanguage.googleapis.com hangs ~20s per address, so each request
+# walked every v6 address first and took 100-170s; IPv4 answered in 0.4s.
+_u3conn.allowed_gai_family = lambda: socket.AF_INET
 import sounddevice as sd
 import pyperclip
 from PIL import Image, ImageDraw
@@ -854,12 +860,15 @@ class SettingsWindow:
         status_label.grid(row=10, column=0, columnspan=3, sticky="w", pady=(14, 0))
 
         def on_save():
-            new_cfg = {
+            # Start from the saved config so keys this dialog has no field for
+            # (input_device) survive a Save instead of silently vanishing.
+            new_cfg = dict(cfg)
+            new_cfg.update({
                 "api_key": api_key_var.get().strip(),
                 "model": cfg.get("model", DEFAULT_CONFIG["model"]),
                 "language_mode": lang_var.get(),
                 "hotkey": hotkey_var.get().strip() or DEFAULT_CONFIG["hotkey"],
-            }
+            })
             try:
                 save_config(new_cfg)
             except OSError as e:

@@ -31,6 +31,15 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-13 18:20 — "juda sekin" ROOT CAUSE = broken IPv6 on the office Wi-Fi
+- Log: replies took ~2 min since 10-12 (was 2-3s on 10-11). Probe: even a GET
+  of the models list took 169s; curl -4 = 0.4s, curl -6 = 22s timeout per
+  address. Not the model. Fix: urllib3 forced to AF_INET (gemini_mic.py,
+  after `import requests`) -> same call 0.5s; full transcribe 2.3s.
+- Found while fixing: the Settings Save rebuilt config from 4 keys and DROPPED
+  `input_device` (the mic pin vanished silently) -> now starts from dict(cfg).
+- Committed locally, NOT pushed (push needs the owner's yes).
+
 ## 2026-10-13 — "telda yaxshi, Windowsda yomon" ROOT CAUSE + mic fallback list (ec6fefa)
 - Phone is good because Android records with `AudioSource.MIC` and never opens
   BT SCO -> it ALWAYS uses the phone's own mic (44.1 kHz AAC), even with the XM5
