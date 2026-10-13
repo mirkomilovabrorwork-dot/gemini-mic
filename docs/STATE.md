@@ -1,4 +1,7 @@
-# Gemini Mic — STATE
+STATUS: ovozli yozish ishlaydi; yangi ish rejalashtirilmagan
+NEXT: men - navbatdagi rejali ishni davom ettirish (pastda)
+SIZDAN: 0
+ Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
 
@@ -23,6 +26,22 @@ Owner's later recorded refinements (his words, not scope invention):
 - Share-zip handover DONE (owner declared in HQ 2026-08-07; duty open since
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
+
+## 2026-10-13 — "telda yaxshi, Windowsda yomon" ROOT CAUSE + mic fallback list (ec6fefa)
+- Phone is good because Android records with `AudioSource.MIC` and never opens
+  BT SCO -> it ALWAYS uses the phone's own mic (44.1 kHz AAC), even with the XM5
+  on. Windows instead got the XM5 Hands-Free mic (16 kHz HFP, the 08-03 garbage
+  channel) whenever Windows made it the default input. No LE Audio endpoint on
+  this PC (MT7921; only the classic Hands-Free node exists).
+- Fix: `input_device` takes an ordered `|` list; config now
+  `"MICUSB1|Microphone Array"` -> log "mic pin: 'microphone array' -> [1]".
+  Hands-Free is never picked unless named. Gotcha: PowerShell 5 Set-Content
+  utf8 writes a BOM -> the app silently ignored the config (incl. api_key);
+  rewritten BOM-less.
+- Also this session: dea944e Mac -> gemini-3-flash-preview + 4096 tokens, new
+  zip on Desktop (not run on a Mac); Windows logs `clip: rms` + `gemini: text=`.
+- OPEN: laptop array is far-field; owner A/B (same sentence, phone vs PC) would
+  give the quality number. MICUSB1 still unplugged.
 
 ## 2026-10-06 20:21 — 3rd "ishlamayapti" = again NOT RUNNING (relaunched, verified)
 - Process absent; last log 10-02 18:50. Relaunched; log "mic stream opened on
@@ -830,3 +849,5 @@ mixed speech. Do NOT burn another session re-testing these.
 - 2026-08-12 [Reja] Timebox (kun rejasi) qayerda tuziladi? -> **Ikkalasida ham**
 - 2026-08-12 [Ovoz] Vidjet ovoz chiqarsinmi (blok boshlanganda/tugaganda)? -> **blok boshlanishdan 15 daqiqa oldin bildiirshnoma**
 - 2026-10-06 [Qo'riqchi] App 3 marta o'zi yopiq qolib ketdi. Kichik qo'riqchi qo'shaymi: app yopilsa, 1 daqiqa ichida o'zi qayta yonadi. Qo'shmasak, har safar menga 'ishlamayapti' deb y... -> **Ha, qo'sh (Tavsiya)**
+- 2026-10-10 [Mac model] Mac zip hozir eski modelda (gemini-3.5-flash). Windows'dagi sinalgan modelga (gemini-3-flash-preview) o'tkazib, yangi zip yig'ib Desktop'ga qo'yaymi? Bu GitHub ... -> **Ha, yangila**
+- 2026-10-10 [Log qo'sh] Windows'da xato yozishni topish uchun log'ga matn va ovoz balandligini yozib qo'ysaymi? -> **Ha, qo'sh**
