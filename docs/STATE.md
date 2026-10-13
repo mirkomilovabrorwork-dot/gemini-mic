@@ -38,7 +38,8 @@ Owner's later recorded refinements (his words, not scope invention):
   after `import requests`) -> same call 0.5s; full transcribe 2.3s.
 - Found while fixing: the Settings Save rebuilt config from 4 keys and DROPPED
   `input_device` (the mic pin vanished silently) -> now starts from dict(cfg).
-- Committed locally, NOT pushed (push needs the owner's yes).
+- Pushed. Owner 2026-10-13: standing YES to push gemini-mic fixes to its
+  GitHub backup without asking each time.
 
 ## 2026-10-13 — "telda yaxshi, Windowsda yomon" ROOT CAUSE + mic fallback list (ec6fefa)
 - Phone is good because Android records with `AudioSource.MIC` and never opens
@@ -870,3 +871,4 @@ mixed speech. Do NOT burn another session re-testing these.
 - 2026-10-06 [Qo'riqchi] App 3 marta o'zi yopiq qolib ketdi. Kichik qo'riqchi qo'shaymi: app yopilsa, 1 daqiqa ichida o'zi qayta yonadi. Qo'shmasak, har safar menga 'ishlamayapti' deb y... -> **Ha, qo'sh (Tavsiya)**
 - 2026-10-10 [Mac model] Mac zip hozir eski modelda (gemini-3.5-flash). Windows'dagi sinalgan modelga (gemini-3-flash-preview) o'tkazib, yangi zip yig'ib Desktop'ga qo'yaymi? Bu GitHub ... -> **Ha, yangila**
 - 2026-10-10 [Log qo'sh] Windows'da xato yozishni topish uchun log'ga matn va ovoz balandligini yozib qo'ysaymi? -> **Ha, qo'sh**
+- 2026-10-13 [GitHub] Tuzatilgan kodni GitHub'ga zaxira qilib yuboraymi? -> **Ha, yubor (Tavsiya)**
