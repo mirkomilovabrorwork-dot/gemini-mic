@@ -31,7 +31,7 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-3-flash-preview",
+    "model": "gemini-3.7-flash",
     "language_mode": "uz_en_ru",
     "hotkey": "right cmd",
 }

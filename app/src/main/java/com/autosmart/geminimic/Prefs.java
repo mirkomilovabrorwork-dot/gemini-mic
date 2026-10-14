@@ -10,7 +10,7 @@ final class Prefs {
     static final String LANG_UZ_EN_RU = "uz_en_ru";
     static final String LANG_UZ_RU = "uz_ru";
     static final String MODEL = "model";
-    static final String MODEL_BETTER = "gemini-3-flash-preview";
+    static final String MODEL_BETTER = "gemini-3.7-flash";
     static final String MODEL_CHEAP = "gemini-2.5-flash-lite";
     static final String NAME = "gemini_mic_prefs";
     // Phone -> PC text relay: POST the transcript to the PC app instead of typing it here.
@@ -31,7 +31,7 @@ final class Prefs {
     }
 
     static String model(Context ctx) {
-        return get(ctx).getString("model", "gemini-3-flash-preview");
+        return get(ctx).getString("model", "gemini-3.7-flash");
     }
 
     static String languageMode(Context ctx) {
