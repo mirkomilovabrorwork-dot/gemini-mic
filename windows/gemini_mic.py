@@ -109,9 +109,12 @@ MAX_CHUNK_CHAIN = 10
 # speech passes. Measured on the owner's mic: true silence rms<80, a click spikes
 # ONE window, speech fills many.
 VOICE_RMS_THRESHOLD = 120
-# Voice must be this many times the clip's own noise floor (see has_speech);
-# 2.5x is ~8 dB - office chatter at 2-3 m stays under it, close speech clears it.
-VOICE_FLOOR_RATIO = 2.5
+# Voice must be this many times the clip's own noise floor (see has_speech).
+# Measured 2026-10-14 (raw path, 6x gain, noisy office): room p20 ~290-460 with
+# chatter bursts up to 3.3x in <=2 windows; the owner's speech sits 3-6x above
+# his floor. 2.0x (~6 dB) + MIN_VOICED_WINDOWS keeps bursts out and lets a short
+# quiet phrase through (2.5x rejected a real 2.25 s dictation: 2/3 windows).
+VOICE_FLOOR_RATIO = 2.0
 VOICE_WINDOW_SEC = 0.20
 MIN_VOICED_WINDOWS = 3
 # WASAPI raw capture skips the audio-effects chain (Realtek/VocaEffectPack APOs),
