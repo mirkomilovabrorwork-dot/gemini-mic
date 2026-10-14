@@ -31,6 +31,16 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 11:00 — first word "Ha" written as "Sizda" -> start-beep leak
+- Latency confirmed fixed live: 3s per dictation today.
+- Owner said "Ha, ..." -> transcript "Sizda ...". Measured: the 1 kHz start
+  cue played on laptop speakers lands in the laptop array at rms ~1300 (vol
+  0.3 probe; app uses 0.12) right over the first word; speech is 500-700.
+  Fix: `remove_start_beep` FFT notch (1 kHz +-40 Hz) in frames_to_wav_bytes.
+  Synthetic proof: beep window rms 1071 -> 562 (voice-only 552), corr 0.998.
+  NOT yet proven on his voice -> next dictation starting with "Ha" decides;
+  if still wrong, next lever = drop the start beep on speaker output.
+
 ## 2026-10-13 18:20 — "juda sekin" ROOT CAUSE = broken IPv6 on the office Wi-Fi
 - Log: replies took ~2 min since 10-12 (was 2-3s on 10-11). Probe: even a GET
   of the models list took 169s; curl -4 = 0.4s, curl -6 = 22s timeout per

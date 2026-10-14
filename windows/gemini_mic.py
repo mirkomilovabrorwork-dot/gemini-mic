@@ -423,10 +423,24 @@ def make_icon_image(color, size=64):
 # WAV helper
 # ---------------------------------------------------------------------------
 
+def remove_start_beep(audio, sample_rate=SAMPLE_RATE, freq=1000.0, width=40.0):
+    """Notch out the 1 kHz start-cue tone. On laptop speakers + laptop mic the
+    cue leaks into the recording at speech level (measured 2026-10-14: rms up
+    to ~500 vs speech 500-700) exactly over the first word ("Ha" -> "Sizda").
+    A +-40 Hz FFT notch removes the pure tone and leaves speech intact."""
+    if audio.size == 0:
+        return audio
+    spec = np.fft.rfft(audio.astype(np.float64))
+    hz = np.fft.rfftfreq(audio.size, 1.0 / sample_rate)
+    spec[(hz > freq - width) & (hz < freq + width)] = 0
+    out = np.fft.irfft(spec, n=audio.size)
+    return np.clip(out, -32768, 32767).astype(np.int16)
+
+
 def frames_to_wav_bytes(frames, sample_rate=SAMPLE_RATE):
     """frames: list of numpy int16 arrays (mono). Returns WAV bytes."""
     if frames:
-        audio = np.concatenate(frames)
+        audio = remove_start_beep(np.concatenate(frames))
     else:
         audio = np.array([], dtype=np.int16)
     buf = BytesIO()
