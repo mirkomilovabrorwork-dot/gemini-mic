@@ -10,6 +10,7 @@ import os
 import queue
 import sys
 import threading
+import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -92,6 +93,60 @@ class RelayServerTest(unittest.TestCase):
         status, _ = self.request("POST", "/", {"token": TOKEN, "text": "a" * 25000})
         self.assertEqual(status, 413)
         self.assertTrue(self.jobs.empty())
+
+    # -- PC hotkey -> phone recording: /cmd long-poll + /ack ------------------
+
+    def test_cmd_empty_queue_none_after_wait(self):
+        t0 = time.monotonic()
+        status, data = self.request("GET", "/cmd?token=%s&wait=1" % TOKEN)
+        elapsed = time.monotonic() - t0
+        self.assertEqual(status, 200)
+        self.assertEqual(data, {"ok": True, "cmd": "none"})
+        self.assertGreaterEqual(elapsed, 0.9)
+        self.assertLess(elapsed, 3.0)
+        self.assertGreater(self.server.phone_seen, t0)
+        self.assertFalse(any("cmd none" in line for line in self.logged))
+
+    def test_cmd_queued_start_delivered_once(self):
+        self.server.cmd_queue.put({"cmd": "start", "seq": 7})
+        status, data = self.request("GET", "/cmd?token=%s&wait=1" % TOKEN)
+        self.assertEqual(status, 200)
+        self.assertEqual(data, {"ok": True, "cmd": "start", "seq": 7})
+        self.assertIn("relay: cmd start -> phone", self.logged)
+        _, data = self.request("GET", "/cmd?token=%s&wait=1" % TOKEN)
+        self.assertEqual(data, {"ok": True, "cmd": "none"})
+
+    def test_ack_sets_event_state_seq(self):
+        self.assertFalse(self.server.ack_event.is_set())
+        status, data = self.request("POST", "/ack", {"token": TOKEN, "state": "recording", "seq": 3})
+        self.assertEqual(status, 200)
+        self.assertEqual(data, {"ok": True})
+        self.assertTrue(self.server.ack_event.is_set())
+        self.assertEqual(self.server.ack_state, "recording")
+        self.assertEqual(self.server.ack_seq, 3)
+        self.assertTrue(self.jobs.empty())  # an ack is never pasted
+
+    def test_cmd_wrong_token_403_counts_toward_lockout(self):
+        for _ in range(gemini_mic.RELAY_LOCK_AFTER):
+            status, data = self.request("GET", "/cmd?token=WRONG&wait=1")
+            self.assertEqual(status, 403)
+            self.assertEqual(data, {"ok": False, "error": "token"})
+        self.assertEqual(self.server.phone_seen, 0.0)
+        status, _ = self.request("GET", "/cmd?token=%s&wait=1" % TOKEN)
+        self.assertEqual(status, 429)
+
+    def test_mic_prefix_cmd_and_ack_accepted(self):
+        status, data = self.request("GET", "/mic/cmd?token=%s&wait=0" % TOKEN)
+        self.assertEqual(status, 200)
+        self.assertEqual(data, {"ok": True, "cmd": "none"})
+        status, _ = self.request("POST", "/mic/ack", {"token": TOKEN, "state": "stopped", "seq": 1})
+        self.assertEqual(status, 200)
+        self.assertEqual(self.server.ack_state, "stopped")
+
+    def test_text_post_sets_last_text_at(self):
+        self.assertEqual(self.server.last_text_at, 0.0)
+        self.request("POST", "/", {"token": TOKEN, "text": "salom"})
+        self.assertGreater(self.server.last_text_at, 0.0)
 
 
 if __name__ == "__main__":

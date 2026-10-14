@@ -6,12 +6,16 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.provider.Settings;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
@@ -52,6 +56,7 @@ public class MainActivity extends Activity {
     private Switch pcModeSwitch;
     private EditText pcUrlInput;
     private EditText pcCodeInput;
+    private Button batteryBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +69,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         refreshStatusSafely();
+        refreshBatteryButton();
     }
 
     @Override
@@ -330,7 +336,28 @@ public class MainActivity extends Activity {
             testPcConnection();
         });
         card.addView(testBtn, new LinearLayout.LayoutParams(-2, -2));
+
+        // The PC poll must survive Doze; hidden once the exemption is granted.
+        batteryBtn = secondaryButton("Batareya cheklovini o'chirish");
+        batteryBtn.setOnClickListener(v -> {
+            try {
+                startActivity(new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                        Uri.parse("package:" + getPackageName())));
+            } catch (Exception e) {
+                Toast.makeText(this, "Sozlama ochilmadi", Toast.LENGTH_SHORT).show();
+            }
+        });
+        card.addView(space(10));
+        card.addView(batteryBtn, new LinearLayout.LayoutParams(-2, -2));
+        refreshBatteryButton();
         return card;
+    }
+
+    private void refreshBatteryButton() {
+        if (batteryBtn == null) return;
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        boolean exempt = pm != null && pm.isIgnoringBatteryOptimizations(getPackageName());
+        batteryBtn.setVisibility(exempt ? View.GONE : View.VISIBLE);
     }
 
     private void savePcPrefs() {
@@ -342,6 +369,7 @@ public class MainActivity extends Activity {
                 .putString(Prefs.PC_CODE,
                         pcCodeInput.getText().toString().trim().toUpperCase(Locale.ROOT))
                 .apply();
+        MicOverlayService.refreshPcMode();
     }
 
     private void testPcConnection() {

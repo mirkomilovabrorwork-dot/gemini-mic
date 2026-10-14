@@ -82,6 +82,9 @@ DEFAULT_CONFIG = {
     "relay_enabled": True,
     "relay_port": 5588,
     "relay_token": "",
+    # True = the hotkey makes the PHONE record (when it is long-polling /cmd);
+    # no phone seen in the last 45 s -> the local mic, exactly as before.
+    "phone_trigger": True,
 }
 
 RELAY_PUBLIC_URL = "https://data365.taildef23b.ts.net/mic"
@@ -1041,9 +1044,14 @@ class SettingsWindow:
             row=13, column=2, sticky="e", padx=(8, 0), pady=(14, 0)
         )
 
+        phone_var = tk.BooleanVar(value=bool(cfg.get("phone_trigger", DEFAULT_CONFIG["phone_trigger"])))
+        ttk.Checkbutton(outer, text="Ctrl -> telefon yozadi", variable=phone_var).grid(
+            row=14, column=0, columnspan=3, sticky="w", pady=(8, 0)
+        )
+
         status_var = tk.StringVar(value="")
         status_label = ttk.Label(outer, textvariable=status_var, foreground="#0a0")
-        status_label.grid(row=14, column=0, columnspan=3, sticky="w", pady=(14, 0))
+        status_label.grid(row=15, column=0, columnspan=3, sticky="w", pady=(14, 0))
 
         def on_save():
             # Start from the saved config so keys this dialog has no field for
@@ -1055,6 +1063,7 @@ class SettingsWindow:
                 "language_mode": lang_var.get(),
                 "hotkey": hotkey_var.get().strip() or DEFAULT_CONFIG["hotkey"],
                 "vocabulary": parse_vocabulary(vocab_var.get()),
+                "phone_trigger": bool(phone_var.get()),
             })
             try:
                 save_config(new_cfg)
@@ -1066,7 +1075,7 @@ class SettingsWindow:
             root.after(700, root.destroy)
 
         btn_frame = ttk.Frame(outer)
-        btn_frame.grid(row=15, column=0, columnspan=3, sticky="e", pady=(16, 0))
+        btn_frame.grid(row=16, column=0, columnspan=3, sticky="e", pady=(16, 0))
         ttk.Button(btn_frame, text="Save", command=on_save).pack(side="right")
         ttk.Button(btn_frame, text="Cancel", command=root.destroy).pack(side="right", padx=(0, 8))
 
@@ -1144,6 +1153,14 @@ RELAY_MAX_TEXT = 20000
 RELAY_PING_PATHS = ("/", "/ping", "/mic", "/mic/", "/mic/ping")
 RELAY_LOCK_AFTER = 5       # wrong tokens before the lockout
 RELAY_LOCK_SEC = 60        # lockout length (the endpoint is on the public internet)
+# The Funnel strips the /mic prefix; accept both spellings.
+RELAY_CMD_PATHS = ("/cmd", "/mic/cmd")
+RELAY_ACK_PATHS = ("/ack", "/mic/ack")
+RELAY_CMD_WAIT = 20        # default long-poll length (s)
+RELAY_CMD_WAIT_MAX = 25    # cap - the phone's read timeout is 35 s
+PHONE_SEEN_SEC = 45        # a poll within this window = phone connected
+PHONE_ACK_SEC = 2.0        # START beep waits this long for the phone's ack
+PHONE_TEXT_SEC = 40        # after stop, the tray waits this long for the text
 
 
 class RelayHandler(BaseHTTPRequestHandler):
@@ -1161,12 +1178,65 @@ class RelayHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def _token_ok(self, token):
+        """hmac check + lockout shared by every token path. On a refusal it
+        replies 429/403 itself and returns False."""
+        if not isinstance(token, str):
+            token = ""
+        expected = self.server.get_token() or ""
+        srv = self.server
+        now = time.monotonic()
+        with srv.lock:
+            if now < srv.locked_until:
+                log("relay: rejected locked out")
+                self._reply(429, {"ok": False, "error": "locked"})
+                return False
+        if not expected or not hmac.compare_digest(
+            token.strip().upper().encode("utf-8"), expected.upper().encode("utf-8")
+        ):
+            with srv.lock:
+                srv.failures += 1
+                if srv.failures >= RELAY_LOCK_AFTER:
+                    srv.failures = 0
+                    srv.locked_until = now + RELAY_LOCK_SEC
+                    log("relay: %d wrong tokens -> locked for %ds" % (RELAY_LOCK_AFTER, RELAY_LOCK_SEC))
+            log("relay: rejected token")
+            self._reply(403, {"ok": False, "error": "token"})
+            return False
+        with srv.lock:
+            srv.failures = 0
+        return True
+
     def do_GET(self):
+        parts = urlsplit(self.path)
+        if parts.path in RELAY_CMD_PATHS:
+            self._poll_cmd(parse_qs(parts.query))
+            return
         # Health check only - no token, no data.
-        if urlsplit(self.path).path in RELAY_PING_PATHS:
+        if parts.path in RELAY_PING_PATHS:
             self._reply(200, {"ok": True, "app": "gemini-mic"})
         else:
             self._reply(404, {"ok": False, "error": "path"})
+
+    def _poll_cmd(self, query):
+        """Phone long-poll: hand over at most ONE queued command, or "none"
+        after `wait` seconds. Every poll marks the phone as connected."""
+        if not self._token_ok((query.get("token") or [""])[0]):
+            return
+        try:
+            wait = int((query.get("wait") or [RELAY_CMD_WAIT])[0])
+        except ValueError:
+            wait = RELAY_CMD_WAIT
+        wait = max(0, min(wait, RELAY_CMD_WAIT_MAX))
+        srv = self.server
+        srv.phone_seen = time.monotonic()
+        try:
+            item = srv.cmd_queue.get(timeout=wait) if wait else srv.cmd_queue.get_nowait()
+        except queue.Empty:
+            self._reply(200, {"ok": True, "cmd": "none"})
+            return
+        log("relay: cmd %s -> phone" % item["cmd"])
+        self._reply(200, {"ok": True, "cmd": item["cmd"], "seq": item["seq"]})
 
     def do_POST(self):
         # Any path: the Funnel may or may not strip the /mic prefix.
@@ -1189,28 +1259,24 @@ class RelayHandler(BaseHTTPRequestHandler):
         token = data.get("token")
         if not isinstance(token, str) or not token:
             token = (parse_qs(urlsplit(self.path).query).get("token") or [""])[0]
-        expected = self.server.get_token() or ""
-        srv = self.server
-        now = time.monotonic()
-        with srv.lock:
-            if now < srv.locked_until:
-                log("relay: rejected locked out")
-                self._reply(429, {"ok": False, "error": "locked"})
-                return
-        if not expected or not hmac.compare_digest(
-            token.strip().upper().encode("utf-8"), expected.upper().encode("utf-8")
-        ):
-            with srv.lock:
-                srv.failures += 1
-                if srv.failures >= RELAY_LOCK_AFTER:
-                    srv.failures = 0
-                    srv.locked_until = now + RELAY_LOCK_SEC
-                    log("relay: %d wrong tokens -> locked for %ds" % (RELAY_LOCK_AFTER, RELAY_LOCK_SEC))
-            log("relay: rejected token")
-            self._reply(403, {"ok": False, "error": "token"})
+        if not self._token_ok(token):
             return
-        with srv.lock:
-            srv.failures = 0
+        srv = self.server
+        if urlsplit(self.path).path in RELAY_ACK_PATHS:
+            # Phone -> PC: the state reached for command `seq` (start -> recording).
+            state = data.get("state")
+            if state not in ("recording", "stopped", "error"):
+                state = "error"
+            try:
+                seq = int(data.get("seq"))
+            except (TypeError, ValueError):
+                seq = 0
+            srv.ack_state = state
+            srv.ack_seq = seq
+            srv.ack_event.set()
+            log("relay: ack %s" % state)
+            self._reply(200, {"ok": True})
+            return
         text = data.get("text")
         if not isinstance(text, str) or not text.strip():
             log("relay: rejected empty text")
@@ -1222,6 +1288,7 @@ class RelayHandler(BaseHTTPRequestHandler):
             return
         # Same FIFO as dictation chunks, so a relay paste never interleaves.
         self.server.jobs.put(("relay", text))
+        srv.last_text_at = time.monotonic()
         log("relay: accepted %d chars" % len(text))
         self._reply(200, {"ok": True})
 
@@ -1234,6 +1301,15 @@ def make_relay_server(port, jobs, get_token):
     server.lock = threading.Lock()
     server.failures = 0
     server.locked_until = 0.0
+    # PC hotkey -> phone recording: commands for the phone's /cmd long-poll and
+    # the phone's /ack answer (see GeminiMicApp.phone_cmd / _phone_start).
+    server.cmd_queue = queue.Queue()
+    server.cmd_seq = 0
+    server.phone_seen = 0.0
+    server.ack_event = threading.Event()
+    server.ack_state = None
+    server.ack_seq = 0
+    server.last_text_at = 0.0
     return server
 
 
@@ -1285,6 +1361,13 @@ class GeminiMicApp:
         self.settings_window = SettingsWindow(self)
         self._listener = None
         self.relay_server = None
+        # PC hotkey -> phone recording. phone_lock guards the press/ack/release
+        # race; phone_gen tells a stale _phone_start it was superseded.
+        self.phone_lock = threading.Lock()
+        self.phone_recording = False  # a phone session is pending or live
+        self.phone_acked = False      # the phone confirmed "recording"
+        self.phone_gen = 0
+        self.phone_falling_back = False  # no ack -> local mic is starting
 
     # -- config -----------------------------------------------------------
 
@@ -1736,6 +1819,18 @@ class GeminiMicApp:
     def _on_press(self, key):
         if key_matches(key, self.hotkey_target):
             self.hotkey_down = True
+            if self.phone_recording or self.phone_falling_back:
+                return  # auto-repeat while the phone session runs
+            if (not self.recording and self.get_config().get("phone_trigger", True)
+                    and self.phone_connected()):
+                with self.phone_lock:
+                    self.phone_recording = True
+                    self.phone_acked = False
+                    self.phone_gen += 1
+                    gen = self.phone_gen
+                self.set_state("recording")
+                threading.Thread(target=self._phone_start, args=(gen,), daemon=True).start()
+                return
             # Dispatch off the pynput listener thread so a slow mic init
             # can't block key-event delivery (incl. the matching release).
             if not self.recording:
@@ -1746,8 +1841,79 @@ class GeminiMicApp:
         if key_matches(key, self.hotkey_target):
             self.hotkey_down = False
             self.chunk_chain = 0  # a real release ends any auto-rollover chain
+            with self.phone_lock:
+                phone, acked = self.phone_recording, self.phone_acked
+                self.phone_recording = False
+            if phone:
+                threading.Thread(target=self._phone_release, args=(acked,), daemon=True).start()
+                return
             if self.recording:
                 threading.Thread(target=self.stop_recording_and_transcribe, daemon=True).start()
+
+    # -- PC hotkey -> phone recording -----------------------------------------
+
+    def phone_connected(self):
+        srv = self.relay_server
+        return srv is not None and time.monotonic() - srv.phone_seen < PHONE_SEEN_SEC
+
+    def phone_cmd(self, cmd):
+        """Queue one command for the phone's /cmd long-poll; returns its seq."""
+        srv = self.relay_server
+        with srv.lock:
+            srv.cmd_seq += 1
+            seq = srv.cmd_seq
+        srv.ack_event.clear()
+        srv.cmd_queue.put({"cmd": cmd, "seq": seq})
+        return seq
+
+    def _phone_start(self, gen):
+        """START beep only after the phone ACKs "recording", so the first
+        syllable is never lost; no ack in PHONE_ACK_SEC -> the local mic."""
+        srv = self.relay_server
+        seq = self.phone_cmd("start")
+        srv.ack_event.wait(PHONE_ACK_SEC)
+        ok = srv.ack_state == "recording" and srv.ack_seq == seq
+        with self.phone_lock:
+            if gen != self.phone_gen or not self.phone_recording:
+                return  # tap-release already cancelled it
+            if ok:
+                self.phone_acked = True
+            else:
+                self.phone_recording = False
+                self.phone_falling_back = True
+        if ok:
+            beep(1000, 80)  # audio cue: the phone is recording (same tone as local)
+            return
+        log("phone: no ack -> local mic")
+        try:
+            self.phone_cmd("cancel")
+            if self.hotkey_down:
+                self.start_recording()
+            else:
+                self.set_state("idle")
+        finally:
+            self.phone_falling_back = False
+
+    def _phone_release(self, acked):
+        if not acked:
+            # tap-release before the ack: cancel, no beep (mirrors the local rule)
+            self.phone_cmd("cancel")
+            self.set_state("idle")
+            return
+        stop_at = time.monotonic()
+        self.phone_cmd("stop")
+        self.set_state("transcribing")
+
+        # The text returns through the relay POST (_job_worker pastes + resets
+        # the tray); this only un-sticks the tray when no text ever arrives.
+        def watchdog():
+            time.sleep(PHONE_TEXT_SEC)
+            if self.relay_server.last_text_at < stop_at:
+                log("phone: no text within %ds" % PHONE_TEXT_SEC)
+                if not (self.recording or self.phone_recording):
+                    self.set_state("idle")
+
+        threading.Thread(target=watchdog, daemon=True).start()
 
     def start_hotkey_listener(self):
         self._listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
