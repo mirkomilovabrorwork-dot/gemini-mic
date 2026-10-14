@@ -1605,34 +1605,66 @@ class GeminiMicApp:
             try:
                 raw = raw_cfg and dev is not None and sd.query_hostapis(
                     sd.query_devices(dev)["hostapi"])["name"] == "Windows WASAPI"
-                extra = None
-                if raw:
-                    # streamOption 1 = eStreamOptionRaw. Do NOT set _streaminfo.version
-                    # (measured: that fails with -9984).
-                    extra = sd.WasapiSettings(auto_convert=True)
-                    extra._streaminfo.streamOption = 1
-                # Set before start(): the first callback must already apply the gain.
-                self.stream_raw = raw
-                s = sd.InputStream(
-                    samplerate=SAMPLE_RATE,
-                    channels=1,
-                    dtype="int16",
-                    blocksize=STREAM_BLOCK,
-                    device=dev,
-                    callback=self._audio_callback,
-                    extra_settings=extra,
-                )
-                s.start()
+                s = self._open_stream(dev, raw)
+                name = "system default" if dev is None else sd.query_devices(dev)["name"][:60]
+                mode = "WASAPI raw, gain %.0fx, " % RAW_GAIN if raw else ""
+                if raw and self._raw_is_digital_zero():
+                    # Raw mode on some endpoints (AMD mic array, XM5 Hands-Free)
+                    # delivers pure zeros while shared mode on the same device
+                    # carries real audio (2026-10-14) -> one retry, shared.
+                    log("mic raw path is digital zero on %s -> reopening shared" % name)
+                    try:
+                        s.close()
+                    except Exception:
+                        pass
+                    self.ring.clear()
+                    s = self._open_stream(dev, False)
+                    mode = "WASAPI shared after raw was silent, "
                 self.stream = s
                 self.last_block = time.monotonic()  # grace until the first callback lands
-                name = "system default" if dev is None else sd.query_devices(dev)["name"][:60]
                 log("mic stream opened on %s (%spersistent, ring %.1fs, preroll %.1fs)"
-                    % (name, "WASAPI raw, gain %.0fx, " % RAW_GAIN if raw else "",
-                       RING_SEC, PRE_ROLL_SEC))
+                    % (name, mode, RING_SEC, PRE_ROLL_SEC))
                 return True
             except Exception as e:
                 log("mic stream open failed on %r: %r" % (dev, e))
         return False
+
+    def _open_stream(self, dev, raw):
+        """Open and start an input stream on dev (raw = WASAPI eStreamOptionRaw)."""
+        extra = None
+        if raw:
+            # streamOption 1 = eStreamOptionRaw. Do NOT set _streaminfo.version
+            # (measured: that fails with -9984).
+            extra = sd.WasapiSettings(auto_convert=True)
+            extra._streaminfo.streamOption = 1
+        # Set before start(): the first callback must already apply the gain
+        # (and a shared stream must NOT - it already carries the APO gain).
+        self.stream_raw = raw
+        s = sd.InputStream(
+            samplerate=SAMPLE_RATE,
+            channels=1,
+            dtype="int16",
+            blocksize=STREAM_BLOCK,
+            device=dev,
+            callback=self._audio_callback,
+            extra_settings=extra,
+        )
+        s.start()
+        return s
+
+    def _raw_is_digital_zero(self, wait=0.6):
+        """True when a just-started raw stream delivered blocks that are all
+        digital zero (max |sample| <= 2 before RAW_GAIN). No blocks -> False:
+        the dead-stream watch handles a stream that never calls back."""
+        limit = 2 * RAW_GAIN  # ring blocks are already gained
+        deadline = time.monotonic() + wait
+        while time.monotonic() < deadline:
+            blocks = list(self.ring)
+            if blocks and max(int(np.abs(b.astype(np.int32)).max()) for b in blocks) > limit:
+                return False
+            time.sleep(0.05)
+        blocks = list(self.ring)
+        return bool(blocks) and max(int(np.abs(b.astype(np.int32)).max()) for b in blocks) <= limit
 
     def start_recording(self):
         # The stream normally already runs; this only repairs it (device
