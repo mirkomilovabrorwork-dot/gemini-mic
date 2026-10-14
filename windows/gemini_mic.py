@@ -1845,7 +1845,10 @@ class GeminiMicApp:
         # 2026-10-14): it sees the un-gained audio x RAW_GAIN as unclipped floats,
         # exactly the level its thresholds were tuned on. Only the WAV gets g.
         gate_g = RAW_GAIN if self.stream_raw else 1.0
-        gate_audio = np.concatenate(frames).astype(np.float64) * gate_g if frames else np.zeros(0)
+        # Same 1 kHz start-beep notch the WAV gets - otherwise a beep leak alone
+        # passes the gate (blind review 2026-10-14).
+        gate_audio = (remove_start_beep(np.concatenate(frames)).astype(np.float64) * gate_g
+                      if frames else np.zeros(0))
         room_floor = None if self.room_floor is None else self.room_floor * gate_g
         if g != 1.0:
             frames = [apply_raw_gain(b, g) for b in frames]
