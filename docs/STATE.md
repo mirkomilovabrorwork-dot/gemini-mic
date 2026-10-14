@@ -1,6 +1,6 @@
-STATUS: XM5 PC da nol ovoz (15:03, kanal muammosi) -> owner: TELEFON REJIMI qurilmoqda (doer ishlayapti)
-NEXT: men - relay diffini review + ilovani qayta ishga tushirish + jonli test; siz - keyin yangi APK
-SIZDAN: 0 | (keyingi: yangi APK ni telefonga o'rnatish - doer tugagach)
+STATUS: TELEFON REJIMI qurildi (18cfbde), PC tomoni jonli + Funnel orqali tekshirildi; APK Desktopda, telefonda hali sinalmagan
+NEXT: siz - APK o'rnatib, kodni kiritib bitta gap; men - logda 'relay: accepted' + PC ga yozilganini tekshiraman
+SIZDAN: 1 | Desktopdagi GeminiMic-android.apk ni telefonga o'rnating, PC kodini kiriting, bitta gap ayting
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
@@ -46,6 +46,28 @@ Owner's later recorded refinements (his words, not scope invention):
 - Share-zip handover DONE (owner declared in HQ 2026-08-07; duty open since
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
+
+## 2026-10-14 15:35 — PHONE MODE BUILT, PC side LIVE, waiting on the phone test
+- Commits aca34d3 (doer opus, spec `_handoff/2026-10-14-gemini-mic-phone-relay.md`)
+  + 18cfbde (my review fold: token 8 -> 12 hex, lockout 60 s after 5 wrong tokens
+  - the automated security review flagged 32-bit entropy on a public endpoint) +
+  CI fix (setup-android default pulled the retired 'tools' package: EVERY Android
+  build since at least 08:57 today had failed at SDK setup - pinned packages,
+  run 38550162134 GREEN). Pushed (standing yes).
+- LIVE PROOF (app restarted 15:29:51, "relay: listening on 127.0.0.1:5588"):
+  `GET https://data365.taildef23b.ts.net/mic/ping` -> {"ok":true}; POST wrong token
+  -> 403 and "relay: rejected token" in the log. Not yet proven: a real phone
+  POST pasting into a PC field (needs the phone), Android code on a real device.
+- Phone code (relay_token) is in Settings ("Telefon kodi: ...", button "Yangi kod").
+  APK: Desktop `GeminiMic-android.apk` (38 KB, CI artifact) + dist/apk-new/.
+  Phone setup: install -> Sozlamalar -> "Matnni PC ga yozish" ON -> PC manzil
+  (prefilled) -> PC kodi -> "Tekshirish" should toast "PC ulandi" -> dictate.
+- Xavf: Funnel = public internet endpoint guarded only by the 12-char code +
+  lockout; GET /ping is open (returns no data). If the PC app is closed the phone
+  falls back to typing on the phone + clipboard. XM5 on PC stays bound as mic
+  (still zeros until the headset is re-paired) - PC-side dictation is effectively
+  phone-only until then.
+  UZ: Qiling: Desktopdagi GeminiMic-android.apk ni telefonga o'rnating, Sozlamalarda "Matnni PC ga yozish" ni yoqib, PC kodini kiriting, "Tekshirish" bosing, keyin bitta gap ayting | Ko'rasiz: telefonda "PC ga yozildi" chiqadi va matn PC dagi ochiq maydonga tushadi | Nega: bu rejim shu uchun qurildi; faqat sizning telefoningiz buni tasdiqlay oladi | Vaqt: 2 daqiqa
 
 ## 2026-10-14 15:10 — XM5 dead on PC -> owner chose PHONE MODE; relay being built
 - Owner's 3 XM5 dictations 14:58-15:03 on the raw path: rms=2 (digital zero, 8-11 s).
