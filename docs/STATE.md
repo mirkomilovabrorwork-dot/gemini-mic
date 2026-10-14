@@ -52,6 +52,13 @@ Owner's later recorded refinements (his words, not scope invention):
   in %APPDATA%\GeminiMic\clips (local only). Men tanladim (rule 5e): ON.
   Takes effect at the next app restart (not restarted: owner asked for quiet).
   NEXT: after a few quiet dictations, re-run raw vs boosted offline.
+- "Faqat mening gapimni yozsin" A/B (scratchpad bg_ab.py): main TTS voice +
+  a different TTS voice chatting 6 / 12 dB quieter + floor noise, 3 pairs,
+  current prompt vs + "transcribe ONLY the main loudest speaker" rule.
+  Leaked background words: 0 in ALL arms (Gemini already ignores a quieter
+  voice). The extra rule HURT: one hallucinated tail ("Keyin esa hamma bilan
+  birga ko'..."), errors 11 vs 2 at -6 dB. NOT shipped. Real lever = voice
+  dominance at the mic (close mic / boom headset), not prompt or gain.
   Watch the log for "stream silent while idle" churn.
 
 ## 2026-10-14 11:33 — XM5 mic A/B: XM5 WINS, now primary (reverses 08-03)
