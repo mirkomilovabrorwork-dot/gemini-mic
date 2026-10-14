@@ -61,6 +61,12 @@ Owner's later recorded refinements (his words, not scope invention):
   mushy audio are possible; the Settings field / empty list is the off switch.
   Owner's next real dictations decide; if he reports an invented term, drop
   "thinking budget" from the list first (it is the leaky one).
+- LIVE PROOF 13:55 (desk mic moved closer, rms 293): owner dictated the test
+  sentence -> "Ha, bugun delegatsiya bo'yicha miting bor. Thinking budget va
+  kontrolni tekshirish kerak." 13/14 (only meeting -> miting, an Uzbek
+  spelling of the loanword). The phrase that failed in every configuration
+  since July is now right on his real voice. Blind review (fable judge)
+  running on dfb23e4; findings fold here.
 - Research (6 STT vendors, sources in session): only Google STT v2 Chirp has
   Uzbek + a NUMERIC per-phrase boost (<=20); ElevenLabs Scribe v2 has Uzbek +
   keyterms without a strength knob; Deepgram no Uzbek; AssemblyAI Uzbek at
