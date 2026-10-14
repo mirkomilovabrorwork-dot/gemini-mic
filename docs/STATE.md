@@ -34,6 +34,15 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 12:33 — app restarted on HEAD (clip saving now ACTIVE)
+- XM5 disconnected since 12:00 (endpoints "Unknown") -> app correctly fell back
+  to the laptop array. Restarted on HEAD; listener proven alive (synthetic
+  Right-Ctrl -> "too short -> rejected"). Clips dir empty so far (the 12:25
+  "clip saved" log lines were a test run; no files kept).
+  NEXT: when XM5 reconnects, log should show the auto-return to it; after a few
+  real dictations, offline A/B from saved clips; Windows Voice Clarity question
+  still open (needs XM5 connected to probe its endpoint).
+
 ## 2026-10-14 11:47 — quiet speech errors + idle BT link loss
 - Owner: "past gapirsam biroz xato, balandroq aniq". XM5 clips arrive at rms
   200-400 (~-40 dBFS). Fix: `normalize_level` peak-normalizes the WAV sent to
