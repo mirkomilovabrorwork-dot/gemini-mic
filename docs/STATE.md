@@ -1,5 +1,5 @@
-STATUS: v2 Ctrl->telefon tuzatildi (196adcf, CI yashil, PC da jonli 17:11); APK Desktopda; re-review kutilmoqda, telefonda sinalmagan
-NEXT: judge re-review of 196adcf (SHIP?) -> owner installs APK (Desktop) + Ctrl test; measure Ctrl->beep and release->paste latency from the log
+STATUS: re-review 196adcf = FIX-FIRST (2 kichik); noutbuk raw 6x KESADI (2.5% clip) -> pass-3 doer ishlayapti; APK Desktopda (hali o'rnatmasin)
+NEXT: pass-3 doer (_handoff/2026-10-14-gemini-mic-pass3.md) -> judge re-check -> restart -> CI -> APK -> owner Ctrl test + latency from log
 SIZDAN: 0 | (keyingi: v2 APK ni o'rnatib Ctrl bilan sinash)
  Gemini Mic — STATE
 
@@ -46,6 +46,18 @@ Owner's later recorded refinements (his words, not scope invention):
   should exit it) - harmless so far, not investigated.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-14 17:25 — laptop raw path works but CLIPS; re-review found 2 more
+- Owner 17:19-17:20, laptop array RAW 6x: 4 dictations verbatim near the mic ("ishladi"),
+  but clips rms 5366-11895, peak 32768, 0.05-2.49 % samples clipped -> the 6x gain tuned
+  for USB MIC PRO saturates the array. Owner: "uzoqdan xato" - told him: far-field is
+  physics, only closeness (phone) helps; the clipping is fixable. Pass 3 = callback stores
+  un-gained blocks, gain = min(6, 28000/peak) applied once at stop (gate + WAV).
+- The raw-zero self-heal (F11) did NOT misfire on the array (kept raw, correct).
+- Judge re-review of 196adcf: all 11 fixed; FIX-FIRST on NEW-2 (desired state can stay
+  "recording" after a session -> phantom 60 s take on the next poller start; stop sent
+  after set_state which can raise) and NEW-1 (60 s handover can paste tail before head).
+  Both in pass 3. Then: re-check -> restart -> CI -> APK -> owner.
 
 ## 2026-10-14 16:50 — v2 built (c9b9ac1), blind review FIX-FIRST; laptop mic live; raw-zero puzzle
 - v2 PC-trigger commit c9b9ac1 (doer opus, 16 tests, e2e sim). CI 38555952314 GREEN (APK not
