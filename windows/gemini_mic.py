@@ -1855,7 +1855,7 @@ class GeminiMicApp:
         wav_bytes, audio = frames_to_wav_bytes(frames)
         save_clip(wav_bytes)
         log("clip: rms=%d gain=%.1fx (diagnostic)"
-            % (np.sqrt(np.mean(audio.astype(np.float64) ** 2)), g))
+            % (np.sqrt(np.mean(audio.astype(np.float64) ** 2)) if audio.size else 0, g))
 
         # Energy-based silence gate (RMS, not a single peak): a click/breath spikes
         # the peak but has low RMS, and PC mics are noisier than phone mics — so a
