@@ -34,6 +34,19 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 12:40 — Windows mic settings question ANSWERED
+- Voice Clarity (AI noise/echo/reverb suppression) applies ONLY to apps using
+  the Communications signal-processing mode (WhatsApp, Phone Link); our app
+  opens the mic in default mode via MME -> Windows toggles do NOT affect us.
+  It removes noise, not other people's speech (MS Insider build 26040 notes).
+- Measured on this PC (MMDevices FxProperties): XM5 Hands-Free endpoint has
+  the "VocaEffectPack" effect pack and lists DEFAULT/RAW/SPEECH/COMMUNICATIONS
+  processing modes -> opening our stream in Communications mode (WASAPI
+  category) is technically possible.
+- Offered owner an A/B (same sentence, default vs Communications mode on XM5),
+  verdict "shubhali": expected gain small, risk = DNS clips his word edges.
+  AWAITING his ha/yo'q. Do not build without his "ha".
+
 ## 2026-10-14 12:33 — app restarted on HEAD (clip saving now ACTIVE)
 - XM5 disconnected since 12:00 (endpoints "Unknown") -> app correctly fell back
   to the laptop array. Restarted on HEAD; listener proven alive (synthetic
