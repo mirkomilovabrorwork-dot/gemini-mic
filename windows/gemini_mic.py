@@ -971,6 +971,11 @@ class GeminiMicApp:
     def __init__(self):
         self.cfg = load_config()
         self.lock = threading.Lock()
+        # Serializes stream (re)opening: a held hotkey auto-repeats, and while a
+        # dead BT stream was being re-initialized every repeat spawned its own
+        # open -> 13 parallel streams fed one buffer and the clip was garbage
+        # ("Ovoz eshitilmadi", 2026-10-14 XM5 test).
+        self.stream_lock = threading.Lock()
         self.recording = False
         self.record_gen = 0  # increments per recording; stale watchdogs check it
         self.hotkey_down = False  # physical key state; guards the press/release race
@@ -1127,6 +1132,10 @@ class GeminiMicApp:
         return None
 
     def ensure_stream(self):
+        with self.stream_lock:
+            return self._ensure_stream_unlocked()
+
+    def _ensure_stream_unlocked(self):
         """Open (or re-open) the persistent mic stream. Returns True when live."""
         s = self.stream
         if s is not None:
