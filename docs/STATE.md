@@ -1,5 +1,5 @@
 STATUS: 3.7-flash LIVE on PC (1 real take 18:50 OK, 4 s); 18:48-49 three 'Model band' = transient network (both models failed <1 s, endpoint 200 at 19:00); app restarted 19:01 on 5319e30 (logs real exception + fallback); phone reconnected 19:01:44; screen-off state UNTESTED
-NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for fallback/Doze; later: PhoneHead seq-tagging, "primary speaker" prompt A/B (offered, undecided)
+NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for Doze/fallback. DEFERRED by owner 19:20: PhoneHead seq-tagging + "primary speaker" prompt A/B (both 'Keyinroq') - do not re-ask; reopen only if he dictates >60 s takes or complains about teammates' voices
 SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
 
@@ -277,3 +277,6 @@ _Older entries (2026-07 .. 2026-10-14 14:05) moved to docs/STATE_ARCHIVE.md._
 - 2026-10-14 [Telefon] Telefonda aynan nima bo'ldi? -> **hech qanday xabar yoq**
 - 2026-10-14 [APK holati] Telefon ilovasining Sozlamalarida "Matnni PC ga yozish" degan tugma bormi va yoqilganmi? -> **qara telda ovoz pasaytirish tugmani bosmadim komputerda ctrl bosdim, telda komputer ulanishi bor halos**
 - 2026-10-14 [Ctrl→telefon] "PC da Ctrl bossam telefon yozsin" rejimini quramizmi? -> **Ha, qur**
+- 2026-10-14 [Ekran o'chiq] Ekran o'chiq sinovi: telefonni 5 daqiqa tegmay, keyin PC da Ctrl bossangiz bip keldimi? -> **Hali sinamadim**
+- 2026-10-14 [Asosiy ovoz] Hamkasblar ovozi aralashganda modelga "faqat asosiy gapiruvchini yoz" deb aytib sinaymizmi? -> **Keyinroq (tavsiya)**
+- 2026-10-14 [Uzun gap] 60 soniyadan uzun gapda matn tartibi buzilishi mumkin. Sizning gaplaringiz 2-4 soniya. Tuzataymi? -> **Keyinroq (tavsiya)**
