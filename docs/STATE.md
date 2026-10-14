@@ -1,6 +1,6 @@
-STATUS: ovozli yozish ishlaydi; atamalar ro'yxati (imlo) 2026-10-14 13:51 jonli, stol mikrofoni "USB MIC PRO" birinchi
-NEXT: siz - odatdagidek gapiring; atama soxta kirsa "soxta" deng (avval "thinking budget" olib tashlanadi). men - Google Chirp sinovi faqat ro'yxat yetmasa
-SIZDAN: 1 (stol mikrofonini og'izga 15-20 sm yaqin qo'yib bitta gap)
+STATUS: ishlaydi; atamalar ro'yxati jonli (10-14 13:51); stol mikrofoni birinchi
+NEXT: siz - odatdagidek gapiring, soxta atama chiqsa "soxta" deng; men - Chirp faqat yetmasa
+SIZDAN: 1 | stol mikrofonini og'izga 15-20 sm yaqin qo'yib bitta gap ayting
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
