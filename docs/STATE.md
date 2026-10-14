@@ -59,6 +59,15 @@ Owner's later recorded refinements (his words, not scope invention):
   voice). The extra rule HURT: one hallucinated tail ("Keyin esa hamma bilan
   birga ko'..."), errors 11 vs 2 at -6 dB. NOT shipped. Real lever = voice
   dominance at the mic (close mic / boom headset), not prompt or gain.
+- XM5 has no user mic setting (Precise Voice Pickup, 4 beamforming mics, always
+  on). LIVE POINT end of session 2026-10-14: running app = 11:46 build (still
+  has normalize_level; clip saving inactive) -> next restart picks up HEAD.
+  NEXT: restart when owner allows, then real-voice A/B from saved clips if he
+  reports "yana xato"; verify auto-return to XM5 after a drop in the log.
+  OPEN QUESTION from owner (not researched, session hit 300k): can WINDOWS mic
+  settings (Audio enhancements / Voice Clarity / noise suppression) make the XM5
+  Hands-Free mic reject teammates? Check in a fresh session: does the XM5 HFP
+  endpoint expose enhancements on this PC, and A/B with saved clips.
   Watch the log for "stream silent while idle" churn.
 
 ## 2026-10-14 11:33 — XM5 mic A/B: XM5 WINS, now primary (reverses 08-03)
