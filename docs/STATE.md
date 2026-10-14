@@ -1,6 +1,6 @@
-STATUS: v2 Ctrl->telefon + clip-safe gain + gate fixes LIVE on PC (9592ca1, 18:06, judge SHIP); APK (196adcf Android) Desktopda - owner o'rnatyapti; telefon-Ctrl oqimi hali tasdiqlanmagan
-NEXT: owner: phone shows "PC bilan ulangan"? Ctrl -> beep -> speak -> text; measure Ctrl->ack and release->paste from the log
-SIZDAN: 0 | (keyingi: v2 APK ni o'rnatib Ctrl bilan sinash)
+STATUS: v2 Ctrl->telefon ISHLAYDI - owner 18:33 "hammasi ishladi" (4/4 Ctrl->phone, bip ~2 s, matn 3-4 s); ack window 3.5 s (HEAD, app 18:37); ekran-o'chiq holati sinalmagan
+NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for fallback/Doze; later: PhoneHead seq-tagging, tests' log side effect, "primary speaker" prompt A/B (offered, undecided)
+SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
@@ -46,6 +46,19 @@ Owner's later recorded refinements (his words, not scope invention):
   should exit it) - harmless so far, not investigated.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-14 18:40 — v2 PROVEN LIVE by the owner; ack window widened
+- Owner installed the APK (196adcf Android side), 18:11-18:33: 4 PC-hotkey sessions all
+  went through the phone - log: `state recording #n -> phone` -> `ack recording` ~2 s
+  later (log second resolution), stop -> `ack stopped` -> `accepted N chars` -> paste
+  3-4 s after release. Owner: "hammasi ishladi". One `phone: no text within 40s` for a
+  take that produced no text (harmless, logged).
+- 2 s ack round trip sat ON the 2.0 s fallback edge -> PHONE_ACK_SEC 3.5 (commit after
+  9592ca1), app restarted 18:37. Memory: feedback_timeout_anchor (measure, then x1.5-2).
+- Owner asked: works with the phone screen off? Answered: designed to (foreground service,
+  battery exemption, wake lock during recording) but UNTESTED; Doze may stall the first
+  press after a long idle. Duty: 5-min screen-off test.
+  UZ: Qiling: telefon ekranini o'chirib 5 daqiqa tegmang, keyin PC da Ctrl bosib bip kuting | Ko'rasiz: bip 2-3 s ichida kelsa ekran o'chiq ham ishlaydi; kelmasa ayting | Nega: Android uxlab qolgan telefonda fon aloqani kechiktirishi mumkin - buni faqat real telefon ko'rsatadi | Vaqt: 6 daqiqa
 
 ## 2026-10-14 18:05 — pass 3 + two review one-liners live; waiting on the phone-Ctrl test
 - ab1f71b (doer opus): callback stores un-gained blocks; gain_for = min(6, 28000/peak) applied
