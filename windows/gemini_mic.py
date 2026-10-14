@@ -550,7 +550,7 @@ def frames_to_wav_bytes(frames, sample_rate=SAMPLE_RATE):
     return buf.getvalue(), audio
 
 
-def has_speech(audio):
+def has_speech(audio, room_floor=None):
     """True only if the clip holds SUSTAINED voice, not silence or a lone
     transient. A single keyboard click inflates the whole-clip RMS but fills just
     one window, so counting voiced windows (not averaging the whole clip) rejects
@@ -568,6 +568,13 @@ def has_speech(audio):
     # windows) by VOICE_FLOOR_RATIO; on the gated MME path the floor is ~0 and
     # the fixed threshold alone decides, exactly as before.
     floor = float(np.percentile(levels, 20))
+    # A clip that is speech throughout (short phrase, the tail chunk of a
+    # >60 s chain) has no quiet windows, so its own percentile IS speech and
+    # the ratio would reject it (blind review 2026-10-14: 15/20 real clips
+    # cut to their loudest 1.5 s). The room tone captured BEFORE the key
+    # press is the honest floor; take the lower of the two.
+    if room_floor is not None:
+        floor = min(floor, float(room_floor))
     threshold = max(VOICE_RMS_THRESHOLD, VOICE_FLOOR_RATIO * floor)
     voiced = sum(1 for rms in levels if rms >= threshold)
     loudest = max(levels)
@@ -1099,6 +1106,7 @@ class GeminiMicApp:
         self.ring = collections.deque(maxlen=max(1, int(RING_SEC / (STREAM_BLOCK / SAMPLE_RATE))))
         self.last_block = 0.0  # when the callback last delivered audio; stale = dead stream
         self.stream_raw = False  # current stream is WASAPI raw -> callback applies RAW_GAIN
+        self.room_floor = None  # idle room tone (rms) captured at key press, for has_speech
         self.record_start = 0.0
         self.chunk_chain = 0  # consecutive auto-rollovers while the key stays held
         self.last_dictation = time.monotonic()  # idle-release clock (see IDLE_RELEASE_SEC)
@@ -1405,7 +1413,14 @@ class GeminiMicApp:
             gen = self.record_gen
             # Seed with the last PRE_ROLL_SEC from the ring so speech that began
             # at (or just before) the key press is not lost.
-            self.frames = list(self.ring)[-preroll:] if preroll else []
+            ring = list(self.ring)
+            self.frames = ring[-preroll:] if preroll else []
+            # Room tone = the ring BEFORE the pre-roll (idle, nobody dictating):
+            # has_speech uses it as the noise floor on the raw path.
+            idle = ring[:-preroll] if preroll else ring
+            self.room_floor = (float(np.percentile(
+                [np.sqrt(np.mean(b.astype(np.float64) ** 2)) for b in idle], 20))
+                if len(idle) >= 3 else None)
             self.recording = True
             self.record_start = time.monotonic()
             self.last_dictation = self.record_start  # idle-release clock
@@ -1463,7 +1478,7 @@ class GeminiMicApp:
         # the peak but has low RMS, and PC mics are noisier than phone mics — so a
         # peak gate let near-silence reach the model, which then hallucinated a
         # whole fake transcript. RMS reliably separates real speech from noise.
-        if not has_speech(audio):
+        if not has_speech(audio, self.room_floor):
             log("gate: no sustained speech -> rejected")
             self.set_state("idle")
             self._tooltip("Gemini Mic — ovoz eshitilmadi")
