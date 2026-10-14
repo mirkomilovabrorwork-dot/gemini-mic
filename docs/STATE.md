@@ -1,5 +1,5 @@
-STATUS: TELEFON REJIMI ISHLAYDI - owner 15:47 "endi ishlayapti" (3 ta relay: accepted + paste, log 15:45-15:47)
-NEXT: v2 PC Ctrl -> phone records: doer opus building (spec _handoff/2026-10-14-gemini-mic-pc-trigger.md); then review, restart, CI APK, owner test
+STATUS: telefon rejimi ISHLAYDI; noutbuk mikrofoni ham ishlaydi (16:43); v2 (Ctrl->telefon) c9b9ac1 review=FIX-FIRST, tuzatuvchi ishlayapti
+NEXT: fix doer (spec _handoff/2026-10-14-gemini-mic-pc-trigger-fixes.md) -> short re-review -> restart app -> push/CI -> APK -> owner Ctrl test
 SIZDAN: 0 | (keyingi: v2 APK ni o'rnatib Ctrl bilan sinash)
  Gemini Mic — STATE
 
@@ -46,6 +46,30 @@ Owner's later recorded refinements (his words, not scope invention):
   should exit it) - harmless so far, not investigated.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-14 16:50 — v2 built (c9b9ac1), blind review FIX-FIRST; laptop mic live; raw-zero puzzle
+- v2 PC-trigger commit c9b9ac1 (doer opus, 16 tests, e2e sim). CI 38555952314 GREEN (APK not
+  delivered - fixes first). Blind judge (opus): FIX-FIRST, 10 findings; proven: F1 local+phone
+  record at once after a 60 s rollover / auto-repeat (release stops only the phone -> second
+  paste); F2 a lost stop lets the phone record to its 60 s cap and the PC pastes it (oldest
+  parked poll wins; no ack for stop); F4 flaky test (15.6 ms monotonic tick). Fix pass = desired-
+  state protocol on /cmd (state+seq, phone reconciles, acks "stopped"), fresh-press-only phone
+  path, release also stops local, wake lock through the upload, phone_seen=-inf, 150 ms hold.
+  Fix doer opus running on `_handoff/2026-10-14-gemini-mic-pc-trigger-fixes.md`.
+- Laptop array, owner 16:43 (app on shared path, array first, raw off): 2 dictations verbatim,
+  rms 665/986, 3 s. Owner: "norm ishlayapti; shovqin/hamkasblar ovozini bloklash + balandroq".
+  Answered: Windows cannot block other people's speech (Voice Clarity = noise only, 12:40);
+  level is fine (rms > 500); only closeness helps -> phone mode is the real answer. Cheap lever
+  offered (Hukm shubhali): prompt "primary speaker only" - try after v2 lands.
+- Raw-zero puzzle: 15:39/15:40 app clips on the array RAW were rms=2; my 2 s sd.rec probe at
+  16:38 also gave RAW max=1 vs SHARED max=15. But a callback-stream probe at 16:47 showed raw
+  blocks: first callback at 0.56 s, first ~0.2 s zero, then real audio (max 700-1100). So raw
+  on the array is NOT always dead; the 15:39 zeros remain unexplained (maybe the stream opened
+  while the XM5 fallback was mid-switch). Self-heal commit 7490501 (doer opus) is correct in
+  shape but its 0.6 s window is shorter than the 0.56 s first-block latency and would misjudge
+  warm-up zeros -> F11 in the fix spec (wait for first block, skip 0.3 s, judge 0.5 s).
+  Config now: array first, raw ON (app restarted 16:48:12, raw stream on the array).
+- Two pythonw copies again after each watchdog start (second ~5 MB) - still uninvestigated.
 
 ## 2026-10-14 15:35 — PHONE MODE BUILT, PC side LIVE, waiting on the phone test
 - Commits aca34d3 (doer opus, spec `_handoff/2026-10-14-gemini-mic-phone-relay.md`)
