@@ -52,7 +52,9 @@ Owner's later recorded refinements (his words, not scope invention):
   config.json (app restarted 18:41), Android Prefs default (MODEL_BETTER + getString
   fallback; the app never writes the "model" key, so the default applies on install),
   Mac default. Hukm given: shubhali - 13:10 A/B on his clips: 3.7-flash tied in word errors
-  (19 vs 20) but ~2x slower (4.3 s vs 2.2 s); his call, reversible via Settings/model.
+  (19 vs 20) but ~2x slower (4.3 s vs 2.2 s); his call, reversible via Settings/model. Owner's reason (18:50): "3.7 mixed language uchun
+  yaxshi natija beryapti" - his wider experience beats our 2-clip A/B; re-measure on the
+  next ~10 saved clips (clips dir) before ever arguing it back.
   New APK from CI (run 38573911813) -> Desktop once green. Verify live: next dictation's
   `gemini: calling model=gemini-3.7-flash` + latency.
 
