@@ -66,6 +66,9 @@ DEFAULT_CONFIG = {
     # fragment lets the app open the path that actually works, independent of
     # the Windows default-input setting.
     "input_device": "",
+    # True = open the mic via WASAPI raw mode, bypassing the Windows audio-effects
+    # chain that gates the first syllable away. Off switch: False = old MME path.
+    "raw_capture": True,
     # Owner-editable spelling reference appended to the transcription prompt
     # (see transcription_prompt). Keep it short.
     "vocabulary": ["thinking budget", "workflow", "deploy", "deadline", "kontrol"],
@@ -106,8 +109,17 @@ MAX_CHUNK_CHAIN = 10
 # speech passes. Measured on the owner's mic: true silence rms<80, a click spikes
 # ONE window, speech fills many.
 VOICE_RMS_THRESHOLD = 120
+# Voice must be this many times the clip's own noise floor (see has_speech);
+# 2.5x is ~8 dB - office chatter at 2-3 m stays under it, close speech clears it.
+VOICE_FLOOR_RATIO = 2.5
 VOICE_WINDOW_SEC = 0.20
 MIN_VOICED_WINDOWS = 3
+# WASAPI raw capture skips the audio-effects chain (Realtek/VocaEffectPack APOs),
+# which applied ~6x gain: measured APO/raw room-tone ratio on this PC 254/40,
+# 346/64. Raw blocks are scaled by this so has_speech thresholds, gate-detail
+# logs and clip levels stay comparable to the MME path. Gemini itself is
+# level-invariant (measured 2026-10-14).
+RAW_GAIN = 6.0
 # The mic stream stays open for the app's lifetime and feeds a small ring
 # buffer. Opening a Windows input stream takes ~0.2-0.5s, and recording used to
 # begin only after that — the first words of every dictation were simply lost
@@ -318,6 +330,12 @@ def format_paragraphs(raw):
 # Self-test entry point (no other deps needed)
 # ---------------------------------------------------------------------------
 
+def apply_raw_gain(block):
+    """Scale a raw int16 block by RAW_GAIN, clipped to int16 range."""
+    import numpy as np  # local: --selftest runs before the heavy imports below
+    return np.clip(block.astype(np.int32) * RAW_GAIN, -32768, 32767).astype(np.int16)
+
+
 def _run_selftest():
     samples = [
         '```Transcript: "Salom, bugun men ofisga bordim va u yerda juda ko\'p ishlar bor edi."```',
@@ -353,6 +371,13 @@ def _run_selftest():
         print("FAIL: vocabulary prompt check")
         sys.exit(1)
     print()
+
+    import numpy as np
+    gain_ok = apply_raw_gain(np.array([10000, -10000, 100], np.int16)).tolist() == [32767, -32768, 600]
+    print("--- raw gain ---\nclips to int16      :", gain_ok)
+    if not gain_ok:
+        print("FAIL: raw gain check")
+        sys.exit(1)
 
 
 if __name__ == "__main__" and "--selftest" in sys.argv:
@@ -530,21 +555,26 @@ def has_speech(audio):
     win = int(VOICE_WINDOW_SEC * SAMPLE_RATE)
     if audio.size < win:
         return False
-    voiced = 0
-    loudest = 0.0
+    levels = []
     for i in range(0, audio.size - win + 1, win):
         seg = audio[i:i + win].astype(np.float64)
-        rms = np.sqrt(np.mean(seg ** 2))
-        loudest = max(loudest, rms)
-        if rms >= VOICE_RMS_THRESHOLD:
-            voiced += 1
+        levels.append(float(np.sqrt(np.mean(seg ** 2))))
+    # The raw WASAPI path (no Windows effects) has no silence gate, so room
+    # noise sits at ~350 after RAW_GAIN - above the fixed threshold. Voice
+    # must therefore also clear the clip's OWN floor (20th percentile of the
+    # windows) by VOICE_FLOOR_RATIO; on the gated MME path the floor is ~0 and
+    # the fixed threshold alone decides, exactly as before.
+    floor = float(np.percentile(levels, 20))
+    threshold = max(VOICE_RMS_THRESHOLD, VOICE_FLOOR_RATIO * floor)
+    voiced = sum(1 for rms in levels if rms >= threshold)
+    loudest = max(levels)
     ok = voiced >= MIN_VOICED_WINDOWS
     if not ok:
         # Log the numbers so a rejection can be told apart from "he never spoke":
         # loudest far under the threshold = real silence; loudest near it = the
         # gate is too strict for this mic/distance and should be lowered.
-        log("gate detail: voiced=%d/%d loudest_rms=%d threshold=%d"
-            % (voiced, MIN_VOICED_WINDOWS, loudest, VOICE_RMS_THRESHOLD))
+        log("gate detail: voiced=%d/%d loudest_rms=%d threshold=%d floor=%d"
+            % (voiced, MIN_VOICED_WINDOWS, loudest, threshold, floor))
     return ok
 
 
@@ -1065,6 +1095,7 @@ class GeminiMicApp:
         self.stream = None  # persistent input stream (opened once, kept for app lifetime)
         self.ring = collections.deque(maxlen=max(1, int(RING_SEC / (STREAM_BLOCK / SAMPLE_RATE))))
         self.last_block = 0.0  # when the callback last delivered audio; stale = dead stream
+        self.stream_raw = False  # current stream is WASAPI raw -> callback applies RAW_GAIN
         self.record_start = 0.0
         self.chunk_chain = 0  # consecutive auto-rollovers while the key stays held
         self.last_dictation = time.monotonic()  # idle-release clock (see IDLE_RELEASE_SEC)
@@ -1247,6 +1278,8 @@ class GeminiMicApp:
 
     def _audio_callback(self, indata, frames_count, time_info, status):
         block = indata[:, 0].copy()
+        if self.stream_raw:
+            block = apply_raw_gain(block)
         self.last_block = time.monotonic()
         self.ring.append(block)
         if self.recording:
@@ -1271,11 +1304,18 @@ class GeminiMicApp:
         # Every match, in fragment order: a disconnected BT headset still lists
         # its WDM-KS node, which fails to open - the caller then tries the next
         # candidate (the next fragment) instead of jumping to the system default.
+        # raw_capture: within each fragment try WASAPI first (raw mode bypasses the
+        # effects chain), WDM-KS last (the known-bad raw-driver path).
+        raw = bool(self.cfg.get("raw_capture", DEFAULT_CONFIG["raw_capture"]))
+        api_rank = {"Windows WASAPI": 0, "MME": 1, "Windows DirectSound": 2, "Windows WDM-KS": 3}
         found = []
         for frag in frags:
-            for i, d in devices:
-                if d["max_input_channels"] > 0 and frag in d["name"].lower() and i not in found:
-                    found.append(i)
+            matches = [i for i, d in devices
+                       if d["max_input_channels"] > 0 and frag in d["name"].lower() and i not in found]
+            if raw:
+                matches.sort(key=lambda i: api_rank.get(
+                    sd.query_hostapis(devices[i][1]["hostapi"])["name"], 3))
+            found.extend(matches)
         if found:
             log("mic pin: %r -> candidates %s" % (frags, found))
             return found
@@ -1313,8 +1353,19 @@ class GeminiMicApp:
                     log("mic auto-heal: reinit failed %r" % (e,))
         self.ring.clear()  # never seed a new device's recording with old/dead blocks
         devices = self.resolve_input_device()
+        raw_cfg = bool(self.cfg.get("raw_capture", DEFAULT_CONFIG["raw_capture"]))
         for dev in (devices or []) + [None]:
             try:
+                raw = raw_cfg and dev is not None and sd.query_hostapis(
+                    sd.query_devices(dev)["hostapi"])["name"] == "Windows WASAPI"
+                extra = None
+                if raw:
+                    # streamOption 1 = eStreamOptionRaw. Do NOT set _streaminfo.version
+                    # (measured: that fails with -9984).
+                    extra = sd.WasapiSettings(auto_convert=True)
+                    extra._streaminfo.streamOption = 1
+                # Set before start(): the first callback must already apply the gain.
+                self.stream_raw = raw
                 s = sd.InputStream(
                     samplerate=SAMPLE_RATE,
                     channels=1,
@@ -1322,13 +1373,15 @@ class GeminiMicApp:
                     blocksize=STREAM_BLOCK,
                     device=dev,
                     callback=self._audio_callback,
+                    extra_settings=extra,
                 )
                 s.start()
                 self.stream = s
                 self.last_block = time.monotonic()  # grace until the first callback lands
                 name = "system default" if dev is None else sd.query_devices(dev)["name"][:60]
-                log("mic stream opened on %s (persistent, ring %.1fs, preroll %.1fs)"
-                    % (name, RING_SEC, PRE_ROLL_SEC))
+                log("mic stream opened on %s (%spersistent, ring %.1fs, preroll %.1fs)"
+                    % (name, "WASAPI raw, gain %.0fx, " % RAW_GAIN if raw else "",
+                       RING_SEC, PRE_ROLL_SEC))
                 return True
             except Exception as e:
                 log("mic stream open failed on %r: %r" % (dev, e))
