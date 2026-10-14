@@ -31,6 +31,17 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 11:47 — quiet speech errors + idle BT link loss
+- Owner: "past gapirsam biroz xato, balandroq aniq". XM5 clips arrive at rms
+  200-400 (~-40 dBFS). Fix: `normalize_level` peak-normalizes the WAV sent to
+  Gemini (~-6 dBFS, max 20x); the gate still sees raw levels.
+- 11:44 a first dictation was 3.8s of zeros: the XM5 stream had died while
+  idle and was only healed at the key press. `_prefer_mic_watch` now re-opens
+  a stream silent >2s while idle. Live since 11:46 (next dictation fine).
+- UNPROVEN: normalization has no A/B yet (no saved clips). If quiet errors
+  persist, next = save raw clips locally and A/B raw vs normalized offline.
+  Watch the log for "stream silent while idle" churn.
+
 ## 2026-10-14 11:33 — XM5 mic A/B: XM5 WINS, now primary (reverses 08-03)
 - Same sentence ("Ha, bugun delegatsiya bo'yicha meeting bor, thinking budget
   va kontrolni tekshirish kerak."), owner in noisy office, ~50 cm from laptop:
