@@ -1108,7 +1108,7 @@ class GeminiMicApp:
             self.frames.append(block)
 
     def resolve_input_device(self):
-        """Config 'input_device' name fragment(s) -> device index, or None for
+        """Config 'input_device' name fragment(s) -> candidate device indices, or None for
         the system default (also on no match, logged). Fragments are tried in
         order, separated by '|' (e.g. "MICUSB1|Microphone Array"): when a BT
         headset connects, Windows makes its Hands-Free mic the default input,
@@ -1123,11 +1123,17 @@ class GeminiMicApp:
         except Exception as e:
             log("mic pin: device scan failed %r" % (e,))
             return None
+        # Every match, in fragment order: a disconnected BT headset still lists
+        # its WDM-KS node, which fails to open - the caller then tries the next
+        # candidate (the next fragment) instead of jumping to the system default.
+        found = []
         for frag in frags:
             for i, d in devices:
-                if d["max_input_channels"] > 0 and frag in d["name"].lower():
-                    log("mic pin: %r -> [%d] %s" % (frag, i, d["name"][:60]))
-                    return i
+                if d["max_input_channels"] > 0 and frag in d["name"].lower() and i not in found:
+                    found.append(i)
+        if found:
+            log("mic pin: %r -> candidates %s" % (frags, found))
+            return found
         log("mic pin: no device matches %r -> using system default" % (frags,))
         return None
 
@@ -1161,8 +1167,8 @@ class GeminiMicApp:
                 except Exception as e:
                     log("mic auto-heal: reinit failed %r" % (e,))
         self.ring.clear()  # never seed a new device's recording with old/dead blocks
-        device = self.resolve_input_device()
-        for dev in ([device, None] if device is not None else [None]):
+        devices = self.resolve_input_device()
+        for dev in (devices or []) + [None]:
             try:
                 s = sd.InputStream(
                     samplerate=SAMPLE_RATE,

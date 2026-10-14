@@ -31,6 +31,23 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 11:33 — XM5 mic A/B: XM5 WINS, now primary (reverses 08-03)
+- Same sentence ("Ha, bugun delegatsiya bo'yicha meeting bor, thinking budget
+  va kontrolni tekshirish kerak."), owner in noisy office, ~50 cm from laptop:
+  XM5 (MME path, now delivers real audio - the 07-30 zeros bug is gone):
+  14/15 words ("thinking" -> "Shuning uchun"), "Ha" correct.
+  Laptop array: transcribed a TEAMMATE's sentence (owner confirmed he did not
+  say it) -> unusable in that room.
+- The 08-03 "XM5 garbage" was most likely the raw WDM-KS workaround path, plus
+  157ace2's bug: hotkey auto-repeat during a dead-BT reinit opened 13 parallel
+  streams into one buffer (first test today = "Ovoz eshitilmadi").
+- Config: `"WH-1000XM5|MICUSB1|Microphone Array"`; resolve now returns every
+  match in order and the opener walks them before the system default.
+- Known gaps: when XM5 reconnects after a drop the app stays on the fallback
+  mic until the tray "Mikrofonni qayta ulash"; music on XM5 is HFP-quality
+  while the app holds the mic open. SoundPEATS: its mic endpoint was absent
+  (8 kHz CVSD anyway) - not tested.
+
 ## 2026-10-14 11:00 — first word "Ha" written as "Sizda" -> start-beep leak
 - Latency confirmed fixed live: 3s per dictation today.
 - Owner said "Ha, ..." -> transcript "Sizda ...". Measured: the 1 kHz start
