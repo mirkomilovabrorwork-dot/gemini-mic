@@ -1,5 +1,5 @@
-STATUS: v2 Ctrl->telefon + clip-safe gain + gate fixes LIVE on PC (974852f, 18:02); APK (196adcf Android) Desktopda - owner o'rnatyapti; telefon-Ctrl oqimi hali tasdiqlanmagan
-NEXT: judge final check of 974852f (beep-leak case) -> owner: phone shows "PC bilan ulangan"? Ctrl -> beep -> speak -> text; measure Ctrl->ack and release->paste from the log
+STATUS: v2 Ctrl->telefon + clip-safe gain + gate fixes LIVE on PC (9592ca1, 18:06, judge SHIP); APK (196adcf Android) Desktopda - owner o'rnatyapti; telefon-Ctrl oqimi hali tasdiqlanmagan
+NEXT: owner: phone shows "PC bilan ulangan"? Ctrl -> beep -> speak -> text; measure Ctrl->ack and release->paste from the log
 SIZDAN: 0 | (keyingi: v2 APK ni o'rnatib Ctrl bilan sinash)
  Gemini Mic — STATE
 
@@ -57,7 +57,8 @@ Owner's later recorded refinements (his words, not scope invention):
   gate sees un-gained audio x RAW_GAIN as unclipped floats; proved: speech rms 40 + 12000
   click -> accepted (was rejected), room noise -> rejected. Judge: fixed, but the gate input
   skipped the 1 kHz start-beep notch -> beep leak alone passed. 974852f: notch applied to the
-  gate input + empty-clip log guard. App restarted 18:02 on 974852f. Known, logged, shippable:
+  gate input (judge: SHIP); the empty-clip log guard it announced was NOT in it - landed
+  as 9592ca1. App restarted 18:06 on 9592ca1. Known, logged, shippable:
   PhoneHead fills with ANY phone text (a head later than 40 s or a new short take within the
   window can paste out of order).
 - Owner 17:42 laptop dictation (pre-fix 6x): rms 8320, verbatim. Model = gemini-3-flash-preview
