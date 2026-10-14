@@ -34,6 +34,22 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 13:10 — comms-mode A/B + new-model A/B: BOTH no gain -> keep config
+- Comms (Voice Clarity) vs default WASAPI, same speech simultaneously, owner's
+  2 known-text dictations: neither better (both mangled "thinking budget va
+  kontrol" differently). NOT built.
+- Model A/B on his 2 saved real clips (`scratchpad/model_ab.py`, app prompt,
+  temp 0, thinking 0, 2 runs each, word errors vs his 14-word sentence):
+  3-flash-preview 20/4 runs @2.2s · 3.7-flash 19 @4.3s · 3.8-flash 21 @3.6s ·
+  3.1-pro 20 @10.5s · omni-1.1-flash = "Interactions API only" (dead here).
+  Every model gets "Ha/Xo'sh, bugun delegatsiya bo'yicha meeting bor" right and
+  invents the 2nd half differently -> the XM5 Hands-Free audio does not carry
+  that phrase; model ceiling is NOT the limit. Keep 3-flash-preview (fastest,
+  tied). Settings verified: temperature 0, thinkingBudget 0, 4096 tokens,
+  prompt = best of 20 measured variants (07-29).
+- Lever left = capture quality: MICUSB1 desk mic (08-03 "deyarli xatosiz") or
+  the phone app for long/important dictation.
+
 ## 2026-10-14 12:40 — Windows mic settings question ANSWERED
 - Voice Clarity (AI noise/echo/reverb suppression) applies ONLY to apps using
   the Communications signal-processing mode (WhatsApp, Phone Link); our app
@@ -45,7 +61,16 @@ Owner's later recorded refinements (his words, not scope invention):
   category) is technically possible.
 - Offered owner an A/B (same sentence, default vs Communications mode on XM5),
   verdict "shubhali": expected gain small, risk = DNS clips his word edges.
-  AWAITING his ha/yo'q. Do not build without his "ha".
+  Owner said "ha" (12:45). Harness (session scratchpad): comms_ab_rec.py
+  records XM5 via WASAPI in two streams AT ONCE - category Other vs
+  Communications (set PaWasapiStreamInfo.streamCategory=3 on
+  sd.WasapiSettings()._streaminfo; keep version=1, version 3 -> -9984);
+  comms_ab_score.py cuts each app dictation (log times, END-aligned) and
+  transcribes both. MEASURED run 1: comms mode IS processed (inter-word floor
+  ~2 vs 0-200 raw, ~10x gain/AGC). Owner did not dictate in the window ->
+  whole-file transcripts were two different hallucinated stories (lesson:
+  never transcribe long un-dictated room audio). Run 2 (5 min) armed 12:56.
+  Auto-return to XM5 PROVEN live 12:45:56; clip saving works.
 
 ## 2026-10-14 12:33 — app restarted on HEAD (clip saving now ACTIVE)
 - XM5 disconnected since 12:00 (endpoints "Unknown") -> app correctly fell back
@@ -969,3 +994,4 @@ mixed speech. Do NOT burn another session re-testing these.
 - 2026-10-10 [Log qo'sh] Windows'da xato yozishni topish uchun log'ga matn va ovoz balandligini yozib qo'ysaymi? -> **Ha, qo'sh**
 - 2026-10-13 [GitHub] Tuzatilgan kodni GitHub'ga zaxira qilib yuboraymi? -> **Ha, yubor (Tavsiya)**
 - 2026-10-14 [10 foiz] 10 foizga nimani pasaytirdingiz? -> **Karnay/musiqa ovozini**
+- 2026-10-14 [Sinov] XM5 mikrofonini qo'ng'iroq rejimida sinab ko'ramizmi? -> **Ha, sinaymiz**
