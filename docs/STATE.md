@@ -68,6 +68,22 @@ Owner's later recorded refinements (his words, not scope invention):
   floor. VOICE_FLOOR_RATIO -> 2.0; checks: room-burst clip rejected, owner
   clip shape accepted. If he still gets "Ovoz eshitilmadi" on short quiet
   phrases, next knob = MIN_VOICED_WINDOWS 3 -> 2 (but that readmits bursts).
+- BLIND REVIEW (fable judge) on the raw-capture diff: 5a FAIL - the clip-own
+  20th percentile IS speech on an all-speech clip (short phrase, chain tail)
+  -> 15/20 real clips cut to their loudest 1.5 s were rejected. FIX 3cfe19d:
+  `room_floor` = 20th percentile of the idle ring blocks BEFORE the pre-roll,
+  captured at key press; has_speech takes min(clip p20, room_floor). Checks:
+  all-speech 1.5 s shape accepted (was rejected), room-burst and flat-room
+  clips rejected, MME-style click rejected. Loudest-cut sweep now 12/20 -
+  the 8 misses are OLD low-level MME/XM5 clips (speech rms 150-400, below
+  2x a 300 floor); on today's raw path his speech is 1300-2600 vs floor
+  ~300-460, so they pass. Judge's other notes: raw_capture=false does not
+  roll back the gate change (true; the floor is ~0 on MME so threshold stays
+  120); XM5 WASAPI raw untested; beep bleed at 6x unverified (notched).
+- Owner 14:25: "telefon mic va headphone qulay, tashqi mic qulay emas" ->
+  XM5 is the real daily mic. XM5 reconnected 14:27: app opened it RAW
+  ("mic stream opened on Headset (WH-1000XM5) (WASAPI raw, gain 6x...)").
+  AWAITING his first XM5 dictation on the raw path (first word + level).
   Zero-code alternative (owner's hands, not needed if the fix lands): Sound
   settings -> USB MIC PRO -> Audio enhancements OFF (HKLM write needs admin,
   so I cannot flip it).
