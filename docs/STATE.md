@@ -49,11 +49,19 @@ Owner's later recorded refinements (his words, not scope invention):
   50% of steady); RAW path is flat from the first 10 ms (112%). That ramp IS
   the lost first syllable. Not the preroll (clips show 1-2 s of silence
   before speech), not the model.
-- FIX (doer, opus, in progress): open the mic via WASAPI with
-  eStreamOptionRaw (bypasses every APO), software gain 6x to keep gate/log/
-  clip levels comparable, WASAPI candidate ordered first per fragment,
-  config `raw_capture` (default true) as the off switch. Then restart, read
-  the next clip's floor (expect ~40, no ramp) and the owner's first word.
+- FIX SHIPPED 3b1d9e1 (doer opus + my gate edit), LIVE 14:18: mic opens via
+  WASAPI eStreamOptionRaw (bypasses every APO), RAW_GAIN 6x in the callback,
+  WASAPI candidate first per fragment, config `raw_capture` (default true)
+  = off switch. Doer's catch: the raw path has NO silence gate, so room noise
+  after gain (~350) beat the fixed has_speech threshold (120) -> an empty
+  press would send teammates' chatter to Gemini. Added VOICE_FLOOR_RATIO 2.5:
+  voice must clear max(120, 2.5 x the clip's 20th-percentile window rms).
+  Checks: synthetic room noise rms350 -> rejected, +0.5 s speech -> accepted,
+  the 4 latest real clips -> accepted. Log line now carries floor=.
+  Log: "mic stream opened on Microphone (USB MIC PRO) (WASAPI raw, gain 6x,
+  ...)". Blind review (fable judge) running on `git diff 2f07a58`.
+  AWAITING the owner's first "Ha/Tashqi ..." dictation; then measure the
+  clip floor (expect ~40 x 6 ≈ 240, not 0) and the onset shape.
   Zero-code alternative (owner's hands, not needed if the fix lands): Sound
   settings -> USB MIC PRO -> Audio enhancements OFF (HKLM write needs admin,
   so I cannot flip it).
