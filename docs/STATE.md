@@ -1,4 +1,4 @@
-STATUS: v2 Ctrl->telefon ISHLAYDI - owner 18:33 "hammasi ishladi" (4/4 Ctrl->phone, bip ~2 s, matn 3-4 s); model -> gemini-3.7-flash (owner 18:45, 3 platforma, app 18:41); ekran-o'chiq holati sinalmagan
+STATUS: 3.7-flash LIVE on PC (1 real take 18:50 OK, 4 s); 18:48-49 three 'Model band' = transient network (both models failed <1 s, endpoint 200 at 19:00); app restarted 19:01 on 5319e30 (logs real exception + fallback); phone reconnected 19:01:44; screen-off state UNTESTED
 NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for fallback/Doze; later: PhoneHead seq-tagging, tests' log side effect, "primary speaker" prompt A/B (offered, undecided)
 SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
@@ -46,6 +46,20 @@ Owner's later recorded refinements (his words, not scope invention):
   should exit it) - harmless so far, not investigated.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-14 19:05 — 3.7 live; "Model band" x3 = network blip, not the model; log patch
+- Log 18:48:43 / 18:49:14 / 18:49:26: `calling model=gemini-3.7-flash` -> `GeminiError("Model band...")`
+  in the SAME second = requests.RequestException (connection, not the 15/30 s timeout); the
+  silent 3.5-flash fallback failed too. 18:50:18 take OK (4 s, "Slash clear", pasted). Probe
+  19:00: text-only POST to 3.7-flash -> HTTP 200 in 4.2 s. Verdict: ~1 min network blip
+  (unverified which hop - DNS/Wi-Fi; the real exception was NOT logged).
+- 5319e30 (mine, 2 lines): log the exception class+message on a request failure and a
+  `gemini: fallback -> model=...` line. 34 tests green (3 files, run directly with
+  windows/.venv python; `pytest` is not installed in that venv). App restarted 19:01 via
+  watchdog; phone poller reconnected 19:01:44 (phone awake at that moment).
+- APK with the 3.7 default on Desktop (18:42, run 38573911813 green) - owner has not said
+  whether he re-installed it; the phone's own takes still use whatever model the installed
+  build defaults to (prefs never write "model").
 
 ## 2026-10-14 18:45 — owner: "gemini micni ham 3.7ga o'tkaz" -> DONE
 - Model gemini-3-flash-preview -> gemini-3.7-flash in Windows DEFAULT_CONFIG + live
