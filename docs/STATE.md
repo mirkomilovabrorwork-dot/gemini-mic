@@ -34,6 +34,20 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 13:22 — desk mic replugged; it is named "USB MIC PRO", not MICUSB1
+- Owner plugged the desk mic in; the app stayed on the laptop array because
+  the endpoint name is "Microphone (USB MIC PRO)" - the old "MICUSB1" fragment
+  never matched. Config (owner-local, untracked) re-pinned to
+  `"USB MIC|MICUSB1|WH-1000XM5|Microphone Array"` -> desk mic FIRST, XM5 only
+  when it is unplugged. App restarted: "mic stream opened on Microphone (USB
+  MIC PRO)". A 2nd-client probe reads zeros while the app holds it (same
+  single-client behaviour as the array) - the next real dictation's log rms
+  + text is the quality check. AWAITING one dictation.
+- Owner asked "telefon mikrofonidan foydalansakchi?" - answered: phone-as-PC-mic
+  needs a bridge app on both sides (WO Mic / DroidCam, Wi-Fi or USB), another
+  moving part; the phone was good only because it is CLOSE to the mouth - the
+  desk mic at ~20 cm gives the same thing without a bridge. Not started.
+
 ## 2026-10-14 13:10 — comms-mode A/B + new-model A/B: BOTH no gain -> keep config
 - Comms (Voice Clarity) vs default WASAPI, same speech simultaneously, owner's
   2 known-text dictations: neither better (both mangled "thinking budget va
