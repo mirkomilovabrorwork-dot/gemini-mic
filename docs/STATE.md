@@ -34,6 +34,26 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 13:45 — owner: "muammo mixed languageda" -> CONFIRMED; vocab hint = gain AND poison
+- Desk mic dictation (13:24, rms 150, Windows level 94%): 8 errors on the
+  14-word test sentence - WORSE than XM5 (5-6); his first attempt was gate-
+  rejected (loudest_rms 131 vs threshold 120, voiced 1/3) -> the desk mic is
+  too far / he spoke quietly. Lever = distance (15-20 cm), not settings.
+- language_mode A/B on 3 known clips x2 (scratchpad/lang_ab.py): uz_en 38 vs
+  uz_en_ru 42 errors - noise. Config stays uz_en.
+- Owner's hypothesis is right: Uzbek words are right on every model; the
+  accented ENGLISH jargon inside the sentence is what every model invents.
+- Vocabulary hint re-tested on REAL clips (scratchpad/vocab_ab.py, 9 terms,
+  prompt says "only when actually heard"): GAIN 36 -> 23 errors / 6 runs
+  (best clip 4-6 -> 1, "Thinking budget va kontrolni" exact). FALSE POSITIVES
+  on 6 control clips that contain none of the terms: 3 injections in 2 clips
+  ("Gemini 1.5 Pro hozir..." -> "Terminalda hozir...", "Men o'zimdan keyin
+  ochilganman" -> "...thinking budget'imni ochib qo'yganman"). The owner's
+  July fear is measured TRUE: Gemini prompt bias has no strength control.
+  NOT shipped. Researcher running: dedicated STT engines with TUNABLE keyword
+  boost + Uzbek (Google STT v2 Chirp, Deepgram, ElevenLabs, AssemblyAI,
+  OpenAI, Azure) - the industry answer to exactly this failure.
+
 ## 2026-10-14 13:22 — desk mic replugged; it is named "USB MIC PRO", not MICUSB1
 - Owner plugged the desk mic in; the app stayed on the laptop array because
   the endpoint name is "Microphone (USB MIC PRO)" - the old "MICUSB1" fragment
