@@ -47,6 +47,11 @@ Owner's later recorded refinements (his words, not scope invention):
   the MMDevices registry; when the FIRST fragment's endpoint is active and the
   stream is elsewhere it calls reconnect_mic. Detection unit-checked live
   (wh-1000xm5 True, soundpeats False); the actual drop->return not yet seen.
+- Wideband CONFIRMED (spectrum, 3s room tone via MME): energy 4.3-7.5 kHz =
+  18% of the 0.3-3.5 kHz band (CVSD/narrowband would be ~0) -> mSBC 16 kHz.
+  Research (MS docs): an open mic forces HFP mono playback; no XM5 LE Audio on
+  Windows. Owner-side: turn off Speak-to-Chat + Adaptive Sound Control in
+  Sound Connect; multipoint is what pulled XM5 to the phone at 11:23.
 - Known gap: music on XM5 is HFP-quality
   while the app holds the mic open. SoundPEATS: its mic endpoint was absent
   (8 kHz CVSD anyway) - not tested.
