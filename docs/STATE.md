@@ -65,8 +65,19 @@ Owner's later recorded refinements (his words, not scope invention):
   sentence -> "Ha, bugun delegatsiya bo'yicha miting bor. Thinking budget va
   kontrolni tekshirish kerak." 13/14 (only meeting -> miting, an Uzbek
   spelling of the loanword). The phrase that failed in every configuration
-  since July is now right on his real voice. Blind review (fable judge)
-  running on dfb23e4; findings fold here.
+  since July is now right on his real voice.
+- BLIND REVIEW (fable judge, dfb23e4): 7/7 user paths PASS, "ship". Two
+  unasserted-rule findings folded 14:04: MAX_VOCABULARY_TERMS = 10 (parse
+  keeps the first 10, silently) + selftest now asserts the two load-bearing
+  sentences and the cap. Selftest EXIT 0.
+- Owner 14:00: desk mic close = "juda yaxshi, ayniqsa faqat o'zbek"; wants
+  the same on XM5. Fact: the list is mic-independent - today's two XM5 clips
+  went 4-6 -> 1-2 errors offline. Owner chose "XM5 birinchi" when both are
+  present -> config `"WH-1000XM5|USB MIC|MICUSB1|Microphone Array"`, app
+  restarted 14:04 (XM5 was disconnected -> bound USB MIC PRO; the 5s watch
+  switches to XM5 when it reconnects, proven 12:45). Honest ceiling: XM5 is
+  a phone-call channel that also hears the room; expect slightly below the
+  close desk mic, especially pure Uzbek.
 - Research (6 STT vendors, sources in session): only Google STT v2 Chirp has
   Uzbek + a NUMERIC per-phrase boost (<=20); ElevenLabs Scribe v2 has Uzbek +
   keyterms without a strength knob; Deepgram no Uzbek; AssemblyAI Uzbek at
@@ -1074,3 +1085,4 @@ mixed speech. Do NOT burn another session re-testing these.
 - 2026-10-14 [Sinov] XM5 mikrofonini qo'ng'iroq rejimida sinab ko'ramizmi? -> **Ha, sinaymiz**
 - 2026-10-14 [Ro'yxat] Qat'iy imlo ro'yxatini Windows ilovasiga qo'shaymi? -> **Ha, qo'sh (tavsiya)**
 - 2026-10-14 [Google STT] Google Cloud STT (Chirp) ni ham sinab ko'raylikmi? -> **uz stt uchun foydasi aniqmi?**
+- 2026-10-14 [Asosiy mik] Ikkala mikrofon ham ulangan bo'lsa, ilova qaysi birini ishlatsin? -> **XM5 birinchi**

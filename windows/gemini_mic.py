@@ -149,13 +149,19 @@ def load_config():
     return cfg
 
 
+MAX_VOCABULARY_TERMS = 10
+
+
 def parse_vocabulary(value):
     # Hand-edited settings may hold a comma-separated string instead of a list.
     if isinstance(value, str):
         value = value.split(",")
     if not isinstance(value, list):
         return list(DEFAULT_CONFIG["vocabulary"])
-    return [t.strip() for t in value if isinstance(t, str) and t.strip()]
+    terms = [t.strip() for t in value if isinstance(t, str) and t.strip()]
+    # A long list brings the measured injection failure back (see
+    # transcription_prompt) - keep the first MAX_VOCABULARY_TERMS, silently.
+    return terms[:MAX_VOCABULARY_TERMS]
 
 
 def save_config(cfg):
@@ -331,11 +337,19 @@ def _run_selftest():
 
     # Vocabulary: empty list must leave the prompt byte-identical.
     empty_ok = transcription_prompt("uz_en", []) == transcription_prompt("uz_en")
-    vocab_ok = "spell it like this: workflow." in transcription_prompt("uz_en", ["workflow"])
+    with_term = transcription_prompt("uz_en", ["workflow"])
+    # The two strict sentences are load-bearing (measured 2026-10-14) - assert them.
+    vocab_ok = (
+        "spell it like this: workflow." in with_term
+        and "Spelling reference ONLY (not a hint about content)" in with_term
+        and "inserting a listed term that was not spoken is a serious error." in with_term
+    )
+    cap_ok = len(parse_vocabulary([f"t{i}" for i in range(30)])) == MAX_VOCABULARY_TERMS
     print("--- vocabulary ---")
     print("empty list unchanged:", empty_ok)
     print("term appended       :", vocab_ok)
-    if not (empty_ok and vocab_ok):
+    print("capped at %d        : %s" % (MAX_VOCABULARY_TERMS, cap_ok))
+    if not (empty_ok and vocab_ok and cap_ok):
         print("FAIL: vocabulary prompt check")
         sys.exit(1)
     print()
