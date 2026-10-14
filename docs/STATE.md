@@ -1,6 +1,6 @@
 STATUS: ishlaydi; atamalar ro'yxati jonli (10-14 13:51); stol mikrofoni birinchi
 NEXT: siz - odatdagidek gapiring, soxta atama chiqsa "soxta" deng; men - Chirp faqat yetmasa
-SIZDAN: 1 | stol mikrofonini 15-20 sm yaqin qo'yib bitta gap ayting
+SIZDAN: 0 | stol mikrofonini 15-20 sm yaqin qo'yib bitta gap ayting
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
