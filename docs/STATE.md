@@ -1,6 +1,6 @@
-STATUS: ovozli yozish ishlaydi; yangi ish rejalashtirilmagan
-NEXT: men - navbatdagi rejali ishni davom ettirish (pastda)
-SIZDAN: 0
+STATUS: ovozli yozish ishlaydi; atamalar ro'yxati (imlo) 2026-10-14 13:51 jonli, stol mikrofoni "USB MIC PRO" birinchi
+NEXT: siz - odatdagidek gapiring; atama soxta kirsa "soxta" deng (avval "thinking budget" olib tashlanadi). men - Google Chirp sinovi faqat ro'yxat yetmasa
+SIZDAN: 1 (stol mikrofonini og'izga 15-20 sm yaqin qo'yib bitta gap)
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
@@ -20,13 +20,16 @@ Owner's later recorded refinements (his words, not scope invention):
   caveat stands.
 
 ## NEXT STEP (single queue, oldest first)
-- (since 2026-10-14) Men tanladim: dictation clips saved locally (last 20) for a
-  real-voice A/B. Owner can say "o'chir" to disable.
-  UZ: Qiling: odatdagidek bir nechta gapni past ovozda ayting | Ko'rasiz: men kuchaytirish foydasini sizning ovozingizda aytaman | Nega: sintetik sinov sizning ovozingizni isbotlamaydi | Vaqt: 1 daqiqa
-0. **(since 2026-10-13) Owner plugs MICUSB1 back in** (noisy room, 50 cm). Then
-   verify log "mic pin: 'micusb1'" + one dictation. If calls lose the mic while
-   the app runs -> next fix = open the mic only while the hotkey is held.
-   UZ: Qiling: stol mikrofonini USB'ga ulang | Ko'rasiz: matn to'g'ri chiqadi | Nega: noutbuk mikrofoni shovqinni oladi | Vaqt: 1 daqiqa
+- (since 2026-10-14) Owner: desk mic at 15-20 cm, one normal dictation; then
+  normal use with the vocabulary list live. Report "soxta" if an unspoken
+  listed term appears -> drop "thinking budget" first; "o'chir" -> clear the
+  Settings field (feature off) and/or stop saving clips.
+  UZ: Qiling: stol mikrofonini og'zingizga 15-20 sm yaqin qo'yib bitta gap ayting | Ko'rasiz: matn XM5'dagidan aniqroq, inglizcha atamalar to'g'ri | Nega: uzoqdagi mikrofon shovqinni oladi, ro'yxat atamani to'g'rilaydi | Vaqt: 1 daqiqa
+- Clips: last 20 dictation WAVs kept in %APPDATA%\GeminiMic\clips (ON since
+  12:33, Men tanladim) - the A/B material for any future "yana xato".
+- DONE 2026-10-14: desk mic replugged (name is "USB MIC PRO"; config pinned
+  desk-first). Open follow-up from 10-13 still unverified: if calls lose the
+  mic while the app holds it -> open the mic only while the hotkey is held.
 1. **Owner tests** (30s, when he wants): first-words capture + one >60s
    dictation on the external mic — reply "ishladi/yo'q", the gate-detail log
    gives the quality number.
