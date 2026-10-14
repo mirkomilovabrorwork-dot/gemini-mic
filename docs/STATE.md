@@ -37,6 +37,27 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 14:20 — "birinchi gap xato" ROOT CAUSE = Windows mic-effects gate eats the first syllable
+- Owner 14:05: first seconds / first word wrong ("Tashqi" -> "Boshqa", "Ha"
+  dropped on XM5). Clip envelopes: DIGITAL ZERO floor (0-1) for 1-2 s, then
+  40 -> 446 within 50 ms. Room tone with the app stopped (scratchpad
+  gate_probe.py): MME rms 346 / WASAPI default 354 / WASAPI RAW 64 - the
+  endpoint's APO chain (Realtek "VocaEffectPack" entries on USB MIC PRO AND
+  on the XM5 Hands-Free endpoint) applies ~6x gain and a silence gate.
+  Onset A/B (onset_ab.py, two simultaneous WASAPI streams, room speech):
+  APO path ramps 0 -> 3,20,41,58,70,93,136... over ~150 ms (first 100 ms =
+  50% of steady); RAW path is flat from the first 10 ms (112%). That ramp IS
+  the lost first syllable. Not the preroll (clips show 1-2 s of silence
+  before speech), not the model.
+- FIX (doer, opus, in progress): open the mic via WASAPI with
+  eStreamOptionRaw (bypasses every APO), software gain 6x to keep gate/log/
+  clip levels comparable, WASAPI candidate ordered first per fragment,
+  config `raw_capture` (default true) as the off switch. Then restart, read
+  the next clip's floor (expect ~40, no ramp) and the owner's first word.
+  Zero-code alternative (owner's hands, not needed if the fix lands): Sound
+  settings -> USB MIC PRO -> Audio enhancements OFF (HKLM write needs admin,
+  so I cannot flip it).
+
 ## 2026-10-14 14:05 — DECISION: strict "spelling reference" vocab list -> BUILD (Windows)
 - Variant 2 (scratchpad/vocab_ab2.py): 5 terms only, wording "Spelling
   reference ONLY (not a hint about content): if - and only if - the audio
