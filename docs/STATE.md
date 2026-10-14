@@ -60,8 +60,14 @@ Owner's later recorded refinements (his words, not scope invention):
   the 4 latest real clips -> accepted. Log line now carries floor=.
   Log: "mic stream opened on Microphone (USB MIC PRO) (WASAPI raw, gain 6x,
   ...)". Blind review (fable judge) running on `git diff 2f07a58`.
-  AWAITING the owner's first "Ha/Tashqi ..." dictation; then measure the
-  clip floor (expect ~40 x 6 ≈ 240, not 0) and the onset shape.
+  OWNER PROOF 14:19: "Ha, endi ishlayapti." - the first word is in. Clip
+  floors on the raw path are ~290-460 (room, x6), never 0 -> no gate ramp.
+- Gate tuning 68ff195: a real 2.25 s dictation was rejected at ratio 2.5
+  (voiced 2/3, floor 458, threshold 1146). Measured room-only raw clip: p20
+  290, chatter bursts to 954 (3.3x) in <=2 windows; owner's speech 3-6x his
+  floor. VOICE_FLOOR_RATIO -> 2.0; checks: room-burst clip rejected, owner
+  clip shape accepted. If he still gets "Ovoz eshitilmadi" on short quiet
+  phrases, next knob = MIN_VOICED_WINDOWS 3 -> 2 (but that readmits bursts).
   Zero-code alternative (owner's hands, not needed if the fix lands): Sound
   settings -> USB MIC PRO -> Audio enhancements OFF (HKLM write needs admin,
   so I cannot flip it).
