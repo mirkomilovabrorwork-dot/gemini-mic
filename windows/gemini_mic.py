@@ -38,7 +38,9 @@ except Exception:
 APP_NAME = "GeminiMic"
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "GeminiMic")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
-LOG_PATH = os.path.join(CONFIG_DIR, "log.txt")
+# GEMINI_MIC_LOG_PATH: tests point it at a temp file so background threads that
+# outlive a test never write into the live %APPDATA% log.
+LOG_PATH = os.environ.get("GEMINI_MIC_LOG_PATH") or os.path.join(CONFIG_DIR, "log.txt")
 
 
 def log(msg):

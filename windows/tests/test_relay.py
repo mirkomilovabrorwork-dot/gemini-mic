@@ -9,11 +9,13 @@ import json
 import os
 import queue
 import sys
+import tempfile
 import threading
 import time
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault("GEMINI_MIC_LOG_PATH", os.path.join(tempfile.gettempdir(), "gemini_mic_test.log"))
 import gemini_mic  # noqa: E402
 
 TOKEN = "3F9A1C7B"

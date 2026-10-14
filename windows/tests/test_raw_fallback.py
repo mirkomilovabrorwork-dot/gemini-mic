@@ -8,6 +8,7 @@ Run (from windows/): .venv\Scripts\python -m unittest tests.test_raw_fallback -v
 import collections
 import os
 import sys
+import tempfile
 import threading
 import time
 import unittest
@@ -15,6 +16,7 @@ import unittest
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault("GEMINI_MIC_LOG_PATH", os.path.join(tempfile.gettempdir(), "gemini_mic_test.log"))
 import gemini_mic  # noqa: E402
 
 sd = gemini_mic.sd
