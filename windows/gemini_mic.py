@@ -437,6 +437,23 @@ def remove_start_beep(audio, sample_rate=SAMPLE_RATE, freq=1000.0, width=40.0):
     return np.clip(out, -32768, 32767).astype(np.int16)
 
 
+def normalize_level(audio, target_peak=16000, max_gain=20.0):
+    """Boost quiet dictation to a normal level before it goes to Gemini.
+    The XM5 hands-free mic delivers speech at rms ~200-400 of 32767 (about
+    -40 dBFS); the owner measured "past gapirsam xato, balandroq aniq".
+    Peak-normalize to ~-6 dBFS, capped at 20x so near-silence is not
+    blown up into loud noise."""
+    if audio.size == 0:
+        return audio
+    peak = float(np.max(np.abs(audio.astype(np.int32))))
+    if peak <= 0:
+        return audio
+    gain = min(target_peak / peak, max_gain)
+    if gain <= 1.0:
+        return audio
+    return np.clip(audio.astype(np.float64) * gain, -32768, 32767).astype(np.int16)
+
+
 def frames_to_wav_bytes(frames, sample_rate=SAMPLE_RATE):
     """frames: list of numpy int16 arrays (mono). Returns WAV bytes."""
     if frames:
@@ -448,7 +465,9 @@ def frames_to_wav_bytes(frames, sample_rate=SAMPLE_RATE):
         wf.setnchannels(1)
         wf.setsampwidth(2)  # int16
         wf.setframerate(sample_rate)
-        wf.writeframes(audio.tobytes())
+        wf.writeframes(normalize_level(audio).tobytes())
+    # `audio` stays un-normalized: the silence gate's thresholds are in raw
+    # mic units, and boosting room noise would let it through.
     return buf.getvalue(), audio
 
 
@@ -1109,7 +1128,16 @@ class GeminiMicApp:
             time.sleep(5)
             try:
                 frags = [f.strip().lower() for f in (self.cfg.get("input_device") or "").split("|") if f.strip()]
-                if len(frags) < 2 or self.recording or not self.jobs.empty():
+                if self.recording or not self.jobs.empty():
+                    continue
+                if self.stream is not None and time.monotonic() - self.last_block > 2.0:
+                    # A BT hands-free link goes quiet while idle; healing only at
+                    # the key press lost a whole first dictation (2026-10-14
+                    # 11:44, 3.8s of zeros). Re-open it now, before he speaks.
+                    log("mic watch: stream silent while idle -> re-opening")
+                    self.ensure_stream()
+                    continue
+                if len(frags) < 2:
                     continue
                 cur = ""
                 if self.stream is not None:
