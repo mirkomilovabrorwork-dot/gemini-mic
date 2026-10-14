@@ -184,7 +184,9 @@ def load_config():
 
 
 def new_relay_token():
-    return secrets.token_hex(4).upper()  # 8 hex chars, e.g. 3F9A1C7B
+    # 12 hex chars (48 bits) - typed once on the phone; brute force over the
+    # public Funnel is further blunted by the failed-token lockout below.
+    return secrets.token_hex(6).upper()
 
 
 MAX_VOCABULARY_TERMS = 10
@@ -1140,6 +1142,8 @@ def key_matches(pressed_key, target):
 
 RELAY_MAX_TEXT = 20000
 RELAY_PING_PATHS = ("/", "/ping", "/mic", "/mic/", "/mic/ping")
+RELAY_LOCK_AFTER = 5       # wrong tokens before the lockout
+RELAY_LOCK_SEC = 60        # lockout length (the endpoint is on the public internet)
 
 
 class RelayHandler(BaseHTTPRequestHandler):
@@ -1186,12 +1190,27 @@ class RelayHandler(BaseHTTPRequestHandler):
         if not isinstance(token, str) or not token:
             token = (parse_qs(urlsplit(self.path).query).get("token") or [""])[0]
         expected = self.server.get_token() or ""
+        srv = self.server
+        now = time.monotonic()
+        with srv.lock:
+            if now < srv.locked_until:
+                log("relay: rejected locked out")
+                self._reply(429, {"ok": False, "error": "locked"})
+                return
         if not expected or not hmac.compare_digest(
             token.strip().upper().encode("utf-8"), expected.upper().encode("utf-8")
         ):
+            with srv.lock:
+                srv.failures += 1
+                if srv.failures >= RELAY_LOCK_AFTER:
+                    srv.failures = 0
+                    srv.locked_until = now + RELAY_LOCK_SEC
+                    log("relay: %d wrong tokens -> locked for %ds" % (RELAY_LOCK_AFTER, RELAY_LOCK_SEC))
             log("relay: rejected token")
             self._reply(403, {"ok": False, "error": "token"})
             return
+        with srv.lock:
+            srv.failures = 0
         text = data.get("text")
         if not isinstance(text, str) or not text.strip():
             log("relay: rejected empty text")
@@ -1212,6 +1231,9 @@ def make_relay_server(port, jobs, get_token):
     server = ThreadingHTTPServer(("127.0.0.1", port), RelayHandler)
     server.jobs = jobs
     server.get_token = get_token
+    server.lock = threading.Lock()
+    server.failures = 0
+    server.locked_until = 0.0
     return server
 
 

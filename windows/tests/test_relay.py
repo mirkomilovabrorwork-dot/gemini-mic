@@ -96,3 +96,27 @@ class RelayServerTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LockoutTest(unittest.TestCase):
+    def test_five_wrong_tokens_lock_for_a_minute(self):
+        import queue as _q, gemini_mic as gm
+        jobs = _q.Queue()
+        srv = gm.make_relay_server(0, jobs, lambda: "ABCDEF123456")
+        port = srv.server_address[1]
+        th = threading.Thread(target=srv.serve_forever, daemon=True); th.start()
+        try:
+            def post(payload):
+                conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+                conn.request("POST", "/", body=json.dumps(payload).encode(),
+                             headers={"Content-Type": "application/json"})
+                return conn.getresponse().status
+            codes = [post({"token": "WRONG", "text": "x"}) for _ in range(6)]
+            self.assertEqual(codes[:5], [403] * 5)
+            self.assertEqual(codes[5], 429)
+            # the right token is refused too while locked
+            self.assertEqual(post({"token": "ABCDEF123456", "text": "x"}), 429)
+            self.assertTrue(jobs.empty())
+            self.assertEqual(len(gm.new_relay_token()), 12)
+        finally:
+            srv.shutdown()

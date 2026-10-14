@@ -316,7 +316,7 @@ public class MainActivity extends Activity {
                 | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
                 | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         pcCodeInput.setFilters(new InputFilter[]{
-                new InputFilter.AllCaps(), new InputFilter.LengthFilter(8)});
+                new InputFilter.AllCaps(), new InputFilter.LengthFilter(12)});
         pcCodeInput.setTextColor(inkColor);
         pcCodeInput.setHintTextColor(mutedColor);
         pcCodeInput.setText(Prefs.pcCode(this));

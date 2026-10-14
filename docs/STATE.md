@@ -1,6 +1,6 @@
-STATUS: ishlaydi; raw mikrofon jonli; YO'NALISH 10-14: faqat XM5 yoki telefon (stol mikrofoni chiqarildi)
-NEXT: siz - XM5 bilan "Ha..." gap; men - XM5 klipida birinchi so'z + floor/threshold o'lchash
-SIZDAN: 1 | XM5 bilan "Ha" deb boshlanadigan bitta gap ayting - bu test yo'nalishni hal qiladi
+STATUS: XM5 PC da nol ovoz (15:03, kanal muammosi) -> owner: TELEFON REJIMI qurilmoqda (doer ishlayapti)
+NEXT: men - relay diffini review + ilovani qayta ishga tushirish + jonli test; siz - keyin yangi APK
+SIZDAN: 0 | (keyingi: yangi APK ni telefonga o'rnatish - doer tugagach)
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
@@ -46,6 +46,37 @@ Owner's later recorded refinements (his words, not scope invention):
 - Share-zip handover DONE (owner declared in HQ 2026-08-07; duty open since
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
+
+## 2026-10-14 15:10 — XM5 dead on PC -> owner chose PHONE MODE; relay being built
+- Owner's 3 XM5 dictations 14:58-15:03 on the raw path: rms=2 (digital zero, 8-11 s).
+  Probed with the app STOPPED: XM5 WASAPI raw / shared+convert / MME all rms=0 max=1;
+  Headset render endpoint absent from WASAPI enumeration -> the Hands-Free (SCO) link
+  to this PC is not carrying audio after the 14:57 reconnect. Phone BT was OFF (owner),
+  so not multipoint. PnP toggle of "WH-1000XM5 Hands-Free AG" needs admin (failed).
+  Owner 15:08: "Telefon rejimini qur" (declined XM5 power-cycle).
+- DESIGN (Men tanladim, reversible): Android app keeps recording/transcribing on the
+  phone mic, then POSTs {token,text} over HTTPS to the PC's EXISTING Tailscale Funnel
+  `https://data365.taildef23b.ts.net/mic` -> `127.0.0.1:5588` where a listener thread in
+  the Windows app enqueues a paste-only job into the existing FIFO -> paste_text. Why
+  Funnel and not LAN: office Wi-Fi is the Windows "Public" profile (inbound to pythonw
+  blocked without an admin firewall rule) and may isolate clients; the phone is NOT on
+  the tailnet (status: only data365 + bunyods-mac-mini); Funnel is already on for
+  data365 (`/` -> 127.0.0.1:3000, the Jarvis bridge). Security: 8-hex token generated
+  by the Windows app, shown in Settings, typed once on the phone; listener binds
+  127.0.0.1 only; GET /ping is tokenless and returns no data. Fallback: if the PC does
+  not answer, the phone types the text locally as before + clipboard.
+  Spec: `D:/vibecoding/_handoff/2026-10-14-gemini-mic-phone-relay.md` (doer opus).
+- INCIDENT 15:06: my `tailscale serve --bg --set-path /mic ...` ran under Git Bash,
+  which mangled `/mic` into `/C:/Program Files/Git/mic` (MSYS path conversion), and the
+  serve status afterwards printed data365 as "(tailnet only)" - Funnel on data365 MAY
+  have been switched off (unverified: every further tailscale call, even `funnel status`,
+  was denied by the permission classifier "External Ingress Tunnel"). Jarvis bridge on
+  :3000 may be unreachable from the internet until fixed.
+  RESOLVED 15:20 by the owner (4 commands): data365 Funnel on, `/` -> 3000 and
+  `/mic` -> 5588, both "Available on the internet". Probed: Funnel STRIPS the prefix -
+  `/mic/ping` arrives at the backend as `/ping`, `/mic` as `/`.
+- Side fact: two pythonw copies of the app run (3192 at 5 MB = the watchdog's second
+  start that the mutex should have exited; harmless so far, not investigated).
 
 ## 2026-10-14 — OWNER DIRECTIVE: "yo tel yo XM5 mic orqali ideal yechim"
 - Desk mic (USB MIC PRO) is OUT of the daily path (owner 14:25 + this). Two
@@ -1162,3 +1193,6 @@ mixed speech. Do NOT burn another session re-testing these.
 - 2026-10-14 [Ro'yxat] Qat'iy imlo ro'yxatini Windows ilovasiga qo'shaymi? -> **Ha, qo'sh (tavsiya)**
 - 2026-10-14 [Google STT] Google Cloud STT (Chirp) ni ham sinab ko'raylikmi? -> **uz stt uchun foydasi aniqmi?**
 - 2026-10-14 [Asosiy mik] Ikkala mikrofon ham ulangan bo'lsa, ilova qaysi birini ishlatsin? -> **XM5 birinchi**
+- 2026-10-14 [XM5 test] XM5 bilan "Ha, ..." deb bitta gap ayting (PC kalitini bosib). Natija qanday? -> **gap ber shuni o'qiyman**
+- 2026-10-14 [XM5 qayta] XM5 ni PC ga qayta bog'lash uchun bitta amal qiling, keyin yana "Ha, ..." gapni ayting. Qaysi birini qildingiz? -> **telefon blutuz hozir ham o'chik edi**
+- 2026-10-14 [XM5 qayta] XM5 ni o'chirib, 5 soniyadan keyin yoqing. PC ga ulangach yana "Ha, ..." gapni ayting. Natija? -> **Telefon rejimini qur**
