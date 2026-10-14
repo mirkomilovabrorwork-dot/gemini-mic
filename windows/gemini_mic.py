@@ -755,6 +755,7 @@ def _call_gemini(api_key, model, body):
         )
     except requests.RequestException as e:
         # timeout / connection issue → mark retryable so the caller tries the other model
+        log("gemini: request failed model=%s (%s: %s)" % (model, type(e).__name__, str(e)[:160]))
         err = GeminiError("Model band yoki internet sekin. Qayta urinib ko'ring.")
         err.status = 0
         raise err
@@ -841,6 +842,7 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None)
         text = _call_gemini(api_key, model, body)
     except GeminiError as e:
         if getattr(e, "status", None) in FALLBACK_STATUSES and model != FALLBACK_MODEL:
+            log("gemini: fallback -> model=%s (status %s)" % (FALLBACK_MODEL, getattr(e, "status", None)))
             body["generationConfig"] = generation_config(FALLBACK_MODEL)
             text = _call_gemini(api_key, FALLBACK_MODEL, body)
         else:
