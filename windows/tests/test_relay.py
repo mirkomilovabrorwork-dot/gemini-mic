@@ -94,36 +94,83 @@ class RelayServerTest(unittest.TestCase):
         self.assertEqual(status, 413)
         self.assertTrue(self.jobs.empty())
 
-    # -- PC hotkey -> phone recording: /cmd long-poll + /ack ------------------
+    # -- PC hotkey -> phone recording: /cmd desired-state long-poll + /ack ----
 
-    def test_cmd_empty_queue_none_after_wait(self):
+    def test_cmd_unchanged_state_after_wait(self):
         t0 = time.monotonic()
-        status, data = self.request("GET", "/cmd?token=%s&wait=1" % TOKEN)
+        status, data = self.request("GET", "/cmd?token=%s&wait=1&have=0" % TOKEN)
         elapsed = time.monotonic() - t0
         self.assertEqual(status, 200)
-        self.assertEqual(data, {"ok": True, "cmd": "none"})
+        self.assertEqual(data, {"ok": True, "state": "idle", "seq": 0})
         self.assertGreaterEqual(elapsed, 0.9)
         self.assertLess(elapsed, 3.0)
-        self.assertGreater(self.server.phone_seen, t0)
-        self.assertFalse(any("cmd none" in line for line in self.logged))
+        self.assertGreaterEqual(self.server.phone_seen, t0)  # Windows' 15.6 ms tick (F4)
+        self.assertEqual(self.server.parked, 0)
+        self.assertFalse(any("-> phone" in line for line in self.logged))
 
-    def test_cmd_queued_start_delivered_once(self):
-        self.server.cmd_queue.put({"cmd": "start", "seq": 7})
-        status, data = self.request("GET", "/cmd?token=%s&wait=1" % TOKEN)
+    def test_cmd_without_have_returns_state_at_once(self):
+        t0 = time.monotonic()
+        _, data = self.request("GET", "/cmd?token=%s&wait=5" % TOKEN)
+        self.assertLess(time.monotonic() - t0, 1.0)
+        self.assertEqual(data, {"ok": True, "state": "idle", "seq": 0})
+
+    def test_cmd_desired_state_survives_repeat_polls(self):
+        seq = gemini_mic.relay_set_state(self.server, "recording")
+        self.assertEqual(seq, 1)
+        status, data = self.request("GET", "/cmd?token=%s&wait=1&have=0" % TOKEN)
         self.assertEqual(status, 200)
-        self.assertEqual(data, {"ok": True, "cmd": "start", "seq": 7})
-        self.assertIn("relay: cmd start -> phone", self.logged)
-        _, data = self.request("GET", "/cmd?token=%s&wait=1" % TOKEN)
-        self.assertEqual(data, {"ok": True, "cmd": "none"})
+        self.assertEqual(data, {"ok": True, "state": "recording", "seq": 1})
+        self.assertIn("relay: state recording #1 -> phone", self.logged)
+        # the phone already has seq 1: the poll parks, then repeats the state
+        _, data = self.request("GET", "/cmd?token=%s&wait=1&have=1" % TOKEN)
+        self.assertEqual(data, {"ok": True, "state": "recording", "seq": 1})
+        seq = gemini_mic.relay_set_state(self.server, "idle", discard=True)
+        _, data = self.request("GET", "/cmd?token=%s&wait=1&have=1" % TOKEN)
+        self.assertEqual(data, {"ok": True, "state": "idle", "seq": 2, "discard": True})
+
+    def test_dead_parked_poll_does_not_swallow_the_change(self):
+        """F2: a poll whose client vanished still gets the change - and so
+        does the live poll, within one round-trip."""
+        results = {}
+
+        def poll(name):
+            t0 = time.monotonic()
+            _, data = self.request("GET", "/cmd?token=%s&wait=5&have=0" % TOKEN)
+            results[name] = (data, time.monotonic() - t0)
+
+        dead = threading.Thread(target=poll, args=("dead",))
+        dead.start()
+        time.sleep(0.2)
+        live = threading.Thread(target=poll, args=("live",))
+        live.start()
+        time.sleep(0.2)
+        self.assertEqual(self.server.parked, 2)
+        t_set = time.monotonic()
+        gemini_mic.relay_set_state(self.server, "recording")
+        live.join(3)
+        dead.join(3)
+        self.assertEqual(results["live"][0], {"ok": True, "state": "recording", "seq": 1})
+        self.assertEqual(results["dead"][0], {"ok": True, "state": "recording", "seq": 1})
+        self.assertLess(time.monotonic() - t_set, 1.0)
+        # stop never acked: desired stays idle, a later poll still gets it
+        stop_seq = gemini_mic.relay_set_state(self.server, "idle")
+        time.sleep(0.3)
+        _, data = self.request("GET", "/cmd?token=%s&wait=5&have=1" % TOKEN)
+        self.assertEqual(data, {"ok": True, "state": "idle", "seq": stop_seq})
+        self.assertEqual(self.server.ack, (None, 0))
 
     def test_ack_sets_event_state_seq(self):
         self.assertFalse(self.server.ack_event.is_set())
+        seen = []
+        self.server.on_ack = lambda *a: seen.append(a)
         status, data = self.request("POST", "/ack", {"token": TOKEN, "state": "recording", "seq": 3})
         self.assertEqual(status, 200)
         self.assertEqual(data, {"ok": True})
         self.assertTrue(self.server.ack_event.is_set())
-        self.assertEqual(self.server.ack_state, "recording")
-        self.assertEqual(self.server.ack_seq, 3)
+        self.assertEqual(self.server.ack, ("recording", 3))
+        self.request("POST", "/ack", {"token": TOKEN, "state": "stopped", "seq": 4, "reason": "short"})
+        self.assertEqual(self.server.ack, ("stopped", 4))
+        self.assertEqual(seen, [("recording", 3, ""), ("stopped", 4, "short")])
         self.assertTrue(self.jobs.empty())  # an ack is never pasted
 
     def test_cmd_wrong_token_403_counts_toward_lockout(self):
@@ -131,17 +178,32 @@ class RelayServerTest(unittest.TestCase):
             status, data = self.request("GET", "/cmd?token=WRONG&wait=1")
             self.assertEqual(status, 403)
             self.assertEqual(data, {"ok": False, "error": "token"})
-        self.assertEqual(self.server.phone_seen, 0.0)
+        self.assertEqual(self.server.phone_seen, float("-inf"))
         status, _ = self.request("GET", "/cmd?token=%s&wait=1" % TOKEN)
         self.assertEqual(status, 429)
 
     def test_mic_prefix_cmd_and_ack_accepted(self):
         status, data = self.request("GET", "/mic/cmd?token=%s&wait=0" % TOKEN)
         self.assertEqual(status, 200)
-        self.assertEqual(data, {"ok": True, "cmd": "none"})
+        self.assertEqual(data, {"ok": True, "state": "idle", "seq": 0})
         status, _ = self.request("POST", "/mic/ack", {"token": TOKEN, "state": "stopped", "seq": 1})
         self.assertEqual(status, 200)
-        self.assertEqual(self.server.ack_state, "stopped")
+        self.assertEqual(self.server.ack[0], "stopped")
+
+    def test_phone_connected_parked_or_recent(self):
+        """F7: false at boot, true while a poll is parked, false 3 s after."""
+        app = object.__new__(gemini_mic.GeminiMicApp)
+        app.relay_server = self.server
+        self.assertFalse(app.phone_connected())
+        th = threading.Thread(target=self.request,
+                              args=("GET", "/cmd?token=%s&wait=1&have=0" % TOKEN))
+        th.start()
+        time.sleep(0.3)
+        self.assertTrue(app.phone_connected())
+        th.join(3)
+        self.assertTrue(app.phone_connected())  # replied < 3 s ago
+        self.server.phone_seen -= gemini_mic.PHONE_SEEN_SEC + 0.1
+        self.assertFalse(app.phone_connected())
 
     def test_text_post_sets_last_text_at(self):
         self.assertEqual(self.server.last_text_at, 0.0)

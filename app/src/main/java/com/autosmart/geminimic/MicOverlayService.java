@@ -63,7 +63,8 @@ public class MicOverlayService extends Service {
     String pcStatus;            // suffix on the notification, null = no PC poll
     String notificationText = "Ready";
     boolean pcRecording;        // the current recording was started by the PC
-    PowerManager.WakeLock wakeLock;
+    long pcSeq;                 // seq of the PC state the phone last applied (acks carry it)
+    PowerManager.WakeLock wakeLock;  // PC take: recording + transcription + POST
 
     public MicOverlayService() {
         this.main = new Handler(Looper.getMainLooper());
@@ -112,6 +113,7 @@ public class MicOverlayService extends Service {
         }
         stopPcPoller();
         stopRecordingQuietly();
+        releaseWakeLock();
         worker.shutdownNow();
         super.onDestroy();
     }
@@ -155,7 +157,8 @@ public class MicOverlayService extends Service {
         boolean on = Prefs.pcMode(this) && !code.isEmpty();
         // onPause saves the prefs too: an unchanged setup must not drop a live poll
         // (a command the PC handed to a torn-down connection would be lost).
-        if (on && pcPoller != null && pcPoller.url.equals(url) && pcPoller.code.equals(code)) {
+        if (on && pcPoller != null && pcPoller.isAlive()
+                && pcPoller.url.equals(url) && pcPoller.code.equals(code)) {
             return;
         }
         stopPcPoller();
@@ -180,35 +183,72 @@ public class MicOverlayService extends Service {
         updateNotification(notificationText);
     }
 
+    /**
+     * A NEW PC desired state (seq changed): "recording" -> start; "idle" -> stop
+     * (discard -> cancel). Every end of a PC take is acked "stopped".
+     */
+    private void pcApply(PcPoller poller, String state, long seq, boolean discard) {
+        if (poller != pcPoller) return;
+        if ("recording".equals(state)) {
+            pcStart(poller, seq);
+            return;
+        }
+        pcSeq = seq;
+        // only a PC-started recording: a volume-key recording is never the PC's to end
+        if (recording && pcRecording) {
+            if (discard) cancelRecording(); else stopAndTranscribe();  // both ack "stopped"
+        } else {
+            worker.submit(() -> postAck(poller.url, poller.code, "stopped", seq, "idle"));
+        }
+    }
+
     /** PC said "start": record, then tell the PC whether the mic is live. */
     private void pcStart(PcPoller poller, long seq) {
-        if (poller != pcPoller) return;
-        boolean ok = startRecording();  // refuses when already recording or busy
-        if (ok) {
-            pcRecording = true;
-            try {
-                PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
-                wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "GeminiMic:pcRecording");
-                wakeLock.acquire(MAX_RECORDING_MS + 5000);
-            } catch (Exception ignored) {
-                wakeLock = null;
+        boolean ok;
+        if (recording && pcRecording) {
+            ok = true;  // already recording for the PC: confirm again
+        } else {
+            ok = startRecording();  // refuses when already recording or busy
+            if (ok) {
+                pcRecording = true;
+                try {
+                    PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+                    wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "GeminiMic:pcRecording");
+                    wakeLock.setReferenceCounted(false);  // a later acquire() just extends it
+                    wakeLock.acquire(MAX_RECORDING_MS + 5000);
+                } catch (Exception ignored) {
+                    wakeLock = null;
+                }
             }
         }
+        if (ok) pcSeq = seq;
         final String state = ok ? "recording" : "error";
-        worker.submit(() -> postAck(poller.url, poller.code, state, seq));
+        worker.submit(() -> postAck(poller.url, poller.code, state, seq, null));
     }
 
-    private void pcStop() {
-        // only a PC-started recording: a volume-key recording is never the PC's to end
-        if (recording && pcRecording && !busy) stopAndTranscribe();
+    /** A PC take ended on the phone without text (or with text to follow on "stop"). */
+    private void pcAckStopped(boolean wasPc, String reason) {
+        if (!wasPc) return;
+        if (!"stop".equals(reason)) releaseWakeLock();  // no transcription follows
+        final PcPoller poller = pcPoller;
+        if (poller == null) return;
+        final long seq = pcSeq;
+        worker.submit(() -> postAck(poller.url, poller.code, "stopped", seq, reason));
     }
 
-    private void pcCancel() {
-        if (recording && pcRecording) cancelRecording();
+    private void releaseWakeLock() {
+        release(wakeLock);
+        wakeLock = null;
+    }
+
+    private static void release(PowerManager.WakeLock wl) {
+        if (wl == null) return;
+        try { if (wl.isHeld()) wl.release(); } catch (Exception ignored) {}
     }
 
     private void cancelRecording() {
         File audioFile = currentFile;
+        boolean wasPc = pcRecording;
         try {
             if (recorder != null) recorder.stop();
         } catch (Exception ignored) {
@@ -217,6 +257,7 @@ public class MicOverlayService extends Service {
         if (audioFile != null) {
             audioFile.delete();
         }
+        pcAckStopped(wasPc, "cancel");
     }
 
     boolean startRecording() {
@@ -254,25 +295,34 @@ public class MicOverlayService extends Service {
     void stopAndTranscribe() {
         File audioFile = currentFile;
         long duration = System.currentTimeMillis() - recordingStartedAt;
+        boolean wasPc = pcRecording;
         try {
             recorder.stop();
         } catch (Exception ignored) {
         }
         stopRecordingQuietly();
         if (audioFile == null || !audioFile.exists()) {
+            pcAckStopped(wasPc, "nofile");
             toast("No audio");
             return;
         }
         if (duration < MIN_RECORDING_MS) {
             audioFile.delete();
+            pcAckStopped(wasPc, "short");
             toast("Hold longer");
             return;
         }
         if (peakAmplitude < SILENCE_PEAK_THRESHOLD) {
             audioFile.delete();
+            pcAckStopped(wasPc, "silent");
             toast("Ovoz eshitilmadi");
             return;
         }
+        if (wasPc && wakeLock != null) {
+            // keep the CPU up through transcription + the POST to the PC
+            try { wakeLock.acquire(TRANSCRIBE_TIMEOUT_MS + 5000); } catch (Exception ignored) {}
+        }
+        pcAckStopped(wasPc, "stop");  // text follows through the relay POST
         busy = true;
         updateNotification("Transcribing");
         final int jobId = ++transcriptionJobId;
@@ -292,11 +342,7 @@ public class MicOverlayService extends Service {
 
     private void stopRecordingQuietly() {
         recording = false;
-        pcRecording = false;
-        if (wakeLock != null) {
-            try { if (wakeLock.isHeld()) wakeLock.release(); } catch (Exception ignored) {}
-            wakeLock = null;
-        }
+        pcRecording = false;  // the wake lock outlives the recording (see finishTranscriptionJob)
         main.removeCallbacks(autoStopRecording);
         main.removeCallbacks(sampleAmplitude);
         if (recorder != null) {
@@ -314,8 +360,11 @@ public class MicOverlayService extends Service {
             // Owner is at the PC: send the text there; type on the phone only
             // if the PC did not take it, so a dead PC never loses a dictation.
             final String pcUrl = Prefs.pcUrl(this);
+            final PowerManager.WakeLock wl = wakeLock;  // held until the POST is done
+            wakeLock = null;
             worker.submit(() -> {
                 int code = sendToPc(pcUrl, pcCode, text);
+                release(wl);
                 main.post(() -> {
                     if (code == 200) {
                         toast("PC ga yozildi ✓");
@@ -377,11 +426,15 @@ public class MicOverlayService extends Service {
         return u;
     }
 
-    /** POST {"token","state","seq"} to <pcUrl>/ack; the PC beeps START on "recording". */
-    private static void postAck(String pcUrl, String code, String state, long seq) {
+    /**
+     * POST {"token","state","seq"[,"reason"]} to <pcUrl>/ack; the PC beeps START
+     * on "recording" and un-sticks its tray / takes over on "stopped".
+     */
+    private static void postAck(String pcUrl, String code, String state, long seq, String reason) {
         HttpURLConnection conn = null;
         try {
             JSONObject body = new JSONObject().put("token", code).put("state", state).put("seq", seq);
+            if (reason != null) body.put("reason", reason);
             conn = (HttpURLConnection) new URL(pcBase(pcUrl) + "/ack").openConnection();
             conn.setRequestMethod("POST");
             conn.setConnectTimeout(10000);
@@ -403,12 +456,14 @@ public class MicOverlayService extends Service {
     }
 
     /**
-     * Outbound long-poll to the PC: GET <pcUrl>/cmd and run start/stop/cancel on
-     * the main thread. Never holds a wake lock; backs off 2,4,8..30 s on errors.
+     * Outbound long-poll to the PC: GET <pcUrl>/cmd?have=<seq> returns the PC's
+     * DESIRED state; a new seq is applied on the main thread (pcApply). Never
+     * holds a wake lock; backs off 2,4,8..30 s on errors.
      */
     private class PcPoller extends Thread {
         final String url;
         final String code;
+        private long handledSeq = -1;  // -1: the first poll returns the state at once
         private volatile boolean running = true;
         private volatile HttpURLConnection conn;
 
@@ -439,7 +494,8 @@ public class MicOverlayService extends Service {
                 int http = -1;
                 try {
                     HttpURLConnection c = (HttpURLConnection) new URL(pcBase(url) + "/cmd?token="
-                            + URLEncoder.encode(code, "UTF-8") + "&wait=20").openConnection();
+                            + URLEncoder.encode(code, "UTF-8") + "&wait=20&have=" + handledSeq)
+                            .openConnection();
                     conn = c;
                     c.setConnectTimeout(10000);
                     c.setReadTimeout(35000);
@@ -452,17 +508,15 @@ public class MicOverlayService extends Service {
                         while ((n = in.read(chunk)) > 0) buf.write(chunk, 0, n);
                         in.close();
                         JSONObject reply = new JSONObject(buf.toString("UTF-8"));
-                        String cmd = reply.optString("cmd", "none");
+                        String state = reply.optString("state", "idle");
                         long seq = reply.optLong("seq", 0);
+                        boolean discard = reply.optBoolean("discard", false);
                         backoff = 0;
                         status("PC bilan ulangan");
                         if (!running) break;
-                        if ("start".equals(cmd)) {
-                            main.post(() -> pcStart(this, seq));
-                        } else if ("stop".equals(cmd)) {
-                            main.post(MicOverlayService.this::pcStop);
-                        } else if ("cancel".equals(cmd)) {
-                            main.post(MicOverlayService.this::pcCancel);
+                        if (seq != handledSeq) {
+                            handledSeq = seq;
+                            main.post(() -> pcApply(this, state, seq, discard));
                         }
                         continue;
                     }
@@ -509,6 +563,7 @@ public class MicOverlayService extends Service {
 
     private void finishTranscriptionJob() {
         clearTranscriptionTimeout();
+        releaseWakeLock();
         currentTranscription = null;
         updateNotification("Ready");
         busy = false;
