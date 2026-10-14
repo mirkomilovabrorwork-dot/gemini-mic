@@ -1,6 +1,6 @@
-STATUS: ishlaydi; atamalar ro'yxati jonli (10-14 13:51); stol mikrofoni birinchi
-NEXT: siz - odatdagidek gapiring, soxta atama chiqsa "soxta" deng; men - Chirp faqat yetmasa
-SIZDAN: 0 | stol mikrofonini 15-20 sm yaqin qo'yib bitta gap ayting
+STATUS: ishlaydi; raw mikrofon + atamalar ro'yxati jonli (10-14 14:27); XM5 birinchi
+NEXT: siz - XM5 bilan "Ha..." gap; men - XM5 klipida birinchi so'z + floor/threshold o'lchash
+SIZDAN: 0 | XM5 bilan "Ha" deb boshlanadigan bitta gap ayting
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
@@ -20,11 +20,21 @@ Owner's later recorded refinements (his words, not scope invention):
   caveat stands.
 
 ## NEXT STEP (single queue, oldest first)
-- (since 2026-10-14) Owner: desk mic at 15-20 cm, one normal dictation; then
-  normal use with the vocabulary list live. Report "soxta" if an unspoken
-  listed term appears -> drop "thinking budget" first; "o'chir" -> clear the
-  Settings field (feature off) and/or stop saving clips.
-  UZ: Qiling: stol mikrofonini og'zingizga 15-20 sm yaqin qo'yib bitta gap ayting | Ko'rasiz: matn XM5'dagidan aniqroq, inglizcha atamalar to'g'ri | Nega: uzoqdagi mikrofon shovqinni oladi, ro'yxat atamani to'g'rilaydi | Vaqt: 1 daqiqa
+- LIVE POINT 2026-10-14 14:30 (session hit the 335k ceiling): running app =
+  HEAD 3cfe19d (raw WASAPI capture + idle-room-floor gate + vocabulary list),
+  config XM5-first, XM5 connected and opened raw. Owner prefers XM5/phone
+  over the desk mic. NEXT (fresh session): read the log for his first XM5
+  dictation on the raw path - first word present? any "gate detail" line
+  (floor/threshold/loudest)? If rejected: knob = VOICE_FLOOR_RATIO 2.0 or
+  MIN_VOICED_WINDOWS 3->2. If the XM5 first syllable is still clipped (its
+  own in-headset NR), say so plainly - not fixable from Windows. Unverified:
+  start-beep bleed level at 6x gain (notched); desk-mic 14:24 dictation
+  "Xayrli tong, aziz do'stlar..." may have been a colleague's voice (owner
+  not asked). Android untouched; Mac untouched.
+  UZ: Qiling: XM5 bilan "Ha" deb boshlanadigan bitta gap ayting | Ko'rasiz: birinchi so'z yoziladi, "Ovoz eshitilmadi" chiqmaydi | Nega: XM5 sizning asosiy mikrofoningiz, tuzatish unda hali jonli tekshirilmagan | Vaqt: 30 soniya
+- Vocabulary list live (5 terms, Settings field). Report "soxta" if an
+  unspoken listed term appears -> drop "thinking budget" first; "o'chir" ->
+  clear the Settings field and/or stop saving clips.
 - Clips: last 20 dictation WAVs kept in %APPDATA%\GeminiMic\clips (ON since
   12:33, Men tanladim) - the A/B material for any future "yana xato".
 - DONE 2026-10-14: desk mic replugged (name is "USB MIC PRO"; config pinned
