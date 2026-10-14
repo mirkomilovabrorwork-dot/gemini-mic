@@ -437,6 +437,27 @@ def remove_start_beep(audio, sample_rate=SAMPLE_RATE, freq=1000.0, width=40.0):
     return np.clip(out, -32768, 32767).astype(np.int16)
 
 
+CLIPS_DIR = os.path.join(CONFIG_DIR, "clips")
+CLIPS_KEEP = 20
+
+
+def save_clip(wav_bytes):
+    """Keep the last CLIPS_KEEP dictations as WAV on this PC only, so a
+    misheard dictation can be re-run offline (A/B on the owner's REAL voice
+    instead of synthetic speech). Never uploaded anywhere; oldest deleted."""
+    try:
+        os.makedirs(CLIPS_DIR, exist_ok=True)
+        name = time.strftime("%Y%m%d-%H%M%S") + ".wav"
+        with open(os.path.join(CLIPS_DIR, name), "wb") as f:
+            f.write(wav_bytes)
+        old = sorted(n for n in os.listdir(CLIPS_DIR) if n.endswith(".wav"))
+        for n in old[:-CLIPS_KEEP]:
+            os.remove(os.path.join(CLIPS_DIR, n))
+        log("clip saved: %s" % name)
+    except OSError as e:
+        log("clip save failed %r" % (e,))
+
+
 def frames_to_wav_bytes(frames, sample_rate=SAMPLE_RATE):
     """frames: list of numpy int16 arrays (mono). Returns WAV bytes."""
     if frames:
@@ -1318,6 +1339,7 @@ class GeminiMicApp:
             return
 
         wav_bytes, audio = frames_to_wav_bytes(frames)
+        save_clip(wav_bytes)
         log("clip: rms=%d (diagnostic)" % np.sqrt(np.mean(audio.astype(np.float64) ** 2)))
 
         # Energy-based silence gate (RMS, not a single peak): a click/breath spikes

@@ -20,6 +20,9 @@ Owner's later recorded refinements (his words, not scope invention):
   caveat stands.
 
 ## NEXT STEP (single queue, oldest first)
+- (since 2026-10-14) Men tanladim: dictation clips saved locally (last 20) for a
+  real-voice A/B. Owner can say "o'chir" to disable.
+  UZ: Qiling: odatdagidek bir nechta gapni past ovozda ayting | Ko'rasiz: men kuchaytirish foydasini sizning ovozingizda aytaman | Nega: sintetik sinov sizning ovozingizni isbotlamaydi | Vaqt: 1 daqiqa
 0. **(since 2026-10-13) Owner plugs MICUSB1 back in** (noisy room, 50 cm). Then
    verify log "mic pin: 'micusb1'" + one dictation. If calls lose the mic while
    the app runs -> next fix = open the mic only while the hotkey is held.
@@ -45,6 +48,10 @@ Owner's later recorded refinements (his words, not scope invention):
   add SNR. normalize_level deleted (no speculative code). "Quiet = errors" is
   therefore SNR vs the noisy office (teammates' speech), not loudness.
   Script: scratchpad level_ab.py (session-local).
+- To prove it on his REAL voice: `save_clip` keeps the last 20 dictation WAVs
+  in %APPDATA%\GeminiMic\clips (local only). Men tanladim (rule 5e): ON.
+  Takes effect at the next app restart (not restarted: owner asked for quiet).
+  NEXT: after a few quiet dictations, re-run raw vs boosted offline.
   Watch the log for "stream silent while idle" churn.
 
 ## 2026-10-14 11:33 — XM5 mic A/B: XM5 WINS, now primary (reverses 08-03)
@@ -923,3 +930,4 @@ mixed speech. Do NOT burn another session re-testing these.
 - 2026-10-10 [Mac model] Mac zip hozir eski modelda (gemini-3.5-flash). Windows'dagi sinalgan modelga (gemini-3-flash-preview) o'tkazib, yangi zip yig'ib Desktop'ga qo'yaymi? Bu GitHub ... -> **Ha, yangila**
 - 2026-10-10 [Log qo'sh] Windows'da xato yozishni topish uchun log'ga matn va ovoz balandligini yozib qo'ysaymi? -> **Ha, qo'sh**
 - 2026-10-13 [GitHub] Tuzatilgan kodni GitHub'ga zaxira qilib yuboraymi? -> **Ha, yubor (Tavsiya)**
+- 2026-10-14 [10 foiz] 10 foizga nimani pasaytirdingiz? -> **Karnay/musiqa ovozini**
