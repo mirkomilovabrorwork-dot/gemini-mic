@@ -42,10 +42,14 @@ Owner's later recorded refinements (his words, not scope invention):
   open the mic only while the hotkey is held.
 - Vocabulary list (5 terms) live; "soxta" -> drop thinking budget first;
   clips: last 20 WAVs in %APPDATA%\GeminiMic\clips.
-- Two pythonw copies run after each watchdog start (second one ~5 MB; mutex
-  should exit it) - harmless so far, not investigated.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-14 19:15 - "two pythonw copies" EXPLAINED (not a bug, closed)
+- PID 20456 (1-5 MB) = `windows\.venv\Scripts\pythonw.exe` = the uv venv LAUNCHER SHIM;
+  it spawns the real interpreter `%APPDATA%\uv\python\cpython-3.11.15\pythonw.exe
+  gemini_mic.py` (PID 30516, 19-85 MB, parent = the shim) and waits. One app instance;
+  the mutex never had a second copy to exit. Nothing to fix; killing either kills both.
 
 ## 2026-10-14 19:10 — test log leak FIXED (429dc2f)
 - The 19:03:59-19:04:05 "relay: state recording #1 / ack stopped #2 (cancel)" lines in the
