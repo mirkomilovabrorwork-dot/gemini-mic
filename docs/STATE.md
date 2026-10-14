@@ -1,5 +1,5 @@
-STATUS: re-review 196adcf = FIX-FIRST (2 kichik); noutbuk raw 6x KESADI (2.5% clip) -> pass-3 doer ishlayapti; APK Desktopda (hali o'rnatmasin)
-NEXT: pass-3 doer (_handoff/2026-10-14-gemini-mic-pass3.md) -> judge re-check -> restart -> CI -> APK -> owner Ctrl test + latency from log
+STATUS: v2 Ctrl->telefon + clip-safe gain + gate fixes LIVE on PC (974852f, 18:02); APK (196adcf Android) Desktopda - owner o'rnatyapti; telefon-Ctrl oqimi hali tasdiqlanmagan
+NEXT: judge final check of 974852f (beep-leak case) -> owner: phone shows "PC bilan ulangan"? Ctrl -> beep -> speak -> text; measure Ctrl->ack and release->paste from the log
 SIZDAN: 0 | (keyingi: v2 APK ni o'rnatib Ctrl bilan sinash)
  Gemini Mic — STATE
 
@@ -46,6 +46,25 @@ Owner's later recorded refinements (his words, not scope invention):
   should exit it) - harmless so far, not investigated.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-14 18:05 — pass 3 + two review one-liners live; waiting on the phone-Ctrl test
+- ab1f71b (doer opus): callback stores un-gained blocks; gain_for = min(6, 28000/peak) applied
+  once at stop (WAV + clip); NEW-2 (desired state never stays "recording"; stop sent even if
+  the tray update raises) and NEW-1 (PhoneHead placeholder keeps head-before-tail at the 60 s
+  handover, 40 s cap). 35 tests x4 green.
+- Judge re-check: both fixed; FIX-FIRST on a gate regression (gain from the loudest sample -
+  a pre-roll key click lowered it and rejected quiet desk-mic speech). My fix 1496c86: the
+  gate sees un-gained audio x RAW_GAIN as unclipped floats; proved: speech rms 40 + 12000
+  click -> accepted (was rejected), room noise -> rejected. Judge: fixed, but the gate input
+  skipped the 1 kHz start-beep notch -> beep leak alone passed. 974852f: notch applied to the
+  gate input + empty-clip log guard. App restarted 18:02 on 974852f. Known, logged, shippable:
+  PhoneHead fills with ANY phone text (a head later than 40 s or a new short take within the
+  window can paste out of order).
+- Owner 17:42 laptop dictation (pre-fix 6x): rms 8320, verbatim. Model = gemini-3-flash-preview
+  (owner asked 17:55; answered from the log + 13:10 A/B).
+- Side effect noticed: the unit suite writes "relay: rejected ..." lines into the REAL app
+  log (%APPDATA%\GeminiMic\log.txt) - harmless, but confusing when reading the log; worth a
+  LOG_PATH override in tests later.
 
 ## 2026-10-14 17:25 — laptop raw path works but CLIPS; re-review found 2 more
 - Owner 17:19-17:20, laptop array RAW 6x: 4 dictations verbatim near the mic ("ishladi"),
