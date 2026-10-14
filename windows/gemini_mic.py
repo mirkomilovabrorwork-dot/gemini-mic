@@ -1162,7 +1162,7 @@ RELAY_ACK_PATHS = ("/ack", "/mic/ack")
 RELAY_CMD_WAIT = 20        # default long-poll length (s)
 RELAY_CMD_WAIT_MAX = 25    # cap - the phone's read timeout is 35 s
 PHONE_SEEN_SEC = 3         # parked poll, or a poll within this window = phone connected
-PHONE_ACK_SEC = 2.0        # START beep waits this long for the phone's ack
+PHONE_ACK_SEC = 3.5        # START beep waits this long for the phone's ack (measured 18:11-18:33: ~2 s via Funnel, 4 of 4)
 PHONE_TEXT_SEC = 40        # after stop, the tray waits this long for the text
 PHONE_STOP_ACK_SEC = 5     # after stop, the phone should ack "stopped" within this
 PHONE_TAP_SEC = 0.15       # a hotkey tap shorter than this never drives the phone
