@@ -66,6 +66,9 @@ DEFAULT_CONFIG = {
     # fragment lets the app open the path that actually works, independent of
     # the Windows default-input setting.
     "input_device": "",
+    # Owner-editable spelling reference appended to the transcription prompt
+    # (see transcription_prompt). Keep it short.
+    "vocabulary": ["thinking budget", "workflow", "deploy", "deadline", "kontrol"],
 }
 
 # Primary gemini-3-flash-preview — the owner's own call, and the measurement on
@@ -142,7 +145,17 @@ def load_config():
             cfg.update({k: v for k, v in data.items() if k in DEFAULT_CONFIG})
     except (FileNotFoundError, ValueError, OSError):
         pass
+    cfg["vocabulary"] = parse_vocabulary(cfg.get("vocabulary"))
     return cfg
+
+
+def parse_vocabulary(value):
+    # Hand-edited settings may hold a comma-separated string instead of a list.
+    if isinstance(value, str):
+        value = value.split(",")
+    if not isinstance(value, list):
+        return list(DEFAULT_CONFIG["vocabulary"])
+    return [t.strip() for t in value if isinstance(t, str) and t.strip()]
 
 
 def save_config(cfg):
@@ -185,13 +198,24 @@ def language_instruction(language_mode):
         return "The speaker may mix Uzbek, English, and Russian in the same sentence. Preserve each language exactly as spoken."
 
 
-def transcription_prompt(language_mode):
-    return (
+def transcription_prompt(language_mode, vocabulary=None):
+    prompt = (
         "Transcribe this audio for direct typing. "
         + language_instruction(language_mode)
         + "\n\nRules:\n"
         + _TRANSCRIPT_RULES
     )
+    # The strict wording is load-bearing: a looser "these terms may appear"
+    # hint made the model insert listed terms that were never spoken (3/6
+    # control clips); this wording measured 0/6 injections, 2026-10-14.
+    # Max ~10 terms - a long list brings injections back.
+    if vocabulary:
+        prompt += (
+            "\n\nSpelling reference ONLY (not a hint about content): if - and only if - the audio clearly contains one of these English terms, spell it like this: "
+            + ", ".join(vocabulary)
+            + ". If the audio does not clearly contain the term, write exactly what you hear instead; inserting a listed term that was not spoken is a serious error."
+        )
+    return prompt
 
 
 # ---------------------------------------------------------------------------
@@ -304,6 +328,17 @@ def _run_selftest():
         print("formatted:")
         print(formatted)
         print()
+
+    # Vocabulary: empty list must leave the prompt byte-identical.
+    empty_ok = transcription_prompt("uz_en", []) == transcription_prompt("uz_en")
+    vocab_ok = "spell it like this: workflow." in transcription_prompt("uz_en", ["workflow"])
+    print("--- vocabulary ---")
+    print("empty list unchanged:", empty_ok)
+    print("term appended       :", vocab_ok)
+    if not (empty_ok and vocab_ok):
+        print("FAIL: vocabulary prompt check")
+        sys.exit(1)
+    print()
 
 
 if __name__ == "__main__" and "--selftest" in sys.argv:
@@ -692,7 +727,7 @@ def generation_config(model):
     return cfg
 
 
-def gemini_transcribe(api_key, model, language_mode, wav_bytes):
+def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None):
     if not api_key:
         raise GeminiError("Missing Gemini API key")
     if len(wav_bytes) == 0:
@@ -704,7 +739,7 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes):
         "contents": [
             {
                 "parts": [
-                    {"text": transcription_prompt(language_mode)},
+                    {"text": transcription_prompt(language_mode, vocabulary)},
                     {
                         "inline_data": {
                             "mime_type": "audio/wav",
@@ -890,9 +925,20 @@ class SettingsWindow:
             row=9, column=1, columnspan=2, sticky="w", padx=(8, 0), pady=(4, 0)
         )
 
+        ttk.Separator(outer).grid(row=10, column=0, columnspan=3, sticky="we", pady=(14, 14))
+
+        # -- Vocabulary -------------------------------------------------------
+        ttk.Label(outer, text="Atamalar (vergul bilan)", font=("Segoe UI", 9, "bold")).grid(
+            row=11, column=0, columnspan=3, sticky="w"
+        )
+        vocab_var = tk.StringVar(value=", ".join(cfg.get("vocabulary", DEFAULT_CONFIG["vocabulary"])))
+        ttk.Entry(outer, textvariable=vocab_var, width=42).grid(
+            row=12, column=0, columnspan=3, sticky="we", pady=(4, 0)
+        )
+
         status_var = tk.StringVar(value="")
         status_label = ttk.Label(outer, textvariable=status_var, foreground="#0a0")
-        status_label.grid(row=10, column=0, columnspan=3, sticky="w", pady=(14, 0))
+        status_label.grid(row=13, column=0, columnspan=3, sticky="w", pady=(14, 0))
 
         def on_save():
             # Start from the saved config so keys this dialog has no field for
@@ -903,6 +949,7 @@ class SettingsWindow:
                 "model": cfg.get("model", DEFAULT_CONFIG["model"]),
                 "language_mode": lang_var.get(),
                 "hotkey": hotkey_var.get().strip() or DEFAULT_CONFIG["hotkey"],
+                "vocabulary": parse_vocabulary(vocab_var.get()),
             })
             try:
                 save_config(new_cfg)
@@ -914,7 +961,7 @@ class SettingsWindow:
             root.after(700, root.destroy)
 
         btn_frame = ttk.Frame(outer)
-        btn_frame.grid(row=11, column=0, columnspan=3, sticky="e", pady=(16, 0))
+        btn_frame.grid(row=14, column=0, columnspan=3, sticky="e", pady=(16, 0))
         ttk.Button(btn_frame, text="Save", command=on_save).pack(side="right")
         ttk.Button(btn_frame, text="Cancel", command=root.destroy).pack(side="right", padx=(0, 8))
 
@@ -1364,11 +1411,15 @@ class GeminiMicApp:
             try:
                 cfg = self.get_config()
                 log("gemini: calling model=%s" % cfg.get("model", DEFAULT_CONFIG["model"]))
+                vocabulary = cfg.get("vocabulary", [])
+                if vocabulary:
+                    log(f"vocab: {len(vocabulary)} terms")
                 transcript = gemini_transcribe(
                     cfg.get("api_key", ""),
                     cfg.get("model", DEFAULT_CONFIG["model"]),
                     cfg.get("language_mode", DEFAULT_CONFIG["language_mode"]),
                     wav_bytes,
+                    vocabulary,
                 )
                 log("gemini: transcript %d chars" % len(transcript))
                 log("gemini: text=%r" % transcript[:300])

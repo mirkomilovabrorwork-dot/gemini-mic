@@ -34,6 +34,40 @@ Owner's later recorded refinements (his words, not scope invention):
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
 
+## 2026-10-14 14:05 — DECISION: strict "spelling reference" vocab list -> BUILD (Windows)
+- Variant 2 (scratchpad/vocab_ab2.py): 5 terms only, wording "Spelling
+  reference ONLY (not a hint about content): if - and only if - the audio
+  clearly contains one of these English terms, spell it like this: ... If the
+  audio does not clearly contain the term, write exactly what you hear
+  instead; inserting a listed term that was not spoken is a serious error."
+  -> errors 36 -> 20 / 6 runs AND 0 injections on the 6 control clips (v1
+  wording: 23 errors, 3 injections). Caveat: 6-clip control set is small ->
+  ships as an owner-editable Settings field + removable in one tap.
+- Owner "Ha, qo'sh" 14:00. Doer (opus) implementing: config key `vocabulary`
+  (list, default the 5 terms), prompt append verbatim, Settings field
+  "Atamalar (vergul bilan)", log "vocab: N terms", selftest checks.
+  SHIPPED 13:51: diff reviewed (wording verbatim, empty list = old prompt,
+  Save keeps unknown keys), selftest + gate EXIT 0, app restarted on the new
+  code (log "vocab: N terms" appears at the next dictation; listener proven
+  by synthetic Right-Ctrl). Shipped code run on saved clips: known clip ->
+  "Thinking budget va kontrolni tekshirish kerak" (exact); control clip that
+  v1 turned into "Terminalda" -> clean. HONEST GAP: the other control clip
+  (garbled 4.8s audio, baseline "Men o'zimdan keyin ochilganman") came back
+  "Men hammani thinking ochilgan deb o'ylayman" - the single word "thinking"
+  leaked (not the listed phrase, so the harness counted 0). Partial leaks on
+  mushy audio are possible; the Settings field / empty list is the off switch.
+  Owner's next real dictations decide; if he reports an invented term, drop
+  "thinking budget" from the list first (it is the leaky one).
+- Research (6 STT vendors, sources in session): only Google STT v2 Chirp has
+  Uzbek + a NUMERIC per-phrase boost (<=20); ElevenLabs Scribe v2 has Uzbek +
+  keyterms without a strength knob; Deepgram no Uzbek; AssemblyAI Uzbek at
+  the worst tier; Whisper docs admit unspoken hints can appear. UNPROVEN:
+  whether Chirp's boost reaches English jargon inside uz-UZ audio. Owner asked
+  "uz stt uchun foydasi aniqmi?" -> answered: not certain, only a paid trial
+  on his clips would tell. Men tanladim: keyinroq - revisit only if the
+  Gemini list is not enough.
+  UZ: Qiling: hozircha hech narsa | Ko'rasiz: Gemini ro'yxati yetmasa, Google sinovini taklif qilaman | Nega: foydasi isbotlanmagan, karta kerak | Vaqt: 0
+
 ## 2026-10-14 13:45 — owner: "muammo mixed languageda" -> CONFIRMED; vocab hint = gain AND poison
 - Desk mic dictation (13:24, rms 150, Windows level 94%): 8 errors on the
   14-word test sentence - WORSE than XM5 (5-6); his first attempt was gate-
@@ -1029,3 +1063,5 @@ mixed speech. Do NOT burn another session re-testing these.
 - 2026-10-13 [GitHub] Tuzatilgan kodni GitHub'ga zaxira qilib yuboraymi? -> **Ha, yubor (Tavsiya)**
 - 2026-10-14 [10 foiz] 10 foizga nimani pasaytirdingiz? -> **Karnay/musiqa ovozini**
 - 2026-10-14 [Sinov] XM5 mikrofonini qo'ng'iroq rejimida sinab ko'ramizmi? -> **Ha, sinaymiz**
+- 2026-10-14 [Ro'yxat] Qat'iy imlo ro'yxatini Windows ilovasiga qo'shaymi? -> **Ha, qo'sh (tavsiya)**
+- 2026-10-14 [Google STT] Google Cloud STT (Chirp) ni ham sinab ko'raylikmi? -> **uz stt uchun foydasi aniqmi?**
