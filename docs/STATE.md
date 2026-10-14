@@ -43,8 +43,11 @@ Owner's later recorded refinements (his words, not scope invention):
   streams into one buffer (first test today = "Ovoz eshitilmadi").
 - Config: `"WH-1000XM5|MICUSB1|Microphone Array"`; resolve now returns every
   match in order and the opener walks them before the system default.
-- Known gaps: when XM5 reconnects after a drop the app stays on the fallback
-  mic until the tray "Mikrofonni qayta ulash"; music on XM5 is HFP-quality
+- Auto-return: `_prefer_mic_watch` (every 5s, idle only, 60s backoff) reads
+  the MMDevices registry; when the FIRST fragment's endpoint is active and the
+  stream is elsewhere it calls reconnect_mic. Detection unit-checked live
+  (wh-1000xm5 True, soundpeats False); the actual drop->return not yet seen.
+- Known gap: music on XM5 is HFP-quality
   while the app holds the mic open. SoundPEATS: its mic endpoint was absent
   (8 kHz CVSD anyway) - not tested.
 

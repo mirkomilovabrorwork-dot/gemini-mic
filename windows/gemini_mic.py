@@ -1069,6 +1069,60 @@ class GeminiMicApp:
                 self.notify("Mikrofon ochilmadi — qurilmalarni tekshiring")
         threading.Thread(target=_do, daemon=True).start()
 
+    def _preferred_endpoint_active(self, frag):
+        """True when a Windows capture endpoint whose device/interface name holds
+        `frag` is ACTIVE (DeviceState 1). Read from the registry, not PortAudio:
+        PortAudio's list is cached and refreshing it would kill the live stream."""
+        import winreg
+        base = r"SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture"
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, base) as root:
+                for k in range(winreg.QueryInfoKey(root)[0]):
+                    sub = winreg.EnumKey(root, k)
+                    try:
+                        with winreg.OpenKey(root, sub) as dk:
+                            if winreg.QueryValueEx(dk, "DeviceState")[0] != 1:
+                                continue
+                        with winreg.OpenKey(root, sub + r"\Properties") as pk:
+                            names = []
+                            for prop in ("{a45c254e-df1c-4efd-8020-67d146a850e0},2",
+                                         "{b3f8fa53-0004-438e-9003-51a46e139bfc},6"):
+                                try:
+                                    names.append(str(winreg.QueryValueEx(pk, prop)[0]).lower())
+                                except OSError:
+                                    pass
+                        if any(frag in n for n in names):
+                            return True
+                    except OSError:
+                        continue
+        except OSError:
+            pass
+        return False
+
+    def _prefer_mic_watch(self):
+        """Background: when the FIRST mic in input_device (e.g. the XM5) comes
+        back after a drop, switch to it while idle - otherwise the app stays on
+        the fallback mic until the tray button is pressed. Owner 2026-10-14:
+        "XM5 mikrofoni yaxshi, shu max ishlaydigan bo'lsin"."""
+        last_try = 0.0
+        while True:
+            time.sleep(5)
+            try:
+                frags = [f.strip().lower() for f in (self.cfg.get("input_device") or "").split("|") if f.strip()]
+                if len(frags) < 2 or self.recording or not self.jobs.empty():
+                    continue
+                cur = ""
+                if self.stream is not None:
+                    cur = sd.query_devices(self.stream.device)["name"].lower()
+                if frags[0] in cur or time.monotonic() - last_try < 60:
+                    continue
+                if self._preferred_endpoint_active(frags[0]):
+                    last_try = time.monotonic()
+                    log("mic watch: %r is back -> switching to it" % frags[0])
+                    self.reconnect_mic()
+            except Exception as e:
+                log("mic watch: %r" % (e,))
+
     def set_state(self, state):
         """state: 'idle' | 'recording' | 'transcribing'"""
         if self.icon is None:
@@ -1400,6 +1454,7 @@ class GeminiMicApp:
         # already has the ring (and its pre-roll) behind it.
         self.ensure_stream()
         self.start_hotkey_listener()
+        threading.Thread(target=self._prefer_mic_watch, daemon=True).start()
 
         self.icon = pystray.Icon(
             APP_NAME,
