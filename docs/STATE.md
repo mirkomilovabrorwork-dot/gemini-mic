@@ -1,4 +1,4 @@
-STATUS: v2 Ctrl->telefon ISHLAYDI - owner 18:33 "hammasi ishladi" (4/4 Ctrl->phone, bip ~2 s, matn 3-4 s); ack window 3.5 s (HEAD, app 18:37); ekran-o'chiq holati sinalmagan
+STATUS: v2 Ctrl->telefon ISHLAYDI - owner 18:33 "hammasi ishladi" (4/4 Ctrl->phone, bip ~2 s, matn 3-4 s); model -> gemini-3.7-flash (owner 18:45, 3 platforma, app 18:41); ekran-o'chiq holati sinalmagan
 NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for fallback/Doze; later: PhoneHead seq-tagging, tests' log side effect, "primary speaker" prompt A/B (offered, undecided)
 SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
@@ -46,6 +46,15 @@ Owner's later recorded refinements (his words, not scope invention):
   should exit it) - harmless so far, not investigated.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-14 18:45 — owner: "gemini micni ham 3.7ga o'tkaz" -> DONE
+- Model gemini-3-flash-preview -> gemini-3.7-flash in Windows DEFAULT_CONFIG + live
+  config.json (app restarted 18:41), Android Prefs default (MODEL_BETTER + getString
+  fallback; the app never writes the "model" key, so the default applies on install),
+  Mac default. Hukm given: shubhali - 13:10 A/B on his clips: 3.7-flash tied in word errors
+  (19 vs 20) but ~2x slower (4.3 s vs 2.2 s); his call, reversible via Settings/model.
+  New APK from CI (run 38573911813) -> Desktop once green. Verify live: next dictation's
+  `gemini: calling model=gemini-3.7-flash` + latency.
 
 ## 2026-10-14 18:40 — v2 PROVEN LIVE by the owner; ack window widened
 - Owner installed the APK (196adcf Android side), 18:11-18:33: 4 PC-hotkey sessions all
