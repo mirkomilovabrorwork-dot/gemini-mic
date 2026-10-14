@@ -38,8 +38,13 @@ Owner's later recorded refinements (his words, not scope invention):
 - 11:44 a first dictation was 3.8s of zeros: the XM5 stream had died while
   idle and was only healed at the key press. `_prefer_mic_watch` now re-opens
   a stream silent >2s while idle. Live since 11:46 (next dictation fine).
-- UNPROVEN: normalization has no A/B yet (no saved clips). If quiet errors
-  persist, next = save raw clips locally and A/B raw vs normalized offline.
+- MEASURED then REMOVED: offline A/B (3 known-text TTS sentences, speech
+  scaled to rms 250/100/50 + measured XM5 floor noise rms 17, raw vs
+  normalized, gemini-3-flash-preview): word errors raw 2/2/3 vs norm 2/3/2 -
+  identical (only "a/the", "3/three"). Gemini is level-invariant; gain cannot
+  add SNR. normalize_level deleted (no speculative code). "Quiet = errors" is
+  therefore SNR vs the noisy office (teammates' speech), not loudness.
+  Script: scratchpad level_ab.py (session-local).
   Watch the log for "stream silent while idle" churn.
 
 ## 2026-10-14 11:33 — XM5 mic A/B: XM5 WINS, now primary (reverses 08-03)
