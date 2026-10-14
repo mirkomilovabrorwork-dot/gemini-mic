@@ -1,6 +1,6 @@
-STATUS: ishlaydi; raw mikrofon + atamalar ro'yxati jonli (10-14 14:27); XM5 birinchi
+STATUS: ishlaydi; raw mikrofon jonli; YO'NALISH 10-14: faqat XM5 yoki telefon (stol mikrofoni chiqarildi)
 NEXT: siz - XM5 bilan "Ha..." gap; men - XM5 klipida birinchi so'z + floor/threshold o'lchash
-SIZDAN: 0 | XM5 bilan "Ha" deb boshlanadigan bitta gap ayting
+SIZDAN: 1 | XM5 bilan "Ha" deb boshlanadigan bitta gap ayting - bu test yo'nalishni hal qiladi
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
@@ -46,6 +46,21 @@ Owner's later recorded refinements (his words, not scope invention):
 - Share-zip handover DONE (owner declared in HQ 2026-08-07; duty open since
   2026-07-28 closed). If he later relays the friend's result (opened/failed),
   treat it as NEW input, not this duty reopening.
+
+## 2026-10-14 — OWNER DIRECTIVE: "yo tel yo XM5 mic orqali ideal yechim"
+- Desk mic (USB MIC PRO) is OUT of the daily path (owner 14:25 + this). Two
+  candidates only: (A) XM5 straight on the PC — zero extra parts, ceiling =
+  BT Hands-Free 16 kHz channel + in-headset NR (not fixable from Windows);
+  (B) phone-grade capture for PC dictation — our Android app records on the
+  phone mic (44.1 kHz, "telda yaxshi"), transcribes, and relays the TEXT to the
+  Windows app over LAN which pastes it (no audio bridge like WO Mic). Cost of
+  B: a LAN receiver in the Windows app + "send to PC" in the Android app; needs
+  same Wi-Fi, phone awake, press on the phone. Decision rule: the pending 30 s
+  XM5 "Ha..." test on the raw path (3cfe19d) decides — acceptable -> A is the
+  ideal, stop; still mangled -> build B. Log 14:27:36 shows only a 0.12 s
+  press (rejected: too short); no real XM5 dictation on the raw path yet.
+  Untested idea C (unverified): a USB LE-Audio dongle could give the XM5 a
+  wideband LC3 mic on Windows (this PC's MT7921 has no LE Audio endpoint).
 
 ## 2026-10-14 14:20 — "birinchi gap xato" ROOT CAUSE = Windows mic-effects gate eats the first syllable
 - Owner 14:05: first seconds / first word wrong ("Tashqi" -> "Boshqa", "Ha"
