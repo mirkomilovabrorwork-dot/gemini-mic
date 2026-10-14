@@ -125,6 +125,91 @@ class RawFallbackTest(unittest.TestCase):
         # a stream that never calls back is left to the dead-stream watch
         self.assertFalse(self.app._raw_is_digital_zero(first_wait=0.2))
 
+    def test_zero_limit_is_two_ungained(self):
+        # ring blocks are un-gained now: |sample| <= 2 is digital zero, 3 is audio
+        FakeStream.raw_level = 2
+        self.assertTrue(self.app.ensure_stream())
+        self.assertEqual(FakeStream.opened, [(DEV, True), (DEV, False)])
+        self.app.stream.close()
+        FakeStream.opened = []
+        FakeStream.raw_level = 3
+        self.assertTrue(self.app.ensure_stream())
+        self.assertEqual(FakeStream.opened, [(DEV, True)])
+        self.assertTrue(self.app.stream_raw)
+
+    def test_raw_blocks_reach_ring_ungained(self):
+        FakeStream.raw_level = 50
+        self.assertTrue(self.app.ensure_stream())
+        time.sleep(0.3)
+        self.assertEqual(int(self.app.ring[-1].max()), 50)
+
+
+def tone(peak, blocks, hz=250):
+    """int16 sine blocks (250 Hz: whole cycles per 0.1 s block, peak exact)."""
+    t = np.arange(gemini_mic.STREAM_BLOCK) / gemini_mic.SAMPLE_RATE
+    b = np.round(peak * np.sin(2 * np.pi * hz * t)).astype(np.int16)
+    return [b.copy() for _ in range(blocks)]
+
+
+class ClipSafeGainTest(unittest.TestCase):
+    """A.2: one clip-safe gain per recording, applied in stop_recording_and_transcribe."""
+
+    def setUp(self):
+        self.logged = []
+        self.saved_wavs = []
+        self._saved = (gemini_mic.log, gemini_mic.save_clip)
+        gemini_mic.log = self.logged.append
+        gemini_mic.save_clip = self.saved_wavs.append
+        app = object.__new__(gemini_mic.GeminiMicApp)
+        app.lock = threading.Lock()
+        app.stream_raw = True
+        app.recording = True
+        app.record_start = time.monotonic() - 3.0
+        app.last_dictation = 0.0
+        app.room_floor = None
+        app.jobs = __import__("queue").Queue()
+        app.set_state = lambda s: None
+        app._tooltip = lambda t: None
+        self.app = app
+
+    def tearDown(self):
+        gemini_mic.log, gemini_mic.save_clip = self._saved
+
+    def run_clip(self, frames, room_floor=None):
+        self.app.frames = frames
+        self.app.recording = True
+        self.app.room_floor = room_floor
+        self.app.stop_recording_and_transcribe()
+        import io, wave
+        with wave.open(io.BytesIO(self.saved_wavs[-1])) as wf:
+            return np.frombuffer(wf.readframes(wf.getnframes()), np.int16)
+
+    def test_quiet_clip_gets_full_gain(self):
+        self.assertEqual(self.app.gain_for(tone(300, 10)), gemini_mic.RAW_GAIN)
+        audio = self.run_clip(tone(300, 10))
+        self.assertGreaterEqual(int(np.abs(audio.astype(np.int32)).max()), 1790)
+        self.assertTrue(any("gain=6.0x" in l and "clip: rms=" in l for l in self.logged))
+
+    def test_loud_clip_is_not_clipped(self):
+        self.assertAlmostEqual(self.app.gain_for(tone(20000, 10)), 1.4)
+        audio = self.run_clip(tone(20000, 10))
+        self.assertLessEqual(int(np.abs(audio.astype(np.int32)).max()), 28000)
+        self.assertEqual(int((np.abs(audio.astype(np.int32)) >= 32000).sum()), 0)
+        self.assertTrue(any("gain=1.4x" in l for l in self.logged))
+
+    def test_shared_stream_is_not_gained(self):
+        self.app.stream_raw = False
+        self.assertEqual(self.app.gain_for(tone(300, 10)), 1.0)
+
+    def test_quiet_speech_verdict_unchanged(self):
+        # raw room tone rms 20 then speech rms 150 (sine peak 212) -> accepted,
+        # clip AND room floor gained by the same 6x
+        room = tone(28, 5)
+        speech = tone(212, 15)
+        self.run_clip(room + speech, room_floor=20.0)
+        self.assertEqual(self.app.jobs.qsize(), 1)
+        self.assertFalse(any("no sustained speech" in l for l in self.logged))
+
 
 if __name__ == "__main__":
     unittest.main()

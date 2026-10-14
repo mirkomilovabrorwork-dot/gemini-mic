@@ -138,6 +138,9 @@ MIN_VOICED_WINDOWS = 3
 # logs and clip levels stay comparable to the MME path. Gemini itself is
 # level-invariant (measured 2026-10-14).
 RAW_GAIN = 6.0
+# ...but never past this peak: the gain is per clip, min(RAW_GAIN, this/peak),
+# so a loud mic (AMD array, raw speech peaks ~1000) is not clipped.
+RAW_GAIN_PEAK = 28000
 # The mic stream stays open for the app's lifetime and feeds a small ring
 # buffer. Opening a Windows input stream takes ~0.2-0.5s, and recording used to
 # begin only after that — the first words of every dictation were simply lost
@@ -361,10 +364,10 @@ def format_paragraphs(raw):
 # Self-test entry point (no other deps needed)
 # ---------------------------------------------------------------------------
 
-def apply_raw_gain(block):
-    """Scale a raw int16 block by RAW_GAIN, clipped to int16 range."""
+def apply_raw_gain(block, gain=RAW_GAIN):
+    """Scale a raw int16 block by gain (default RAW_GAIN), clipped to int16 range."""
     import numpy as np  # local: --selftest runs before the heavy imports below
-    return np.clip(block.astype(np.int32) * RAW_GAIN, -32768, 32767).astype(np.int16)
+    return np.clip(block.astype(np.int32) * gain, -32768, 32767).astype(np.int16)
 
 
 def _run_selftest():
@@ -1315,7 +1318,16 @@ class RelayHandler(BaseHTTPRequestHandler):
             self._reply(413, {"ok": False, "error": "too_long"})
             return
         # Same FIFO as dictation chunks, so a relay paste never interleaves.
-        self.server.jobs.put(("relay", text))
+        # A 60 s handover parked a PhoneHead ahead of the local tail: this
+        # text fills it instead, so the head pastes first.
+        with srv.lock:
+            head = srv.pending_head
+            if head is not None:
+                srv.pending_head = None
+                head.text = text
+                head.event.set()
+            else:
+                self.server.jobs.put(("relay", text))
         srv.last_text_at = time.monotonic()
         log("relay: accepted %d chars" % len(text))
         self._reply(200, {"ok": True})
@@ -1342,7 +1354,19 @@ def make_relay_server(port, jobs, get_token):
     server.ack = (None, 0)             # (state, seq) of the last /ack
     server.on_ack = None               # callable(state, seq, reason), set by the app
     server.last_text_at = 0.0
+    server.pending_head = None         # PhoneHead the next text fills (60 s handover)
     return server
+
+
+class PhoneHead:
+    """Placeholder job for the phone's head text at a 60 s handover: queued
+    BEFORE the local tail so paste order is [head, tail] even when the tail
+    is ready first. The relay POST fills it; _job_worker waits until deadline."""
+
+    def __init__(self, deadline):
+        self.deadline = deadline
+        self.event = threading.Event()
+        self.text = None
 
 
 def relay_set_state(server, state, discard=False):
@@ -1377,7 +1401,7 @@ class GeminiMicApp:
         self.stream = None  # persistent input stream (opened once, kept for app lifetime)
         self.ring = collections.deque(maxlen=max(1, int(RING_SEC / (STREAM_BLOCK / SAMPLE_RATE))))
         self.last_block = 0.0  # when the callback last delivered audio; stale = dead stream
-        self.stream_raw = False  # current stream is WASAPI raw -> callback applies RAW_GAIN
+        self.stream_raw = False  # current stream is WASAPI raw -> each clip gets gain_for() gain
         self.room_floor = None  # idle room tone (rms) captured at key press, for has_speech
         self.record_start = 0.0
         self.chunk_chain = 0  # consecutive auto-rollovers while the key stays held
@@ -1570,9 +1594,9 @@ class GeminiMicApp:
     # -- recording ----------------------------------------------------------
 
     def _audio_callback(self, indata, frames_count, time_info, status):
+        # Un-gained: the raw gain is chosen per clip from its peak in
+        # stop_recording_and_transcribe (a fixed 6x clipped the AMD array).
         block = indata[:, 0].copy()
-        if self.stream_raw:
-            block = apply_raw_gain(block)
         self.last_block = time.monotonic()
         self.ring.append(block)
         if self.recording:
@@ -1653,7 +1677,7 @@ class GeminiMicApp:
                     sd.query_devices(dev)["hostapi"])["name"] == "Windows WASAPI"
                 s = self._open_stream(dev, raw)
                 name = "system default" if dev is None else sd.query_devices(dev)["name"][:60]
-                mode = "WASAPI raw, gain %.0fx, " % RAW_GAIN if raw else ""
+                mode = "WASAPI raw, gain <=%.0fx, " % RAW_GAIN if raw else ""
                 if raw and self._raw_is_digital_zero():
                     # Raw mode on some endpoints (AMD mic array, XM5 Hands-Free)
                     # delivers pure zeros while shared mode on the same device
@@ -1683,8 +1707,8 @@ class GeminiMicApp:
             # (measured: that fails with -9984).
             extra = sd.WasapiSettings(auto_convert=True)
             extra._streaminfo.streamOption = 1
-        # Set before start(): the first callback must already apply the gain
-        # (and a shared stream must NOT - it already carries the APO gain).
+        # Set before start(): gain_for() gains raw clips only (a shared
+        # stream must NOT be gained - it already carries the APO gain).
         self.stream_raw = raw
         s = sd.InputStream(
             samplerate=SAMPLE_RATE,
@@ -1700,12 +1724,12 @@ class GeminiMicApp:
 
     def _raw_is_digital_zero(self, first_wait=1.5, settle=0.3, judge=0.5):
         """True when a just-started raw stream delivers only digital zero
-        (max |sample| <= 2 before RAW_GAIN). Measured on the AMD array: the
+        (max |sample| <= 2; ring blocks are un-gained). Measured on the AMD array: the
         FIRST block lands ~0.56 s after start() and the first ~0.2 s of blocks
         are zero even on a healthy device - so wait up to `first_wait` for the
         first block, ignore `settle` s after it, judge the next `judge` s.
         No blocks -> False: the dead-stream watch handles a silent stream."""
-        limit = 2 * RAW_GAIN  # ring blocks are already gained
+        limit = 2  # ring blocks are un-gained
         deadline = time.monotonic() + first_wait
         while not self.ring:
             if time.monotonic() >= deadline:
@@ -1783,6 +1807,17 @@ class GeminiMicApp:
 
         threading.Thread(target=watchdog, daemon=True).start()
 
+    def gain_for(self, frames):
+        """Clip-safe raw gain: RAW_GAIN, lowered so the clip's peak lands at
+        RAW_GAIN_PEAK. A fixed 6x was tuned on "USB MIC PRO" (room tone rms 64);
+        the AMD array already peaks 700-1100 raw, and 6x saturated it (owner's
+        2026-10-14 17:19 clips: peak 32768, up to 2.5 % samples clipped).
+        A shared (non-raw) stream is never gained."""
+        if not self.stream_raw:
+            return 1.0
+        peak = max((int(np.abs(b.astype(np.int32)).max()) for b in frames if b.size), default=0)
+        return min(RAW_GAIN, RAW_GAIN_PEAK / max(1, peak))
+
     def stop_recording_and_transcribe(self):
         with self.lock:
             if not self.recording:
@@ -1802,15 +1837,23 @@ class GeminiMicApp:
             self._tooltip("Gemini Mic — hold longer")
             return
 
+        # The ONE place the raw gain is applied: clip, gate and saved WAV all
+        # see the same g (the gate thresholds were tuned on gained audio).
+        g = self.gain_for(frames)
+        if g != 1.0:
+            frames = [apply_raw_gain(b, g) for b in frames]
+        # room_floor is the idle room-tone rms (un-gained) -> same g
+        room_floor = None if self.room_floor is None else self.room_floor * g
         wav_bytes, audio = frames_to_wav_bytes(frames)
         save_clip(wav_bytes)
-        log("clip: rms=%d (diagnostic)" % np.sqrt(np.mean(audio.astype(np.float64) ** 2)))
+        log("clip: rms=%d gain=%.1fx (diagnostic)"
+            % (np.sqrt(np.mean(audio.astype(np.float64) ** 2)), g))
 
         # Energy-based silence gate (RMS, not a single peak): a click/breath spikes
         # the peak but has low RMS, and PC mics are noisier than phone mics — so a
         # peak gate let near-silence reach the model, which then hallucinated a
         # whole fake transcript. RMS reliably separates real speech from noise.
-        if not has_speech(audio, self.room_floor):
+        if not has_speech(audio, room_floor):
             log("gate: no sustained speech -> rejected")
             self.set_state("idle")
             self._tooltip("Gemini Mic — ovoz eshitilmadi")
@@ -1827,6 +1870,18 @@ class GeminiMicApp:
         while True:
             job = self.jobs.get()
             try:
+                if isinstance(job, PhoneHead):
+                    job.event.wait(max(0.0, job.deadline - time.monotonic()))
+                    srv = self.relay_server
+                    with srv.lock:  # a fill happens under this lock: text is final now
+                        if srv.pending_head is job:
+                            srv.pending_head = None  # a later text queues normally
+                    if job.text is None:
+                        log("phone: head missing")
+                        continue
+                    self.paste_text(job.text)
+                    beep(660, 90)
+                    continue
                 if isinstance(job, tuple) and job[0] == "relay":
                     self.paste_text(job[1])
                     beep(660, 90)  # audio cue: phone text pasted (done)
@@ -1946,6 +2001,12 @@ class GeminiMicApp:
                 phone, acked = self.phone_recording, self.phone_acked
                 sent = self.phone_start_seq != 0
                 self.phone_recording = False
+                # A "stopped" ack that landed before this lock ended the
+                # session without _phone_release: never leave desired
+                # "recording" behind, or a later poll records a phantom take.
+                srv = self.relay_server
+                if not phone and sent and srv is not None and srv.desired_state == "recording":
+                    self.phone_cmd("stop")
             if phone:
                 threading.Thread(target=self._phone_release, args=(acked, sent), daemon=True).start()
             # no return: a local recording started meanwhile must stop too (F1)
@@ -2021,7 +2082,10 @@ class GeminiMicApp:
             self.set_state("idle")
             return
         stop_at = time.monotonic()
-        self.set_state("transcribing")  # before the stop: a fast "short" ack resets it
+        try:
+            self.set_state("transcribing")  # before the stop: a fast "short" ack resets it
+        except Exception as e:  # pystray can raise (WinError): the stop must still go out
+            log("phone: tray update failed %r" % (e,))
         stop_seq = self.phone_cmd("stop")
 
         # A stop the phone never confirms (its poll died) is logged; desired
@@ -2056,18 +2120,31 @@ class GeminiMicApp:
             # The phone ended the take while the key is still held -> the
             # local mic records the remainder (F3).
             held = self.phone_recording and self.phone_acked and self.hotkey_down
-            if self.phone_recording and self.phone_acked:
+            ended = self.phone_recording and self.phone_acked
+            if ended:
                 self.phone_recording = False
                 self.phone_falling_back = held
         if held:
             log("phone: 60s cap -> local mic")
             try:
                 self.phone_cmd("stop")  # desired idle: the phone must not restart
+                if reason not in PHONE_NO_TEXT_REASONS:
+                    # The head text arrives later than the tail may be ready:
+                    # park its slot in the FIFO now, the tail queues behind it.
+                    head = PhoneHead(time.monotonic() + PHONE_TEXT_SEC)
+                    srv = self.relay_server
+                    with srv.lock:
+                        srv.pending_head = head
+                    self.jobs.put(head)
                 if self.hotkey_down:
                     self.start_recording()
             finally:
                 self.phone_falling_back = False
             return
+        if ended:
+            # the phone ended a confirmed session (e.g. racing the release):
+            # desired must not stay "recording"
+            self.phone_cmd("stop")
         if reason in PHONE_NO_TEXT_REASONS and not (self.recording or self.phone_recording):
             self.set_state("idle")  # no text will come - don't wait 40 s (F5)
 

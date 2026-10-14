@@ -170,6 +170,10 @@ class RelayServerTest(unittest.TestCase):
         self.assertEqual(self.server.ack, ("recording", 3))
         self.request("POST", "/ack", {"token": TOKEN, "state": "stopped", "seq": 4, "reason": "short"})
         self.assertEqual(self.server.ack, ("stopped", 4))
+        # the handler replies BEFORE it calls on_ack: wait for the callback
+        end = time.monotonic() + 2
+        while len(seen) < 2 and time.monotonic() < end:
+            time.sleep(0.01)
         self.assertEqual(seen, [("recording", 3, ""), ("stopped", 4, "short")])
         self.assertTrue(self.jobs.empty())  # an ack is never pasted
 
