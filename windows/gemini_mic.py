@@ -11,16 +11,20 @@ Self-test: python gemini_mic.py --selftest
 import base64
 import collections
 import ctypes
+import hmac
 import json
 import queue
 import os
 import re
+import secrets
 import sys
 import tempfile
 import threading
 import time
 import wave
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
+from urllib.parse import parse_qs, urlsplit
 
 try:
     import uiautomation as _uia  # optional: focus the foreground text field w/o a click
@@ -72,7 +76,15 @@ DEFAULT_CONFIG = {
     # Owner-editable spelling reference appended to the transcription prompt
     # (see transcription_prompt). Keep it short.
     "vocabulary": ["thinking budget", "workflow", "deploy", "deadline", "kontrol"],
+    # Phone -> PC text relay: the Android app POSTs its finished transcript to
+    # RELAY_PUBLIC_URL (Tailscale Funnel -> 127.0.0.1:relay_port) and this app
+    # pastes it. relay_token is generated on first load (see load_config).
+    "relay_enabled": True,
+    "relay_port": 5588,
+    "relay_token": "",
 }
+
+RELAY_PUBLIC_URL = "https://data365.taildef23b.ts.net/mic"
 
 # Primary gemini-3-flash-preview — the owner's own call, and the measurement on
 # his recorded voice backed it: across 4 segments it transcribed correctly every
@@ -161,7 +173,18 @@ def load_config():
     except (FileNotFoundError, ValueError, OSError):
         pass
     cfg["vocabulary"] = parse_vocabulary(cfg.get("vocabulary"))
+    if not cfg.get("relay_token"):
+        # The owner types this code on the phone once - persist it right away.
+        cfg["relay_token"] = new_relay_token()
+        try:
+            save_config(cfg)
+        except OSError:
+            pass
     return cfg
+
+
+def new_relay_token():
+    return secrets.token_hex(4).upper()  # 8 hex chars, e.g. 3F9A1C7B
 
 
 MAX_VOCABULARY_TERMS = 10
@@ -990,9 +1013,35 @@ class SettingsWindow:
             row=12, column=0, columnspan=3, sticky="we", pady=(4, 0)
         )
 
+        # -- Phone relay code (read-only) -------------------------------------
+        def relay_text(token):
+            return f"Telefon kodi: {token}  (manzil: {RELAY_PUBLIC_URL})"
+
+        relay_var = tk.StringVar(value=relay_text(cfg.get("relay_token", "")))
+        ttk.Label(outer, textvariable=relay_var, wraplength=300, justify="left").grid(
+            row=13, column=0, columnspan=2, sticky="w", pady=(14, 0)
+        )
+
+        def on_new_code():
+            token = new_relay_token()
+            full = self.app.get_config()
+            full["relay_token"] = token
+            try:
+                save_config(full)
+            except OSError as e:
+                messagebox.showerror("Gemini Mic", f"Could not save settings:\n{e}")
+                return
+            self.app.apply_config(full)
+            cfg["relay_token"] = token  # on_save starts from cfg - keep the new code
+            relay_var.set(relay_text(token))
+
+        ttk.Button(outer, text="Yangi kod", command=on_new_code).grid(
+            row=13, column=2, sticky="e", padx=(8, 0), pady=(14, 0)
+        )
+
         status_var = tk.StringVar(value="")
         status_label = ttk.Label(outer, textvariable=status_var, foreground="#0a0")
-        status_label.grid(row=13, column=0, columnspan=3, sticky="w", pady=(14, 0))
+        status_label.grid(row=14, column=0, columnspan=3, sticky="w", pady=(14, 0))
 
         def on_save():
             # Start from the saved config so keys this dialog has no field for
@@ -1015,7 +1064,7 @@ class SettingsWindow:
             root.after(700, root.destroy)
 
         btn_frame = ttk.Frame(outer)
-        btn_frame.grid(row=14, column=0, columnspan=3, sticky="e", pady=(16, 0))
+        btn_frame.grid(row=15, column=0, columnspan=3, sticky="e", pady=(16, 0))
         ttk.Button(btn_frame, text="Save", command=on_save).pack(side="right")
         ttk.Button(btn_frame, text="Cancel", command=root.destroy).pack(side="right", padx=(0, 8))
 
@@ -1086,6 +1135,87 @@ def key_matches(pressed_key, target):
 
 
 # ---------------------------------------------------------------------------
+# Phone -> PC relay server
+# ---------------------------------------------------------------------------
+
+RELAY_MAX_TEXT = 20000
+RELAY_PING_PATHS = ("/", "/ping", "/mic", "/mic/", "/mic/ping")
+
+
+class RelayHandler(BaseHTTPRequestHandler):
+    """POST {"token", "text"} -> paste-only job on the app FIFO. self.server
+    carries .jobs (the FIFO) and .get_token (callable -> current code)."""
+
+    def log_message(self, *_args):
+        pass  # pythonw has no stderr; log() records one line per request instead
+
+    def _reply(self, code, payload):
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_GET(self):
+        # Health check only - no token, no data.
+        if urlsplit(self.path).path in RELAY_PING_PATHS:
+            self._reply(200, {"ok": True, "app": "gemini-mic"})
+        else:
+            self._reply(404, {"ok": False, "error": "path"})
+
+    def do_POST(self):
+        # Any path: the Funnel may or may not strip the /mic prefix.
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        if length > RELAY_MAX_TEXT * 4 + 4096:  # utf-8 worst case + JSON overhead
+            self.close_connection = True
+            log("relay: rejected too large (%d bytes)" % length)
+            self._reply(413, {"ok": False, "error": "too_long"})
+            return
+        raw = self.rfile.read(length) if length > 0 else b""
+        try:
+            data = json.loads(raw.decode("utf-8")) if raw else {}
+        except ValueError:
+            data = {}
+        if not isinstance(data, dict):
+            data = {}
+        token = data.get("token")
+        if not isinstance(token, str) or not token:
+            token = (parse_qs(urlsplit(self.path).query).get("token") or [""])[0]
+        expected = self.server.get_token() or ""
+        if not expected or not hmac.compare_digest(
+            token.strip().upper().encode("utf-8"), expected.upper().encode("utf-8")
+        ):
+            log("relay: rejected token")
+            self._reply(403, {"ok": False, "error": "token"})
+            return
+        text = data.get("text")
+        if not isinstance(text, str) or not text.strip():
+            log("relay: rejected empty text")
+            self._reply(400, {"ok": False, "error": "empty"})
+            return
+        if len(text) > RELAY_MAX_TEXT:
+            log("relay: rejected too long (%d chars)" % len(text))
+            self._reply(413, {"ok": False, "error": "too_long"})
+            return
+        # Same FIFO as dictation chunks, so a relay paste never interleaves.
+        self.server.jobs.put(("relay", text))
+        log("relay: accepted %d chars" % len(text))
+        self._reply(200, {"ok": True})
+
+
+def make_relay_server(port, jobs, get_token):
+    """Bound to 127.0.0.1 only - the Tailscale Funnel is the sole way in."""
+    server = ThreadingHTTPServer(("127.0.0.1", port), RelayHandler)
+    server.jobs = jobs
+    server.get_token = get_token
+    return server
+
+
+# ---------------------------------------------------------------------------
 # Main application
 # ---------------------------------------------------------------------------
 
@@ -1132,6 +1262,7 @@ class GeminiMicApp:
         self.icon = None
         self.settings_window = SettingsWindow(self)
         self._listener = None
+        self.relay_server = None
 
     # -- config -----------------------------------------------------------
 
@@ -1490,10 +1621,16 @@ class GeminiMicApp:
         self.jobs.put(wav_bytes)
 
     def _job_worker(self):
-        """Single FIFO consumer: transcribe+paste chunks strictly in spoken order."""
+        """Single FIFO consumer: transcribe+paste chunks strictly in spoken order.
+        A ("relay", text) item is phone text: paste only, no transcription."""
         while True:
-            wav_bytes = self.jobs.get()
+            job = self.jobs.get()
             try:
+                if isinstance(job, tuple) and job[0] == "relay":
+                    self.paste_text(job[1])
+                    beep(660, 90)  # audio cue: phone text pasted (done)
+                    continue
+                wav_bytes = job
                 cfg = self.get_config()
                 log("gemini: calling model=%s" % cfg.get("model", DEFAULT_CONFIG["model"]))
                 vocabulary = cfg.get("vocabulary", [])
@@ -1595,6 +1732,27 @@ class GeminiMicApp:
         self._listener.daemon = True
         self._listener.start()
 
+    # -- phone relay ----------------------------------------------------------
+
+    def _relay_server(self):
+        """Daemon thread: phone -> PC text relay listener. A busy port never
+        takes the app down - it logs, notifies and returns."""
+        cfg = self.get_config()
+        if not cfg.get("relay_enabled", True):
+            return
+        try:
+            port = int(cfg.get("relay_port") or DEFAULT_CONFIG["relay_port"])
+            server = make_relay_server(
+                port, self.jobs, lambda: self.get_config().get("relay_token", "")
+            )
+        except (OSError, ValueError) as e:
+            log("relay: bind failed %r" % (e,))
+            self.notify("Telefon ulanishi ochilmadi (port band)")
+            return
+        self.relay_server = server
+        log("relay: listening on 127.0.0.1:%d" % port)
+        server.serve_forever()
+
     # -- lifecycle ----------------------------------------------------------
 
     def quit(self, *_args):
@@ -1610,6 +1768,8 @@ class GeminiMicApp:
             pass
         if self._listener is not None:
             self._listener.stop()
+        if self.relay_server is not None:
+            self.relay_server.shutdown()
         if self.icon is not None:
             self.icon.stop()
 
@@ -1637,6 +1797,9 @@ class GeminiMicApp:
                 "Ishga tushdi. Yozish joyiga bosing, o'ng Ctrl ni bosib turib gapiring. "
                 "Ikonka soat yonidagi ^ ichida bo'lishi mumkin."
             )
+            # Started here (not next to _prefer_mic_watch) so a port-busy
+            # notify() has a visible tray icon to show on.
+            threading.Thread(target=self._relay_server, daemon=True).start()
 
         self.icon.run(setup=on_ready)
 

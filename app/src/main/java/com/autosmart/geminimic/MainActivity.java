@@ -8,6 +8,8 @@ import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.InputFilter;
+import android.text.InputType;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.ViewGroup;
@@ -16,8 +18,13 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Space;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Locale;
 
 public class MainActivity extends Activity {
 
@@ -42,6 +49,10 @@ public class MainActivity extends Activity {
 
     private Button primaryButton;
 
+    private Switch pcModeSwitch;
+    private EditText pcUrlInput;
+    private EditText pcCodeInput;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,6 +64,12 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         refreshStatusSafely();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        savePcPrefs();
     }
 
     private void computePalette() {
@@ -106,6 +123,9 @@ public class MainActivity extends Activity {
         layout.addView(space(16));
 
         layout.addView(buildLanguageCard(), fullWidth());
+        layout.addView(space(16));
+
+        layout.addView(buildPcCard(), fullWidth());
         layout.addView(space(16));
 
         primaryButton = primaryButton("Mikrofonni yoqish");
@@ -264,6 +284,87 @@ public class MainActivity extends Activity {
                 tv.setTextColor(inkColor);
             }
         }
+    }
+
+    private LinearLayout buildPcCard() {
+        LinearLayout card = card();
+        card.addView(cardTitle("PC ga yuborish"));
+
+        pcModeSwitch = new Switch(this);
+        pcModeSwitch.setText("Matnni PC ga yozish");
+        pcModeSwitch.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f);
+        pcModeSwitch.setTextColor(inkColor);
+        pcModeSwitch.setChecked(Prefs.pcMode(this));
+        pcModeSwitch.setOnCheckedChangeListener((b, checked) -> savePcPrefs());
+        card.addView(pcModeSwitch, fullWidth());
+
+        card.addView(space(10));
+
+        pcUrlInput = new EditText(this);
+        pcUrlInput.setHint("PC manzil");
+        pcUrlInput.setSingleLine(true);
+        pcUrlInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        pcUrlInput.setTextColor(inkColor);
+        pcUrlInput.setHintTextColor(mutedColor);
+        pcUrlInput.setText(Prefs.pcUrl(this));
+        card.addView(pcUrlInput, fullWidth());
+
+        pcCodeInput = new EditText(this);
+        pcCodeInput.setHint("PC kodi");
+        pcCodeInput.setSingleLine(true);
+        pcCodeInput.setInputType(InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
+                | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        pcCodeInput.setFilters(new InputFilter[]{
+                new InputFilter.AllCaps(), new InputFilter.LengthFilter(8)});
+        pcCodeInput.setTextColor(inkColor);
+        pcCodeInput.setHintTextColor(mutedColor);
+        pcCodeInput.setText(Prefs.pcCode(this));
+        card.addView(pcCodeInput, fullWidth());
+
+        card.addView(space(10));
+
+        Button testBtn = secondaryButton("Tekshirish");
+        testBtn.setOnClickListener(v -> {
+            savePcPrefs();
+            testPcConnection();
+        });
+        card.addView(testBtn, new LinearLayout.LayoutParams(-2, -2));
+        return card;
+    }
+
+    private void savePcPrefs() {
+        if (pcModeSwitch == null) return;
+        String url = pcUrlInput.getText().toString().trim();
+        Prefs.get(this).edit()
+                .putBoolean(Prefs.PC_MODE, pcModeSwitch.isChecked())
+                .putString(Prefs.PC_URL, url.isEmpty() ? Prefs.PC_URL_DEFAULT : url)
+                .putString(Prefs.PC_CODE,
+                        pcCodeInput.getText().toString().trim().toUpperCase(Locale.ROOT))
+                .apply();
+    }
+
+    private void testPcConnection() {
+        final String url = Prefs.pcUrl(this);
+        new Thread(() -> {
+            String result;
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URL(url).openConnection();
+                conn.setRequestMethod("GET");
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(10000);
+                int code = conn.getResponseCode();
+                result = code == 200 ? "PC ulandi ✓" : "PC topilmadi: HTTP " + code;
+            } catch (Exception e) {
+                result = "PC topilmadi: "
+                        + (e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+            final String msg = result;
+            runOnUiThread(() -> toast(msg));
+        }).start();
     }
 
     private LinearLayout buildHowToCard() {

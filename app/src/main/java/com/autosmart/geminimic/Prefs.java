@@ -13,6 +13,11 @@ final class Prefs {
     static final String MODEL_BETTER = "gemini-3-flash-preview";
     static final String MODEL_CHEAP = "gemini-2.5-flash-lite";
     static final String NAME = "gemini_mic_prefs";
+    // Phone -> PC text relay: POST the transcript to the PC app instead of typing it here.
+    static final String PC_MODE = "pc_mode";
+    static final String PC_URL = "pc_url";
+    static final String PC_CODE = "pc_code";
+    static final String PC_URL_DEFAULT = "https://data365.taildef23b.ts.net/mic";
 
     private Prefs() {
     }
@@ -31,6 +36,18 @@ final class Prefs {
 
     static String languageMode(Context ctx) {
         return get(ctx).getString("language_mode", "uz_en_ru");
+    }
+
+    static boolean pcMode(Context ctx) {
+        return get(ctx).getBoolean(PC_MODE, false);
+    }
+
+    static String pcUrl(Context ctx) {
+        return get(ctx).getString(PC_URL, PC_URL_DEFAULT);
+    }
+
+    static String pcCode(Context ctx) {
+        return get(ctx).getString(PC_CODE, "");
     }
 
     static String modelLabel(Context ctx) {

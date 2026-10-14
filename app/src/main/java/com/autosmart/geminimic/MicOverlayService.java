@@ -4,6 +4,8 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.media.MediaRecorder;
 import android.os.Build;
@@ -12,7 +14,13 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.widget.Toast;
 
+import org.json.JSONObject;
+
 import java.io.File;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -216,10 +224,66 @@ public class MicOverlayService extends Service {
 
     private void finishTranscriptionSuccess(int jobId, String text) {
         if (!isActiveTranscription(jobId)) return;
+        copyToClipboard(text);  // cheap safety net in both modes
+        final String pcCode = Prefs.pcCode(this);
+        if (Prefs.pcMode(this) && !pcCode.isEmpty()) {
+            // Owner is at the PC: send the text there; type on the phone only
+            // if the PC did not take it, so a dead PC never loses a dictation.
+            final String pcUrl = Prefs.pcUrl(this);
+            worker.submit(() -> {
+                int code = sendToPc(pcUrl, pcCode, text);
+                main.post(() -> {
+                    if (code == 200) {
+                        toast("PC ga yozildi ✓");
+                        return;
+                    }
+                    toast(code == 403 ? "PC kodi noto'g'ri" : "PC javob bermadi");
+                    typeOnPhone(text);
+                });
+            });
+        } else {
+            typeOnPhone(text);
+        }
+        finishTranscriptionJob();
+    }
+
+    private void typeOnPhone(String text) {
         if (!VoiceInputAccessibilityService.typeText(text)) {
             toast("Enable auto input first");
         }
-        finishTranscriptionJob();
+    }
+
+    private void copyToClipboard(String text) {
+        try {
+            ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            if (cm != null) cm.setPrimaryClip(ClipData.newPlainText("Gemini Mic", text));
+        } catch (Exception ignored) {}
+    }
+
+    /** POST {"token","text"} to the PC relay; returns the HTTP code, or -1 on a network error. */
+    private static int sendToPc(String url, String code, String text) {
+        HttpURLConnection conn = null;
+        try {
+            JSONObject body = new JSONObject().put("token", code).put("text", text);
+            conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(10000);
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
+            OutputStream out = conn.getOutputStream();
+            try {
+                out.write(payload);
+            } finally {
+                out.close();
+            }
+            return conn.getResponseCode();
+        } catch (Exception e) {
+            return -1;
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
     }
 
     private void finishTranscriptionError(int jobId, Exception e) {
