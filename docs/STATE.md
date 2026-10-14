@@ -1,5 +1,5 @@
 STATUS: 3.7-flash LIVE on PC (1 real take 18:50 OK, 4 s); 18:48-49 three 'Model band' = transient network (both models failed <1 s, endpoint 200 at 19:00); app restarted 19:01 on 5319e30 (logs real exception + fallback); phone reconnected 19:01:44; screen-off state UNTESTED
-NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for fallback/Doze; later: PhoneHead seq-tagging, tests' log side effect, "primary speaker" prompt A/B (offered, undecided)
+NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for fallback/Doze; later: PhoneHead seq-tagging, "primary speaker" prompt A/B (offered, undecided)
 SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
 
@@ -46,6 +46,13 @@ Owner's later recorded refinements (his words, not scope invention):
   should exit it) - harmless so far, not investigated.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-14 19:10 — test log leak FIXED (429dc2f)
+- The 19:03:59-19:04:05 "relay: state recording #1 / ack stopped #2 (cancel)" lines in the
+  live log were test_phone_session's server threads outliving tearDown (seq #1/#2 match the
+  test, the live app was at #0) - NOT an owner take. Fix: `GEMINI_MIC_LOG_PATH` env override
+  (LOG_PATH read at import) + each test sets it to %TEMP%\gemini_mic_test.log before import.
+  Proved: override -> probe line lands in the temp file; 3 test files rerun -> +0 live lines.
 
 ## 2026-10-14 19:05 — 3.7 live; "Model band" x3 = network blip, not the model; log patch
 - Log 18:48:43 / 18:49:14 / 18:49:26: `calling model=gemini-3.7-flash` -> `GeminiError("Model band...")`
