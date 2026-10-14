@@ -1840,10 +1840,15 @@ class GeminiMicApp:
         # The ONE place the raw gain is applied: clip, gate and saved WAV all
         # see the same g (the gate thresholds were tuned on gained audio).
         g = self.gain_for(frames)
+        # The GATE must not depend on the clip's loudest sample (a key click in
+        # the pre-roll would lower g and reject quiet speech - blind review
+        # 2026-10-14): it sees the un-gained audio x RAW_GAIN as unclipped floats,
+        # exactly the level its thresholds were tuned on. Only the WAV gets g.
+        gate_g = RAW_GAIN if self.stream_raw else 1.0
+        gate_audio = np.concatenate(frames).astype(np.float64) * gate_g if frames else np.zeros(0)
+        room_floor = None if self.room_floor is None else self.room_floor * gate_g
         if g != 1.0:
             frames = [apply_raw_gain(b, g) for b in frames]
-        # room_floor is the idle room-tone rms (un-gained) -> same g
-        room_floor = None if self.room_floor is None else self.room_floor * g
         wav_bytes, audio = frames_to_wav_bytes(frames)
         save_clip(wav_bytes)
         log("clip: rms=%d gain=%.1fx (diagnostic)"
@@ -1853,7 +1858,7 @@ class GeminiMicApp:
         # the peak but has low RMS, and PC mics are noisier than phone mics — so a
         # peak gate let near-silence reach the model, which then hallucinated a
         # whole fake transcript. RMS reliably separates real speech from noise.
-        if not has_speech(audio, room_floor):
+        if not has_speech(gate_audio, room_floor):
             log("gate: no sustained speech -> rejected")
             self.set_state("idle")
             self._tooltip("Gemini Mic — ovoz eshitilmadi")
