@@ -1,6 +1,6 @@
-STATUS: TELEFON REJIMI qurildi (18cfbde), PC tomoni jonli + Funnel orqali tekshirildi; APK Desktopda, telefonda hali sinalmagan
-NEXT: siz - APK o'rnatib, kodni kiritib bitta gap; men - logda 'relay: accepted' + PC ga yozilganini tekshiraman
-SIZDAN: 1 | Desktopdagi GeminiMic-android.apk ni telefonga o'rnating, PC kodini kiriting, bitta gap ayting
+STATUS: TELEFON REJIMI ISHLAYDI - owner 15:47 "endi ishlayapti" (3 ta relay: accepted + paste, log 15:45-15:47)
+NEXT: owner asked: PC Ctrl should trigger the phone -> decision pending (Hukm: shubhali, see 15:50 note)
+SIZDAN: 1 | "PC tugmasi -> telefon yozsin" ni quramizmi? (savol berildi)
  Gemini Mic — STATE
 
 _Trigger words: "gemini", "gemini mic". Source of truth for resume._
@@ -20,12 +20,15 @@ Owner's later recorded refinements (his words, not scope invention):
   caveat stands.
 
 ## NEXT STEP (single queue, oldest first)
-- OWNER (since 2026-10-14): install Desktop `GeminiMic-android.apk`, turn on
-  "Matnni PC ga yozish", enter the PC code (Settings -> "Telefon kodi"), tap
-  "Tekshirish", dictate one sentence. Reply ishladi/yo'q.
-  UZ: Qiling: Desktopdagi GeminiMic-android.apk ni o'rnatib, "Matnni PC ga yozish" ni yoqing, PC kodini kiriting, "Tekshirish", bitta gap ayting | Ko'rasiz: telefonda "PC ga yozildi", matn PC maydoniga tushadi | Nega: telefon rejimi faqat sizning telefoningizda tasdiqlanadi | Vaqt: 2 daqiqa
-- ME after his answer: log must show `relay: accepted N chars` + paste; if "PC
-  javob bermadi" -> check phone internet (office Wi-Fi) vs mobile data first.
+- DONE 15:47: owner installed the APK, dictated on the phone (volume-down
+  hold) -> PC pasted. Log: relay: accepted 22/44/21 chars, "paste: Ctrl+V sent".
+  His first attempt failed only because he pressed Ctrl on the PC (PC mic path).
+- OPEN (owner 15:48): "PC Ctrl bosganimda telefon yozsin" - PC-triggered phone
+  recording. Would need: phone keeps an outbound long-poll/WebSocket to the PC
+  (Funnel) from its foreground service; PC key -> "start/stop" push -> phone
+  records. Pitfalls: ~0.3-1 s start lag loses the first syllable unless the
+  phone listens continuously (mic always on = battery + privacy LED); Doze /
+  connection drops after hours -> "sometimes doesn't work". Not built.
 - XM5 on the PC: still digital zeros on every capture path after the 14:57
   reconnect (Hands-Free link half-open). Not fixable without re-pairing the
   headset in Windows Bluetooth settings (owner declined for now). PC dictation
@@ -159,3 +162,7 @@ Owner's later recorded refinements (his words, not scope invention):
   so I cannot flip it).
 
 _Older entries (2026-07 .. 2026-10-14 14:05) moved to docs/STATE_ARCHIVE.md._
+
+## DECISIONS (owner one-tap answers - auto-appended; a decided question is never re-asked)
+- 2026-10-14 [Telefon] Telefonda aynan nima bo'ldi? -> **hech qanday xabar yoq**
+- 2026-10-14 [APK holati] Telefon ilovasining Sozlamalarida "Matnni PC ga yozish" degan tugma bormi va yoqilganmi? -> **qara telda ovoz pasaytirish tugmani bosmadim komputerda ctrl bosdim, telda komputer ulanishi bor halos**
