@@ -1,5 +1,5 @@
-STATUS: telefon rejimi ISHLAYDI; noutbuk mikrofoni ham ishlaydi (16:43); v2 (Ctrl->telefon) c9b9ac1 review=FIX-FIRST, tuzatuvchi ishlayapti
-NEXT: fix doer (spec _handoff/2026-10-14-gemini-mic-pc-trigger-fixes.md) -> short re-review -> restart app -> push/CI -> APK -> owner Ctrl test
+STATUS: v2 Ctrl->telefon tuzatildi (196adcf, CI yashil, PC da jonli 17:11); APK Desktopda; re-review kutilmoqda, telefonda sinalmagan
+NEXT: judge re-review of 196adcf (SHIP?) -> owner installs APK (Desktop) + Ctrl test; measure Ctrl->beep and release->paste latency from the log
 SIZDAN: 0 | (keyingi: v2 APK ni o'rnatib Ctrl bilan sinash)
  Gemini Mic — STATE
 
