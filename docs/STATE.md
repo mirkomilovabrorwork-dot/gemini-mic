@@ -3,7 +3,7 @@ NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for 
 SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
 
-_Trigger words: "gemini", "gemini mic". Source of truth for resume._
+_Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
 
 ## GOAL (owner's words)
 Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
