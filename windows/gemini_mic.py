@@ -87,6 +87,10 @@ DEFAULT_CONFIG = {
     # True = the hotkey makes the PHONE record (when it is long-polling /cmd);
     # no phone seen in the last 45 s -> the local mic, exactly as before.
     "phone_trigger": True,
+    # Name fragment of a local mic that beats the phone: while a stream is live on
+    # it, the PC hotkey records locally. "" = phone whenever connected.
+    # Owner 2026-10-23: "tashqi mikrofon birinchi, u bo'lmasagina telefon".
+    "phone_unless_mic": "",
 }
 
 RELAY_PUBLIC_URL = "https://data365.taildef23b.ts.net/mic"
@@ -1989,6 +1993,7 @@ class GeminiMicApp:
             # local rollover gap (recording briefly False) must not (F1).
             if (not was_down and not self.recording
                     and self.get_config().get("phone_trigger", True)
+                    and not self.preferred_mic_live()
                     and self.phone_connected()):
                 with self.phone_lock:
                     self.phone_recording = True
@@ -2026,6 +2031,17 @@ class GeminiMicApp:
                 threading.Thread(target=self.stop_recording_and_transcribe, daemon=True).start()
 
     # -- PC hotkey -> phone recording -----------------------------------------
+
+    def preferred_mic_live(self):
+        """The open stream is on the phone_unless_mic device and still delivering."""
+        frag = (self.get_config().get("phone_unless_mic") or "").strip().lower()
+        s = self.stream
+        if not frag or s is None or time.monotonic() - self.last_block > 1.0:
+            return False
+        try:
+            return frag in sd.query_devices(s.device)["name"].lower()
+        except Exception:
+            return False
 
     def phone_connected(self):
         """A /cmd poll is parked right now, or one arrived/returned < 3 s ago."""
