@@ -1,4 +1,4 @@
-STATUS: 2026-10-23 external mic MICUSB1 = first mic AND beats the phone (0281bce, config phone_unless_mic=MICUSB1, input_device MICUSB1 first); live take 15:06 on MICUSB1 OK (3 s); 'MICUSB1 beats a CONNECTED phone' = lab-only (4 unit tests + mutant caught; phone was not polling at 15:06)
+STATUS: 2026-10-23 MICUSB1 = primary EVERYWHERE: Gemini Mic first mic + beats the phone (0281bce) AND kept as the Windows default mic, all roles (f71d2ab, config windows_default_mic=MICUSB1; live: forced away -> restored in ~15 s). Telegram follows only if its own mic setting is 'Default' (unverified, owner check)
 NEXT: owner - next dictation with the phone app open: log must show `record stop` and NO `relay: state recording` -> proves MICUSB1 beats the phone; unplug MICUSB1 -> Ctrl must go to the phone. Screen-off test still open. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
 SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
@@ -44,6 +44,19 @@ Owner's later recorded refinements (his words, not scope invention):
   clips: last 20 WAVs in %APPDATA%\GeminiMic\clips.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-23 16:30 - owner: "Telegram, hamma yerda tashqi mikrofon asosiy" -> DONE (Windows side live)
+- Owner declined the "only my voice" filter for now (16:10: "hozircha kerak emas"); options given:
+  Gemini prompt / lower gain / Krisp BVC (pricing unverified) / mic placement.
+- MICUSB1 was already the Windows default (console+multimedia+communications) at 16:15; the gap is
+  Windows moving the default to a BT headset on connect. f71d2ab: windows_default_mic re-asserted every
+  5 s while idle from _prefer_mic_watch via pycaw IPolicyConfig (capture endpoint only - MICUSB1 also has
+  a Speakers endpoint, untouched). Bug found live: pycaw GetEndpointDataFlow returns the string
+  "eCapture", not the enum -> first build never matched; fixed before commit.
+- Live x2: default forced to the AMD array -> app log "windows default mic -> Microphone (MICUSB1)
+  (all roles)" within 14-16 s, all 3 roles back. GLM review folded (COM init once; after the recording
+  guard). Undo: set windows_default_mic "" in config.json (or Settings) + restart.
+- Telegram Desktop (running) keeps its OWN input choice: follows Windows only if set to "Default".
 
 ## 2026-10-23 15:10 - owner: "tashqi mikrofon birinchi, u bo'lmasagina telefon" -> DONE (lab + 1 live take)
 - MICUSB1 plugged in (WASAPI 15). Config: input_device "MICUSB1|Microphone Array|WH-1000XM5|USB MIC",
