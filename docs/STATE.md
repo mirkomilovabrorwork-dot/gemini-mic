@@ -1,4 +1,4 @@
-STATUS: 2026-10-23 MICUSB1 = primary EVERYWHERE: Gemini Mic first mic + beats the phone (0281bce) AND kept as the Windows default mic, all roles (f71d2ab, config windows_default_mic=MICUSB1; live: forced away -> restored in ~15 s). Telegram follows only if its own mic setting is 'Default' (unverified, owner check)
+STATUS: 2026-10-23 17:10 'No transcript returned' on long takes = gemini-3.7-flash (served as 3.8-flash) blockReason=OTHER, intermittent -> all platforms now fall back to 3.5-flash on a block (ce8bd89; Windows LIVE 17:09, Android APK via CI). MICUSB1 primary everywhere (f71d2ab).
 NEXT: owner - next dictation with the phone app open: log must show `record stop` and NO `relay: state recording` -> proves MICUSB1 beats the phone; unplug MICUSB1 -> Ctrl must go to the phone. Screen-off test still open. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
 SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
@@ -44,6 +44,17 @@ Owner's later recorded refinements (his words, not scope invention):
   clips: last 20 WAVs in %APPDATA%\GeminiMic\clips.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-23 17:10 - "No transcript returned" (owner screenshot) -> FIXED on all platforms
+- 17:02 (22 s) and 17:03 (35 s) takes: HTTP 200, no candidates, promptFeedback.blockReason=OTHER,
+  modelVersion "gemini-3.8-flash" (the 3.7-flash alias), serviceTier standard (= paid tier; a block is
+  not a quota error). Replay: first replay blocked both, a later replay of one passed -> intermittent.
+  3.5-flash and 3-flash-preview transcribed both clips correctly. Google docs: OTHER = input blocked for
+  a non-safety reason; no documented cause (forum anecdote: non-English words near a filtered term).
+- ce8bd89: Windows (log blockReason, status 0 -> FALLBACK_MODEL; test_block_fallback, mutant caught),
+  Android (isBlocked -> fallback post), Mac (status 0). Windows restarted 17:09:52 on MICUSB1.
+- Residual risk: if BOTH models block the same clip the error still shows (not seen yet).
+  If blocks keep appearing (count `blockReason=` in the log), consider 3-flash-preview as primary.
 
 ## 2026-10-23 16:30 - owner: "Telegram, hamma yerda tashqi mikrofon asosiy" -> DONE (Windows side live)
 - Owner declined the "only my voice" filter for now (16:10: "hozircha kerak emas"); options given:
