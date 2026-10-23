@@ -1,5 +1,5 @@
-STATUS: 3.7-flash LIVE on PC (1 real take 18:50 OK, 4 s); 18:48-49 three 'Model band' = transient network (both models failed <1 s, endpoint 200 at 19:00); app restarted 19:01 on 5319e30 (logs real exception + fallback); phone reconnected 19:01:44; screen-off state UNTESTED
-NEXT: owner screen-off test (5 min idle, then Ctrl) -> if no beep: read log for Doze/fallback. DEFERRED by owner 19:20: PhoneHead seq-tagging + "primary speaker" prompt A/B (both 'Keyinroq') - do not re-ask; reopen only if he dictates >60 s takes or complains about teammates' voices
+STATUS: 2026-10-23 external mic MICUSB1 = first mic AND beats the phone (0281bce, config phone_unless_mic=MICUSB1, input_device MICUSB1 first); live take 15:06 on MICUSB1 OK (3 s); 'MICUSB1 beats a CONNECTED phone' = lab-only (4 unit tests + mutant caught; phone was not polling at 15:06)
+NEXT: owner - next dictation with the phone app open: log must show `record stop` and NO `relay: state recording` -> proves MICUSB1 beats the phone; unplug MICUSB1 -> Ctrl must go to the phone. Screen-off test still open. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
 SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
  Gemini Mic — STATE
 
@@ -44,6 +44,18 @@ Owner's later recorded refinements (his words, not scope invention):
   clips: last 20 WAVs in %APPDATA%\GeminiMic\clips.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
+
+## 2026-10-23 15:10 - owner: "tashqi mikrofon birinchi, u bo'lmasagina telefon" -> DONE (lab + 1 live take)
+- MICUSB1 plugged in (WASAPI 15). Config: input_device "MICUSB1|Microphone Array|WH-1000XM5|USB MIC",
+  new key phone_unless_mic "MICUSB1" (DEFAULT_CONFIG "" = old behaviour, friend's zip unaffected).
+- 0281bce: preferred_mic_live() = stream open on that device AND a block < 1 s ago; _on_press skips
+  the phone path when it is true. Unplug -> stream dies -> watch/auto-heal moves to the next mic, and
+  preferred_mic_live() is False -> phone again. _prefer_mic_watch already switches BACK to MICUSB1
+  within ~5-60 s of it returning.
+- GLM review (read-only, tree unchanged): F1 "stream.device None on system default" DISPROVED
+  (sounddevice resolves it to index 1 = MICUSB1, probed); F2 test misnamed -> renamed. Known gap:
+  a plugged mic that delivers pure silence still wins over the phone ("Ovoz eshitilmadi").
+- Live: app restarted 15:04:41 on MICUSB1 raw; 15:06:40 take rms 871 @6x, 3 s, verbatim.
 
 ## 2026-10-14 19:15 - "two pythonw copies" EXPLAINED (not a bug, closed)
 - PID 20456 (1-5 MB) = `windows\.venv\Scripts\pythonw.exe` = the uv venv LAUNCHER SHIM;
