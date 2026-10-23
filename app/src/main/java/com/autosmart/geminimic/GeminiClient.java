@@ -68,6 +68,15 @@ final class GeminiClient {
         }
     }
 
+    private static boolean isBlocked(String body) {
+        try {
+            JSONArray c = new JSONObject(body).optJSONArray("candidates");
+            return c == null || c.length() == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private static String extractText(String body) throws Exception {
         JSONArray candidates = new JSONObject(body).optJSONArray("candidates");
         if (candidates == null || candidates.length() == 0) {
@@ -280,6 +289,12 @@ final class GeminiClient {
             } else {
                 throw e;
             }
+        }
+        // A 200 with promptFeedback.blockReason and no candidates (3.7-flash,
+        // 2026-10-23, two long takes) -> the other model, which transcribed them.
+        if (!FALLBACK_MODEL.equals(model) && isBlocked(raw)) {
+            request.put("generationConfig", generationConfig(FALLBACK_MODEL));
+            raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
         }
         String cleaned = cleanTranscript(extractText(raw));
         if (isNoSpeech(cleaned)) {

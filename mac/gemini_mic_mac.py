@@ -337,7 +337,11 @@ def _call_gemini(api_key, model, body):
 
     candidates = data.get("candidates") or []
     if not candidates:
-        raise GeminiError("No transcript returned")
+        # promptFeedback.blockReason, no candidates (3.7-flash, 2026-10-23):
+        # status 0 = retryable -> the caller tries the other model.
+        err = GeminiError("No transcript returned")
+        err.status = 0
+        raise err
 
     try:
         parts = candidates[0]["content"]["parts"]

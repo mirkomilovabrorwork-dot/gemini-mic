@@ -782,7 +782,15 @@ def _call_gemini(api_key, model, body):
 
     candidates = data.get("candidates") or []
     if not candidates:
-        raise GeminiError("No transcript returned")
+        # 2026-10-23: 3.7-flash (served as 3.8-flash) answered two long takes
+        # (22 s, 35 s) with promptFeedback.blockReason=OTHER and no candidates,
+        # reproducibly; 3.5-flash and 3-flash-preview transcribed the same clips.
+        # status 0 = retryable -> the caller falls back to the other model.
+        block = (data.get("promptFeedback") or {}).get("blockReason")
+        log("gemini: no candidates model=%s blockReason=%s" % (model, block))
+        err = GeminiError("No transcript returned")
+        err.status = 0
+        raise err
 
     # A truncated answer still arrives as a normal 200 with a partial transcript,
     # so without this the user just silently loses the tail of a long dictation
