@@ -91,6 +91,10 @@ DEFAULT_CONFIG = {
     # it, the PC hotkey records locally. "" = phone whenever connected.
     # Owner 2026-10-23: "tashqi mikrofon birinchi, u bo'lmasagina telefon".
     "phone_unless_mic": "",
+    # Name fragment of a capture device to keep as the WINDOWS default mic (all
+    # roles, so Telegram/calls use it too) whenever it is plugged in; Windows
+    # moves the default to a BT headset on connect. "" = never touch Windows.
+    "windows_default_mic": "",
 }
 
 RELAY_PUBLIC_URL = "https://data365.taildef23b.ts.net/mic"
@@ -1537,18 +1541,59 @@ class GeminiMicApp:
             pass
         return False
 
+    def _assert_windows_default_mic(self, frag):
+        """Make the active capture endpoint matching frag the Windows default for
+        every role (console, multimedia, communications). Returns the device name
+        when it had to switch, else None. Lazy pycaw import: off unless configured."""
+        if not getattr(self, "_com_ready", False):
+            import comtypes
+            comtypes.CoInitialize()  # once: only the watch thread calls this
+            self._com_ready = True
+        from pycaw.utils import AudioUtilities
+        from pycaw.constants import ERole, EDataFlow, AudioDeviceState
+        target = None
+        for d in AudioUtilities.GetAllDevices():
+            if (frag in (d.FriendlyName or "").lower() and d.state == AudioDeviceState.Active
+                    and str(AudioUtilities.GetEndpointDataFlow(d.id)) in ("eCapture", str(EDataFlow.eCapture))):
+                target = d
+                break  # GetEndpointDataFlow returns the NAME ("eCapture"), not the enum
+        if target is None:
+            return None
+        enum = AudioUtilities.GetDeviceEnumerator()
+        roles = [ERole.eConsole, ERole.eMultimedia, ERole.eCommunications]
+        current = set()
+        for r in roles:
+            try:
+                current.add(enum.GetDefaultAudioEndpoint(EDataFlow.eCapture.value, r.value).GetId())
+            except Exception:
+                current.add(None)
+        if current == {target.id}:
+            return None
+        AudioUtilities.SetDefaultDevice(target.id, roles)
+        return target.FriendlyName
+
     def _prefer_mic_watch(self):
         """Background: when the FIRST mic in input_device (e.g. the XM5) comes
         back after a drop, switch to it while idle - otherwise the app stays on
         the fallback mic until the tray button is pressed. Owner 2026-10-14:
         "XM5 mikrofoni yaxshi, shu max ishlaydigan bo'lsin"."""
         last_try = 0.0
+        win_retry_at = 0.0
         while True:
             time.sleep(5)
             try:
                 frags = [f.strip().lower() for f in (self.cfg.get("input_device") or "").split("|") if f.strip()]
                 if self.recording or not self.jobs.empty():
                     continue
+                win_frag = (self.cfg.get("windows_default_mic") or "").strip().lower()
+                if win_frag and time.monotonic() >= win_retry_at:
+                    try:
+                        switched = self._assert_windows_default_mic(win_frag)
+                        if switched:
+                            log("windows default mic -> %s (all roles)" % switched)
+                    except Exception as e:
+                        log("windows default mic: %r (retry in 5 min)" % (e,))
+                        win_retry_at = time.monotonic() + 300
                 if self.stream is not None and time.monotonic() - self.last_block > 2.0:
                     # A BT hands-free link goes quiet while idle; healing only at
                     # the key press lost a whole first dictation (2026-10-14

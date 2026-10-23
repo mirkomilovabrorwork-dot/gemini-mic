@@ -6,3 +6,4 @@ pystray
 pillow
 pyperclip
 uiautomation
+pycaw
