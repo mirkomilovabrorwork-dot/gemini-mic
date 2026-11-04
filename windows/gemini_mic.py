@@ -602,13 +602,47 @@ def frames_to_wav_bytes(frames, sample_rate=SAMPLE_RATE):
         audio = remove_start_beep(np.concatenate(frames))
     else:
         audio = np.array([], dtype=np.int16)
+    return audio_to_wav_bytes(audio, sample_rate), audio
+
+
+# Only-my-voice (owner 2026-11-05 "faqat 30-50 sm dan eshitsin"): windows more than
+# NEAR_DROP_DB under the take's own speech level (95th percentile) are muted - a voice
+# ~2 m away is ~16 dB under his at 30 cm. Lab (his 10 reads + a far voice mixed in at
+# -16 dB): far-voice words in the text 4 -> 0, clean-read error 3.12% -> 3.10%.
+# The hold keeps his soft word ends; 15 dB or a 0.25 s hold still leaked.
+NEAR_DROP_DB = 10.0
+NEAR_WIN_SEC = 0.03
+NEAR_HOLD_SEC = 0.4
+NEAR_ATTACK_SEC = 0.1
+
+
+def near_voice_gate(audio):
+    """Mute what is far quieter than the speaker's own voice (people further away)."""
+    win = int(NEAR_WIN_SEC * SAMPLE_RATE)
+    n = audio.size // win
+    if n < 3:
+        return audio
+    a = audio.astype(np.float64)
+    rms = np.sqrt(np.mean(a[:n * win].reshape(n, win) ** 2, axis=1))
+    loud = rms >= np.percentile(rms, 95) * 10 ** (-NEAR_DROP_DB / 20)
+    keep = loud.copy()
+    hold, attack = int(NEAR_HOLD_SEC / NEAR_WIN_SEC), int(NEAR_ATTACK_SEC / NEAR_WIN_SEC)
+    for i in np.flatnonzero(loud):
+        keep[max(0, i - attack):i + hold + 1] = True
+    # soft edges; edge padding so the take's own first/last window stays at full level
+    g = np.convolve(np.pad(keep.astype(np.float64), 1, mode="edge"), np.ones(3) / 3, mode="valid")
+    gain = np.concatenate([np.repeat(g, win), np.full(audio.size - n * win, g[-1])])
+    return np.clip(a * gain, -32768, 32767).astype(np.int16)
+
+
+def audio_to_wav_bytes(audio, sample_rate=SAMPLE_RATE):
     buf = BytesIO()
     with wave.open(buf, "wb") as wf:
         wf.setnchannels(1)
         wf.setsampwidth(2)  # int16
         wf.setframerate(sample_rate)
         wf.writeframes(audio.tobytes())
-    return buf.getvalue(), audio
+    return buf.getvalue()
 
 
 def has_speech(audio, room_floor=None):
@@ -1982,6 +2016,11 @@ class GeminiMicApp:
         save_clip(wav_bytes)
         log("clip: rms=%d gain=%.1fx (diagnostic)"
             % (np.sqrt(np.mean(audio.astype(np.float64) ** 2)) if audio.size else 0, g))
+        # the saved clip stays raw (re-runnable A/B); the model gets only the near voice
+        near = near_voice_gate(audio)
+        if audio.size:
+            log("near gate: muted %d%%" % round(100.0 * np.mean((near == 0) & (audio != 0))))
+        wav_bytes = audio_to_wav_bytes(near)
 
         # Energy-based silence gate (RMS, not a single peak): a click/breath spikes
         # the peak but has low RMS, and PC mics are noisier than phone mics — so a

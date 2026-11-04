@@ -1,5 +1,5 @@
-﻿STATUS: 11-05 free Google key first, any error -> OpenRouter at once: LIVE, his dictation passed
-NEXT: siz - read docs/ACCURACY_TEST_SENTENCES_2.md (10 sentences, noisy room, one Ctrl each, ~3 min); then men: A/B Uzbek-first + main-speaker lines on set1+set2. Also watch OpenRouter spend.
+﻿STATUS: 11-05 00:29 only-my-voice gate LIVE (lab leak 4/4 -> 0/4); OpenRouter backup LIVE
+NEXT: siz - read docs/ACCURACY_TEST_SENTENCES_2.md in the noisy room (10 sentences, one Ctrl each); then men: score leak + accuracy on those clips, A/B Uzbek-first line. Also watch OpenRouter spend.
 SIZDAN: 1 | test 2 o'qish
  Gemini Mic — STATE
 
@@ -57,6 +57,7 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - 11-05 00:00 owner: "Hozir qur" + "qilinmay qolmasligi shart avval free key u ishlamasa srazi openrouter key bn qiladi". Meet STT key (server /opt/data365/app.env OPENROUTER_API_KEY, sk-or-v1-3ca...) pulled over ssh, stored as openrouter_api_key in live config.json. Probe (scratchpad or_probe.py): google/gemini-3-flash-preview 200 2.9 s correct, 3.8 and 3.7 also 200 = NO model limit. BUILDING: any Google error -> OpenRouter google/<model> at once; Google 3.8 fallback only without an OpenRouter key.
 - 00:06 LIVE: his real dictation 000636: Google free key 429 -> OpenRouter google/gemini-3-flash-preview -> pasted in 4 s ('Xo''p, endi ishlayaptimi?'). Free key's 3-flash daily quota is hit (429 since 23:55). 00:09 context test via OpenRouter (scratchpad ab_ctx_or.py, 40 calls, $0.024): plain 4.7% letter errors -> context hint + reasoning 1024 3.7% (0 injections, 3.1 s median, max 5.2 s); Google path plain 3.5%. OpenRouter path now uses the hint. Replay 000856 OK in 5.1 s but began with '...' (watch). 41 tests pass, app restarted 00:09.
 - 00:20 'pul va sifat' -> 'full response'/'pull request' (his clips 001117, 001419). Owner thought the context hint did it: NO - plain prompt (= Google path) gives the same 6/6 (scratchpad pul_probe.py, $0.014). Cause: uz_en prompt + English names push 'pul' to English. Lab line 'Uzbek word first when it fits' (pul_probe2.py): 6/12 right vs 0/12 - noisy, not built. Set 1 had only list names; free English words untested -> docs/ACCURACY_TEST_SENTENCES_2.md (mixed + read in noise, also tests only-my-voice).
+- 00:29 ONLY-MY-VOICE BUILT + LIVE (owner 00:20: 'faqat meni ovozimni eshitadigan qilish bu shart ... 30-40 sm, maks 50 sm ... Do fast'). near_voice_gate: windows >10 dB under the take's own speech level (95th pct) muted, hold 0.4 s, attack 0.1 s; raw clip still saved, model gets the gated audio; log line 'near gate: muted N%'. Lab (scratchpad near_gate_lab*.py, ~$0.08 OpenRouter): far voice mixed at -16 dB (~2 m) leaked into the text 4/4 pairs plain -> 0/4; 15 dB / 0.25 s hold still leaked. Clean 10 reads 3.1% -> 3.1-3.6% (run noise); his 6 real 11-05 clips same text. LIMIT: a person talking AT THE SAME TIME as him, or right next to him, is not removed - test 2 in his noisy room is the real check. 44 tests OK.
 - Proposed (needs "boshla"): model -> gemini-3-flash-preview + 10-name list; 0.4 s tail after release.
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
@@ -68,7 +69,7 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
 - accuracy | 3-flash+names live; 'pul'->'full' cause found, Uzbek-first line 6/12 vs 0/12 in lab | owner reads test 2, then A/B on set1+set2, keep only if better | siz
-- only-my-voice | 11-04: others never reached the text in 20 clips; 11-05 owner works in noise, wants it | test 2 read in noise, then prompt line 'main close speaker only' A/B | siz (read test 2)
+- only-my-voice | near_voice_gate LIVE 00:29 (lab far-voice leak 4/4 -> 0/4) | owner reads test 2 in noise -> check leak + 'near gate: muted' in log; overlap speech not covered | siz (read test 2)
 
 Tugadi — /clear xavfsiz
 
