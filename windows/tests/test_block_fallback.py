@@ -44,5 +44,33 @@ class BlockFallbackTest(unittest.TestCase):
         self.assertIn(gemini_mic.FALLBACK_MODEL, self.calls[1])
 
 
+class OpenRouterBackupTest(unittest.TestCase):
+    """Owner 2026-11-05: free Google key first, any error -> OpenRouter at once."""
+
+    def setUp(self):
+        self.calls = []
+        self._saved = (gemini_mic.requests.post, gemini_mic.log)
+        gemini_mic.log = lambda *a: None
+
+        def post(url, **k):
+            self.calls.append((url, k.get("json", {}).get("model")))
+            if "openrouter.ai" in url:
+                return FakeResp({"choices": [{"message": {"content": "Salom dunyo."}}]})
+            r = FakeResp({"error": {"code": 429}})
+            r.status_code, r.text = 429, "quota"
+            return r
+        gemini_mic.requests.post = post
+
+    def tearDown(self):
+        gemini_mic.requests.post, gemini_mic.log = self._saved
+
+    def test_google_429_goes_straight_to_openrouter(self):
+        text = gemini_mic.gemini_transcribe("k", "gemini-3-flash-preview", "uz_en", b"RIFF" + b"\0" * 100,
+                                            openrouter_key="or")
+        self.assertEqual(text, "Salom dunyo.")
+        self.assertEqual(len(self.calls), 2)  # no Google fallback model in between
+        self.assertEqual(self.calls[1], ("https://openrouter.ai/api/v1/chat/completions", "google/gemini-3-flash-preview"))
+
+
 if __name__ == "__main__":
     unittest.main()

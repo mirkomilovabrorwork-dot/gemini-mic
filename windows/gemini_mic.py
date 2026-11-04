@@ -61,6 +61,9 @@ def log(msg):
 
 DEFAULT_CONFIG = {
     "api_key": "",
+    # Paid backup: any Google error -> the same model through OpenRouter at once
+    # (owner 2026-11-05: "qilinmay qolmasligi shart"). "" = Google-only, as before.
+    "openrouter_api_key": "",
     "model": "gemini-3-flash-preview",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
@@ -848,7 +851,49 @@ def generation_config(model):
     return cfg
 
 
-def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None):
+# Owner's idea (2026-11-04: "think, fix misheard words from context"). On the 10
+# read sentences via OpenRouter: plain 4.7% letter errors, this + reasoning 1024
+# 3.7% (0 injections, +1 s); the Google path without it is 3.5%.
+OPENROUTER_CONTEXT_HINT = (
+    "\n\nBefore answering, think about what the whole recording is about. If a word was clearly misheard "
+    "(it sounds like a different word that fits the context much better, e.g. a name from the spelling reference), "
+    "write the word the speaker meant. Never add, drop, reorder, summarise or rephrase words, and never translate. "
+    "Output ONLY the final transcript.")
+
+
+def _call_openrouter(api_key, model, prompt, wav_bytes):
+    """Same model through OpenRouter chat completions (the body shape the Meet
+    app verified live; probe 2026-11-05: 3-flash-preview 200 in 2.9 s)."""
+    body = {
+        "model": "google/" + model,
+        "temperature": 0,
+        "max_tokens": 4096,
+        "reasoning": {"max_tokens": 1024},
+        "messages": [{"role": "user", "content": [
+            {"type": "text", "text": prompt + OPENROUTER_CONTEXT_HINT},
+            {"type": "input_audio", "input_audio": {
+                "data": base64.b64encode(wav_bytes).decode("ascii"), "format": "wav"}},
+        ]}],
+    }
+    try:
+        resp = requests.post("https://openrouter.ai/api/v1/chat/completions",
+                             headers={"Authorization": "Bearer " + api_key}, json=body,
+                             timeout=(GEMINI_CONNECT_TIMEOUT, GEMINI_READ_TIMEOUT))
+    except requests.RequestException as e:
+        log("openrouter: request failed (%s: %s)" % (type(e).__name__, str(e)[:160]))
+        raise GeminiError("Model band yoki internet sekin. Qayta urinib ko'ring.")
+    if resp.status_code < 200 or resp.status_code >= 300:
+        raise GeminiError(f"OpenRouter error {resp.status_code}: {resp.text[:300]}")
+    try:
+        text = (resp.json()["choices"][0]["message"].get("content") or "").strip()
+    except (ValueError, KeyError, IndexError, TypeError):
+        raise GeminiError("OpenRouter returned invalid JSON")
+    if not text:
+        raise GeminiError("No transcript returned")
+    return text
+
+
+def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None, openrouter_key=""):
     if not api_key:
         raise GeminiError("Missing Gemini API key")
     if len(wav_bytes) == 0:
@@ -876,7 +921,10 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None)
     try:
         text = _call_gemini(api_key, model, body)
     except GeminiError as e:
-        if getattr(e, "status", None) in FALLBACK_STATUSES and model != FALLBACK_MODEL:
+        if openrouter_key:
+            log("gemini: %s -> openrouter model=google/%s" % (getattr(e, "status", None), model))
+            text = _call_openrouter(openrouter_key, model, body["contents"][0]["parts"][0]["text"], wav_bytes)
+        elif getattr(e, "status", None) in FALLBACK_STATUSES and model != FALLBACK_MODEL:
             log("gemini: fallback -> model=%s (status %s)" % (FALLBACK_MODEL, getattr(e, "status", None)))
             body["generationConfig"] = generation_config(FALLBACK_MODEL)
             text = _call_gemini(api_key, FALLBACK_MODEL, body)
@@ -1984,6 +2032,7 @@ class GeminiMicApp:
                     cfg.get("language_mode", DEFAULT_CONFIG["language_mode"]),
                     wav_bytes,
                     vocabulary,
+                    cfg.get("openrouter_api_key", ""),
                 )
                 log("gemini: transcript %d chars" % len(transcript))
                 log("gemini: text=%r" % transcript[:300])

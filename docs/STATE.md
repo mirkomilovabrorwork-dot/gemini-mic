@@ -1,6 +1,6 @@
-﻿STATUS: 11-04 3-flash+names+0.4 s tail LIVE on owner's free key (1 dictation ok)
-NEXT: men - keyingi kunlarda log: limit (429) va oxirgi so'z. DEFERRED: PhoneHead seq-tagging + primary-speaker A/B
-SIZDAN: 1 | OpenRouter zaxirasi: hozir yoki keyin?
+﻿STATUS: 11-05 free Google key first, any error -> OpenRouter at once: LIVE, his dictation passed
+NEXT: men - watch log for OpenRouter cost, '...' prefix, end words. DEFERRED: PhoneHead seq-tagging + primary-speaker A/B
+SIZDAN: 0 | -
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
@@ -54,14 +54,15 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - 23:28 owner put a FREE-tier key (new project). First call on it: gemini-3-flash-preview + 10 names, 3 s, his 103-char question verbatim, last word kept (tail live). Free-tier per-model limits are shown only in AI Studio (official rate-limits page); RPD resets midnight Pacific = 13:00 Tashkent. His load: max 136 dictations/day (11-04), usually 5-50. Free tier = Google may use the audio for training. Google's own 'speak into any app' dictation (Gemini desktop) is macOS-only today; gemini.google/desktop says 'more coming to Windows over time' (checked 23:30).
 - 23:40 owner thought Google's dictation reached Windows - re-checked: official Windows help (support.google.com/gemini/answer/18263854) lists no dictation/voice; Speak to Window is only on the Mac help page (hold fn, 'rolling out over time'); Android Police 10-07: Windows has only the Dictate button into Gemini's own box. One report: Speak to Window English-only. Verdict: stay on Gemini Mic. Running: ab_ctx.py (owner idea 'think, fix misheard words by context') on 3-flash + names, 2 runs.
 - 23:47 owner saw 'Model band' - CAUSE = my ab_ctx.py test on his free key ate the per-minute quota (429 on his dictations 23:45, 23:47). Killed 23:49, no result kept. Lesson: never A/B on the key the owner dictates with. 23:50 owner: use his OpenRouter key (Meet app's, limited to Gemini 3.7) - asked Business OS (SendMessage msg 7174d618) to lift the model limit via Mac Mini. App calls Google directly: OpenRouter needs a code path (spec + boshla).
+- 11-05 00:00 owner: "Hozir qur" + "qilinmay qolmasligi shart avval free key u ishlamasa srazi openrouter key bn qiladi". Meet STT key (server /opt/data365/app.env OPENROUTER_API_KEY, sk-or-v1-3ca...) pulled over ssh, stored as openrouter_api_key in live config.json. Probe (scratchpad or_probe.py): google/gemini-3-flash-preview 200 2.9 s correct, 3.8 and 3.7 also 200 = NO model limit. BUILDING: any Google error -> OpenRouter google/<model> at once; Google 3.8 fallback only without an OpenRouter key.
+- 00:06 LIVE: his real dictation 000636: Google free key 429 -> OpenRouter google/gemini-3-flash-preview -> pasted in 4 s ('Xo''p, endi ishlayaptimi?'). Free key's 3-flash daily quota is hit (429 since 23:55). 00:09 context test via OpenRouter (scratchpad ab_ctx_or.py, 40 calls, $0.024): plain 4.7% letter errors -> context hint + reasoning 1024 3.7% (0 injections, 3.1 s median, max 5.2 s); Google path plain 3.5%. OpenRouter path now uses the hint. Replay 000856 OK in 5.1 s but began with '...' (watch). 41 tests pass, app restarted 00:09.
 - Proposed (needs "boshla"): model -> gemini-3-flash-preview + 10-name list; 0.4 s tail after release.
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
 
-- (since 2026-11-04) Tur: qaror | Qiling: OpenRouter zaxirasini hozir qurishni xohlasangiz "qur" deng, aks holda hech narsa qilmang | Ko'rasiz: bepul limit tugasa ilova o'zi OpenRouter'ga o'tadi | undo: zaxira o'chiriladi, bepul kalit qoladi
 ## OPEN THREADS
-- OpenRouter key for Gemini Mic | Business OS 23:58: Meet STT key has NO model limit on the key object (limit may be a dashboard Guardrail or Meet app code); nothing changed | my pick: stay on free Google key, build OpenRouter backup only if 429 limits show up in the log | owner
+- OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
 - accuracy (12 variants measured on his 10 reads) | winner Gemini 3 Flash + names; tail cut found | built + live on free key 23:28 (1 dictation ok) | watch next days: limit hits, end words | men
 - only-my-voice | measured: others never reached the text | none unless owner wants prompt line | siz
