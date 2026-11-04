@@ -61,7 +61,7 @@ def log(msg):
 
 DEFAULT_CONFIG = {
     "api_key": "",
-    "model": "gemini-3.7-flash",
+    "model": "gemini-3-flash-preview",
     "language_mode": "uz_en_ru",
     "hotkey": "right ctrl",
     # Name fragment of the mic to record from; empty = system default input.
@@ -76,8 +76,10 @@ DEFAULT_CONFIG = {
     # chain that gates the first syllable away. Off switch: False = old MME path.
     "raw_capture": True,
     # Owner-editable spelling reference appended to the transcription prompt
-    # (see transcription_prompt). Keep it short.
-    "vocabulary": ["thinking budget", "workflow", "deploy", "deadline", "kontrol"],
+    # (see transcription_prompt). Keep it short. These 10 names cut letter errors
+    # 4.7% -> 3.5% on the owner's 10 read sentences (2026-11-04), 0 injections.
+    "vocabulary": ["Gemini Mic", "Claude", "Opus", "Sonnet", "GLM", "Jarvis",
+                   "commander", "usage", "deploy", "thinking budget"],
     # Phone -> PC text relay: the Android app POSTs its finished transcript to
     # RELAY_PUBLIC_URL (Tailscale Funnel -> 127.0.0.1:relay_port) and this app
     # pastes it. relay_token is generated on first load (see load_config).
@@ -105,9 +107,13 @@ RELAY_PUBLIC_URL = "https://data365.taildef23b.ts.net/mic"
 # the price ($0.50/$3.00 per 1M vs $1.50/$7.50). DO NOT "upgrade" to 3.6-flash:
 # on 2 of 3 segments it emitted its own REASONING instead of the transcript
 # ("Using explicit rules for mixed Uzbek/English speech transcription…") — a
-# newer model is not automatically better for this task. On error
-# (busy/quota/timeout) retry once with gemini-3.5-flash (separate quota).
-FALLBACK_MODEL = "gemini-3.5-flash"
+# newer model is not automatically better for this task. 2026-11-04 re-measure
+# on his 10 read sentences: 3-flash-preview + names 3.5% letter errors @2.1 s vs
+# 3.7-flash (the 10-14 pick) 5.9% @3.1 s; 3.7 also refused hard clips with
+# blockReason=OTHER (11/12), 3-flash-preview 0/38. On error (busy/quota/timeout)
+# retry once with gemini-3.8-flash: 3.5-flash, the old fallback, wrote its own
+# working notes ("Key terms phonetically...") into a 45 s dictation.
+FALLBACK_MODEL = "gemini-3.8-flash"
 # 0 = a network/timeout error (retryable → try the other model too).
 FALLBACK_STATUSES = (0, 404, 429, 500, 503)
 
@@ -120,6 +126,10 @@ LANGUAGE_CHOICES = [
 # Recording guards (match Android)
 SAMPLE_RATE = 16000
 MIN_DURATION_SEC = 0.65
+# Keep recording this long after the key goes up: the owner lifts Ctrl on his
+# last syllable (clip 20261104-230133: last 0.2 s louder than the clip mean,
+# "tanla" lost by every model).
+RELEASE_TAIL_SEC = 0.4
 AUTO_STOP_SEC = 60
 # When the key is STILL HELD at the 60s mark, the recording no longer just
 # stops (the owner lost everything he said after minute one): the finished
@@ -1981,7 +1991,9 @@ class GeminiMicApp:
                 beep(660, 90)  # audio cue: transcript pasted (done)
             except GeminiError as e:
                 log("gemini: error %r" % (e,))
-                self.notify(str(e))
+                # 402 = prepaid balance empty; the raw JSON toast said nothing to the owner
+                self.notify("Google balansi tugadi - AI Studio'da to'ldiring (yozuv saqlandi)"
+                            if getattr(e, "status", None) == 402 else str(e))
             except Exception as e:
                 log("worker: unexpected %r" % (e,))
                 self.notify(f"Unexpected error: {e}")
@@ -2088,7 +2100,14 @@ class GeminiMicApp:
                 threading.Thread(target=self._phone_release, args=(acked, sent), daemon=True).start()
             # no return: a local recording started meanwhile must stop too (F1)
             if self.recording:
-                threading.Thread(target=self.stop_recording_and_transcribe, daemon=True).start()
+                threading.Thread(target=self._stop_after_tail, args=(self.record_gen,), daemon=True).start()
+
+    def _stop_after_tail(self, gen):
+        time.sleep(RELEASE_TAIL_SEC)
+        # pressed again inside the tail: the same take simply continues
+        if self.hotkey_down or self.record_gen != gen:
+            return
+        self.stop_recording_and_transcribe()
 
     # -- PC hotkey -> phone recording -----------------------------------------
 
