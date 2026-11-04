@@ -1,6 +1,6 @@
-﻿STATUS: 11-04 3-flash+names+0.4 s tail built; BLOCKED: Google balance 0 (402)
-NEXT: siz - Google balansini to'ldiring; men - keyin jonli tekshiruv + saqlangan gaplarni matnga. DEFERRED: PhoneHead seq-tagging
-SIZDAN: 1 | Google balansini to'ldiring
+﻿STATUS: 11-04 3-flash+names+0.4 s tail LIVE on owner's free key (1 dictation ok)
+NEXT: men - keyingi kunlarda log: limit (429) va oxirgi so'z. DEFERRED: PhoneHead seq-tagging + primary-speaker A/B
+SIZDAN: 0 | -
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
@@ -51,15 +51,15 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - Sentence 9 lost "tanla" in EVERY model: clip 230133 last 0.2 s RMS 5336 vs clip mean 3217 = he was
   still speaking when Ctrl went up; recording stops at release (no tail). Fix candidate: ~0.4 s tail.
 - 23:27 owner said ha (boshla). BUILT: model gemini-3-flash-preview + 10-name vocab (DEFAULT_CONFIG + live config.json; backup scratchpad config_before.json), FALLBACK 3.5 -> 3.8-flash, RELEASE_TAIL_SEC 0.4 (_stop_after_tail; re-press inside tail continues the take), 402 toast in Uzbek. gate + 40 tests pass, app restarted 23:26:58. LIVE CHECK BLOCKED: Google prepaid credits depleted (402 on every call since 23:18; my A/B runs ~600 calls helped drain it). Unsent clips saved 231817..232130 - transcribe after top-up. Android/Mac defaults NOT changed.
+- 23:28 owner put a FREE-tier key (new project). First call on it: gemini-3-flash-preview + 10 names, 3 s, his 103-char question verbatim, last word kept (tail live). Free-tier per-model limits are shown only in AI Studio (official rate-limits page); RPD resets midnight Pacific = 13:00 Tashkent. His load: max 136 dictations/day (11-04), usually 5-50. Free tier = Google may use the audio for training. Google's own 'speak into any app' dictation (Gemini desktop) is macOS-only today; gemini.google/desktop says 'more coming to Windows over time' (checked 23:30).
 - Proposed (needs "boshla"): model -> gemini-3-flash-preview + 10-name list; 0.4 s tail after release.
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
-- (since 2026-11-04) Tur: topshirish | Blok: Google balans 0 (402 since 23:18) | Qiling: ai.studio/projects da balansni to'ldiring, keyin Ctrl bosib bitta gap ayting | Ko'rasiz: matn chiqadi, oxirgi so'z kesilmaydi | undo: to'lov qilinmasa ilova ishlamaydi, boshqa zarar yo'q
 
 ## OPEN THREADS
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
-- accuracy (12 variants measured on his 10 reads) | winner Gemini 3 Flash + names; tail cut found | built 23:27, live check after balance top-up | siz
+- accuracy (12 variants measured on his 10 reads) | winner Gemini 3 Flash + names; tail cut found | built + live on free key 23:28 (1 dictation ok) | watch next days: limit hits, end words | men
 - only-my-voice | measured: others never reached the text | none unless owner wants prompt line | siz
 
 Tugadi — /clear xavfsiz
