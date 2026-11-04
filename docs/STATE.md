@@ -1,6 +1,6 @@
-﻿STATUS: 11-05 00:29 only-my-voice gate LIVE (lab leak 4/4 -> 0/4); OpenRouter backup LIVE
-NEXT: siz 11-05 14:00 (reminder set) - read test 2 in the noisy office; then men: score_test2.py, A/B Uzbek-first line. Also watch OpenRouter spend.
-SIZDAN: 1 | test 2 o'qish
+﻿STATUS: 11-05 00:55 only-my-voice proven (podcast leak 2/10 -> 0/10, error 8.9% -> 5.9%); end tick removed; OpenRouter backup live
+NEXT: men - watch OpenRouter spend; English-in-Uzbek misses (main/issue/pulni) open. DEFERRED: PhoneHead seq-tagging
+SIZDAN: 0 | -
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
@@ -59,18 +59,19 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - 00:20 'pul va sifat' -> 'full response'/'pull request' (his clips 001117, 001419). Owner thought the context hint did it: NO - plain prompt (= Google path) gives the same 6/6 (scratchpad pul_probe.py, $0.014). Cause: uz_en prompt + English names push 'pul' to English. Lab line 'Uzbek word first when it fits' (pul_probe2.py): 6/12 right vs 0/12 - noisy, not built. Set 1 had only list names; free English words untested -> docs/ACCURACY_TEST_SENTENCES_2.md (mixed + read in noise, also tests only-my-voice).
 - 00:29 ONLY-MY-VOICE BUILT + LIVE (owner 00:20: 'faqat meni ovozimni eshitadigan qilish bu shart ... 30-40 sm, maks 50 sm ... Do fast'). near_voice_gate: windows >10 dB under the take's own speech level (95th pct) muted, hold 0.4 s, attack 0.1 s; raw clip still saved, model gets the gated audio; log line 'near gate: muted N%'. Lab (scratchpad near_gate_lab*.py, ~$0.08 OpenRouter): far voice mixed at -16 dB (~2 m) leaked into the text 4/4 pairs plain -> 0/4; 15 dB / 0.25 s hold still leaked. Clean 10 reads 3.1% -> 3.1-3.6% (run noise); his 6 real 11-05 clips same text. LIMIT: a person talking AT THE SAME TIME as him, or right next to him, is not removed - test 2 in his noisy room is the real check. 44 tests OK.
 - 00:40 owner: 'hozir yonimda ichki yo'q, ertaga ish vaqtida sinaymiz. Ertaga soat 2 PMlarda eslatvor' -> test 2 moved to 11-05 14:00 at the office; scheduled task gemini-mic-test2-reminder (14:00, messages this session; may pause on an approval - default mode). Clip 003900 (1st sentence) taken before he stopped - ignore. Scorer ready: scratchpad score_test2.py <start yyyyMMdd-HHmmss> (live vs raw vs gate vs gate+UZ-first, extra-word leak). OpenRouter spend 00:40: today $0.29 (incl. ~$0.16 my lab tests), week $0.85, 23 backup calls today.
+- 00:47 TEST 2 DONE (owner read the 10 mixed sentences, podcast loud on his phone ~2 m away; clips 004454..004634 in scratchpad test2/, score_test2.py, $0.016). Podcast words in text: raw (no gate) 2/10 (#10 'O'zi, coder, Angliyada o'sha', #8 'o'sha yerda' for 'online') -> gate 0/10. Letter error raw 8.9% -> gate 5.9%. 'pul va sifat' right. Still wrong: 'Pulni'->'To'lov', 'main''ga'->'menga', 'issue''larni'->other words. Uzbek-first prompt line 6.4% vs 5.9% -> DISCARDED. First word present in 10/10 (pre-roll 0.6 s). 14:00 reminder deleted (owner did the podcast test instead).
+- 00:55 owner: 'Shu tugagandagi tik etishni o'chirib qo'yaver' (end tick = 660 Hz pasted cue; he waited for it). Removed all 3 done beeps (local + 2 phone paste paths); start beep stays. Back-to-back takes already worked (24 in log). Owner: 'endi telefon orqali emas, mikrofon orqali ishlayapmiz faqat' - phone_trigger already False, no phone use 11-04/05. 44 tests OK, app restarted.
 - Proposed (needs "boshla"): model -> gemini-3-flash-preview + 10-name list; 0.4 s tail after release.
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
 
-- OWNER TODO (since 2026-11-05, 14:00 da eslatiladi): test 2 ni o'qish - Qiling: ishxonada, shovqinli xonada docs/ACCURACY_TEST_SENTENCES_2.md dagi 10 gapni har birini bitta Ctrl bilan o'qing | Ko'rasiz: men 'yozuvlar keldi' deyman | Blok: yo'q (faqat aniqlik ishi kutadi)
 
 ## OPEN THREADS
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
-- accuracy | 3-flash+names live; 'pul'->'full' cause found, Uzbek-first line 6/12 vs 0/12 in lab | owner reads test 2, then A/B on set1+set2, keep only if better | siz
-- only-my-voice | near_voice_gate LIVE 00:29 (lab far-voice leak 4/4 -> 0/4) | owner reads test 2 in noise -> check leak + 'near gate: muted' in log; overlap speech not covered | siz (read test 2)
+- accuracy | test 2: gate 5.9%, pul fixed; English-in-Uzbek words still miss (main, issue, pulni); Uzbek-first line discarded | next idea needs owner's OK | men
+- only-my-voice | DONE: gate live, podcast test leak 2/10 -> 0/10 | people talking AT THE SAME TIME untested - watch | men
 
 Tugadi — /clear xavfsiz
 

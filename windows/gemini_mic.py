@@ -2052,12 +2052,10 @@ class GeminiMicApp:
                     if job.text is None:
                         log("phone: head missing")
                         continue
-                    self.paste_text(job.text)
-                    beep(660, 90)
+                    self.paste_text(job.text)  # no done beep, as below
                     continue
                 if isinstance(job, tuple) and job[0] == "relay":
-                    self.paste_text(job[1])
-                    beep(660, 90)  # audio cue: phone text pasted (done)
+                    self.paste_text(job[1])  # no done beep, as below
                     continue
                 wav_bytes = job
                 cfg = self.get_config()
@@ -2076,7 +2074,8 @@ class GeminiMicApp:
                 log("gemini: transcript %d chars" % len(transcript))
                 log("gemini: text=%r" % transcript[:300])
                 self.paste_text(transcript)
-                beep(660, 90)  # audio cue: transcript pasted (done)
+                # no "done" beep (owner 2026-11-05: "tugaganda ham tiqillayapti. Men kutib
+                # qolyapman") - he waited for it between takes; the pasted text is the cue
             except GeminiError as e:
                 log("gemini: error %r" % (e,))
                 # 402 = prepaid balance empty; the raw JSON toast said nothing to the owner
