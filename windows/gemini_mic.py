@@ -458,6 +458,12 @@ BEEP_VOLUME = 0.12  # 0..1 — winsound.Beep was a full-volume square wave; the
                     # owner reported it painfully loud (especially on a BT
                     # headset). A quiet sine with fade edges is generated per
                     # call and played from memory instead.
+# Silence played before each tone. The default output is a Bluetooth headset
+# (WH-1000XM5, measured 2026-11-04); after a few idle seconds its audio link
+# sleeps and the first part of the next sound is cut, so a bare 80 ms tone was
+# heard only when something had played recently ("sometimes no beep").
+# Measured: after 25 s idle PlaySound takes 0.2-0.45 s longer than when warm.
+BEEP_LEAD_SEC = 0.5
 
 
 def beep(freq, duration):
@@ -475,6 +481,7 @@ def beep(freq, duration):
                 env[-fade:] = np.linspace(1, 0, fade)
                 tone *= env
             pcm = (tone * 32767 * BEEP_VOLUME).astype(np.int16)
+            pcm = np.concatenate([np.zeros(int(sr * BEEP_LEAD_SEC), np.int16), pcm])
             buf = BytesIO()
             with wave.open(buf, "wb") as w:
                 w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
