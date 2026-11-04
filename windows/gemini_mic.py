@@ -152,7 +152,13 @@ VOICE_RMS_THRESHOLD = 120
 # chatter bursts up to 3.3x in <=2 windows; the owner's speech sits 3-6x above
 # his floor. 2.0x (~6 dB) + MIN_VOICED_WINDOWS keeps bursts out and lets a short
 # quiet phrase through (2.5x rejected a real 2.25 s dictation: 2/3 windows).
-VOICE_FLOOR_RATIO = 2.0
+# 2026-11-05 (MICUSB1, floor ~500): 2.0x rejected 3 of 4 real quiet takes
+# (0-2 voiced windows) - owner had to repeat each one; a real 45 s take sat
+# only 1.1-1.3x over the floor (2 windows at 1.6x, 24 at 1.3x). A level gate
+# cannot tell such quiet speech from noise, but the model can: it answered
+# NO_SPEECH on the one truly silent take. So the gate only drops clearly-
+# nothing clips and the model decides the borderline ones.
+VOICE_FLOOR_RATIO = 1.3
 VOICE_WINDOW_SEC = 0.20
 MIN_VOICED_WINDOWS = 3
 # WASAPI raw capture skips the audio-effects chain (Realtek/VocaEffectPack APOs),

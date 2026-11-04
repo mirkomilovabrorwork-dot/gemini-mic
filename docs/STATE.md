@@ -1,9 +1,23 @@
-﻿STATUS: 11-05 00:55 only-my-voice proven (podcast leak 2/10 -> 0/10, error 8.9% -> 5.9%); end tick removed; OpenRouter backup live
-NEXT: men - watch OpenRouter spend; English-in-Uzbek misses (main/issue/pulni) open. DEFERRED: PhoneHead seq-tagging
-SIZDAN: 0 | -
+﻿STATUS: 11-05 01:25 speech gate 2.0x->1.3x: live 6/6 takes kept (was 4 of 5 real dropped)
+NEXT: siz - 3.8-flash ha/yo'q (lab 6.8%->5.1%, issue still wrong); men - spend watch
+SIZDAN: 1 | 3.8-flash ga o'tamizmi - ha/yo'q
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
+
+## 2026-11-05 01:25 - dropped takes fixed; model A/B for English words
+- Owner: "birinchisida ishlamadi, keyingisida ishladi ... oxirgi besh-oltitalarni tekshirib ol". Cause:
+  has_speech threshold 2.0x room floor (~500 at 6x gain on MICUSB1). His voice since ~00:48 arrives
+  ~8x weaker than during test 2 (floor unchanged = mic farther/turned); 4 of 5 rejected takes were
+  real speech (OpenRouter transcript), 1 NO_SPEECH. A 45 s real take sat only 1.1-1.3x over floor.
+  VOICE_FLOOR_RATIO 2.0 -> 1.3; the model's NO_SPEECH decides borderline. Live after restart: 6/6 kept.
+  NOT the near-voice gate (owner's guess): it muted 0% on those takes and rejects existed on 11-04.
+  Lost 01:11/01:12 takes recovered via scratchpad recover.py and given to him in chat.
+- English words (owner "hal qila olsang, hal qil"): vocab + 20 dev terms -> issue/main unchanged.
+  Models on test-2 clips (OpenRouter): 3-flash 6.8% vs 3.8-flash 5.1% letter errors, same speed
+  (~3.4 s), same cost ($0.0005/take). 3.8 fixed Pulni, heard "main"; issue'larni still wrong; new
+  miss "avval mainga". 3.5-flash / 3.1-pro / 4-argon: 404 = his OpenRouter guardrail/data policy.
+  3-flash-preview is the owner's own pick (code comment) -> switch only on his yes.
 
 ## 2026-11-04 21:00 - owner's 4 asks (only my voice / beep / context correction / max accuracy)
 - Beep: default render = Headphones (WH-1000XM5) (pycaw). PlaySound after 25 s idle takes 0.2-0.45 s
@@ -65,12 +79,12 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
-
+- (since 2026-11-05) Qiling: "3.8-flash ga o'tamiz" yoki "yo'q" deb yozing | Ko'rasiz: inglizcha so'z xatolari kamayadimi | undo: model nomini 3-flash-preview ga qaytarish
 
 ## OPEN THREADS
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
-- accuracy | test 2: gate 5.9%, pul fixed; English-in-Uzbek words still miss (main, issue, pulni); Uzbek-first line discarded | next idea needs owner's OK | men
+- accuracy | vocab fix failed; 3.8-flash lab 6.8%->5.1% (issue still wrong) | owner ha/yo'q on 3.8-flash | siz
 - only-my-voice | DONE: gate live, podcast test leak 2/10 -> 0/10 | people talking AT THE SAME TIME untested - watch | men
 
 Tugadi — /clear xavfsiz
