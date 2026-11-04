@@ -641,6 +641,31 @@ def near_voice_gate(audio):
     return np.clip(a * gain, -32768, 32767).astype(np.int16)
 
 
+# Quiet speech (owner 2026-11-05 "sekin gapirsam xato yozyapti"): on MICUSB1 most of
+# the room tone is rumble under 150 Hz (13 dB above the 150-500 Hz band), so when he
+# speaks softly the rumble outweighs his voice in the clip. Lab (his 10 reads, voice
+# turned down + real 01:xx room tone, cut then near_voice_gate, 3 runs): letter errors
+# -18 dB 9.2 -> 6.1%, -21 dB 9.7 -> 7.1% (biquad twin: -15 dB 5.3 -> 4.8%). Loud
+# reads 4.3 -> 3.7% letters, but word errors 45 -> 53/261 (inside run noise, ~10);
+# podcast set at -18 dB 11.3 -> 12.2% (neutral). Simulated quiet, not his real soft
+# voice - the field check is his next quiet takes. Peak normalising on top and
+# spectral denoise did not help (denoise was worse).
+HIGHPASS_HZ = 120.0
+
+
+def highpass(audio, cutoff=HIGHPASS_HZ, sample_rate=SAMPLE_RATE):
+    """Remove rumble below cutoff: 2nd-order Butterworth magnitude, zero phase."""
+    if audio.size < 2:
+        return audio
+    # >= 0.5 s zero pad (the filter's ring dies out, no wrap-around), rounded up to a
+    # power of two: an odd take length with a big prime factor made the FFT 5x slower
+    n = 1 << int(np.ceil(np.log2(audio.size + sample_rate // 2)))
+    f = np.fft.rfftfreq(n, 1.0 / sample_rate)
+    h = 1.0 / np.sqrt(1.0 + (cutoff / np.maximum(f, 1e-6)) ** 4)
+    out = np.fft.irfft(np.fft.rfft(audio.astype(np.float64), n) * h, n)[:audio.size]
+    return np.clip(np.round(out), -32768, 32767).astype(np.int16)
+
+
 def audio_to_wav_bytes(audio, sample_rate=SAMPLE_RATE):
     buf = BytesIO()
     with wave.open(buf, "wb") as wf:
@@ -2022,10 +2047,12 @@ class GeminiMicApp:
         save_clip(wav_bytes)
         log("clip: rms=%d gain=%.1fx (diagnostic)"
             % (np.sqrt(np.mean(audio.astype(np.float64) ** 2)) if audio.size else 0, g))
-        # the saved clip stays raw (re-runnable A/B); the model gets only the near voice
-        near = near_voice_gate(audio)
+        # the saved clip stays raw (re-runnable A/B); the model gets only the near voice,
+        # rumble removed first so a soft voice is not buried under it
+        cut = highpass(audio)
+        near = near_voice_gate(cut)
         if audio.size:
-            log("near gate: muted %d%%" % round(100.0 * np.mean((near == 0) & (audio != 0))))
+            log("near gate: muted %d%%" % round(100.0 * np.mean((near == 0) & (cut != 0))))
         wav_bytes = audio_to_wav_bytes(near)
 
         # Energy-based silence gate (RMS, not a single peak): a click/breath spikes
