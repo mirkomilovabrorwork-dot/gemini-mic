@@ -1,9 +1,38 @@
-STATUS: 2026-10-23 17:10 'No transcript returned' on long takes = gemini-3.7-flash (served as 3.8-flash) blockReason=OTHER, intermittent -> all platforms now fall back to 3.5-flash on a block (ce8bd89; Windows LIVE 17:09, Android APK via CI). MICUSB1 primary everywhere (f71d2ab).
-NEXT: owner - next dictation with the phone app open: log must show `record stop` and NO `relay: state recording` -> proves MICUSB1 beats the phone; unplug MICUSB1 -> Ctrl must go to the phone. Screen-off test still open. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
-SIZDAN: 1 | ekran o'chiq sinovi: 5 daqiqa tegmang, keyin Ctrl -> bip keldimi?
+STATUS: 11-04 beep fix live (6c96c56), ears unconfirmed; accuracy A/B awaits owner
+NEXT: siz - 1 min idle, Ctrl 3x: bip har safar? + accuracy A yoki B (detail: 2026-11-04 21:00 section). Older: phone-open check, screen-off test. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
+SIZDAN: 2 | 1 daqiqa kuting, Ctrl 3 marta: bip keldimi?
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
+
+## 2026-11-04 21:00 - owner's 4 asks (only my voice / beep / context correction / max accuracy)
+- Beep: default render = Headphones (WH-1000XM5) (pycaw). PlaySound after 25 s idle takes 0.2-0.45 s
+  longer than warm (scratchpad probe, silent tone) = the BT link sleeps; the bare 80 ms tone was cut.
+  Fix 6c96c56: BEEP_LEAD_SEC 0.5 of silence in beep(). Taps < ~0.3 s stay silent by design (59 of 348
+  takes in the log were < 0.5 s). lab-only: owner's ears. Undo: BEEP_LEAD_SEC = 0.
+- Only-my-voice: 20 clips of 20:29-20:45 copied to scratchpad. Speech/room SNR 13-23 dB, no clipping.
+  3.1-pro-preview heard faint other voices in 8/18, NONE of them appeared in the pasted text (one
+  doubtful: 202935). The x6 software gain scales his voice and others equally -> lowering it blocks
+  nothing. No change made.
+- Accuracy (scratchpad/ab_context.py, results.json, side.txt; 15 clips x 5 variants, one run each):
+  same clip + same settings gives different words run to run (203939 live "Gemini 2", rerun "Gemini
+  Make") -> single runs are noise; ground truth needed (only the speaker knows). Errors seen = his
+  names/English words (Gemini Mic, usage, commander) + a few Uzbek words (bazada/ba'zida).
+  Prev-dictation context: once spread a wrong name 3x ("Gemini Live" for Gemini Mic) - risky.
+  Text-only fix pass with his names list: fixed Gemini Mic in 2 clips, 11 untouched, 1 doubtful, +3-5 s
+  (one 30 s timeout). Thinking 2048: fixed "usage", +~1 s, mixed elsewhere. 3 blockReason misses/75.
+  Research (sourced, sonnet researcher): Live API transcript is a side channel, no documented
+  context correction; Wispr/Superwhisper use screen/app context + learned dictionary, no published
+  gains; GER papers gain mostly on weak ASR, over-correction is the known failure.
+  Offered owner: A = bigger personal names list + thinking (no extra step) vs B = AI fix pass after
+  the text (+3-5 s); both measured on 10 read sentences x3 runs before shipping.
+
+## OPEN THREADS
+- beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears 3/3 after idle | siz
+- accuracy A/B (names list+thinking vs AI fix pass) | measured, no ground truth | owner picks + reads 10 sentences | siz
+- only-my-voice | measured: others never reached the text | none unless owner wants prompt line | siz
+
+Tugadi — /clear xavfsiz
 
 ## GOAL (owner's words)
 Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
