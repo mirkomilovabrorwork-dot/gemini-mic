@@ -1,6 +1,6 @@
 ﻿STATUS: 11-05 free Google key first, any error -> OpenRouter at once: LIVE, his dictation passed
-NEXT: men (waits on days of real use) - check log + OpenRouter spend after ~1 day of dictation. 00:08-00:12 check: 5 live takes via OpenRouter, 3-4 s, no '...' prefix. DEFERRED: PhoneHead seq-tagging + primary-speaker A/B
-SIZDAN: 0 | -
+NEXT: siz - read docs/ACCURACY_TEST_SENTENCES_2.md (10 sentences, noisy room, one Ctrl each, ~3 min); then men: A/B Uzbek-first + main-speaker lines on set1+set2. Also watch OpenRouter spend.
+SIZDAN: 1 | test 2 o'qish
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
@@ -56,16 +56,19 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - 23:47 owner saw 'Model band' - CAUSE = my ab_ctx.py test on his free key ate the per-minute quota (429 on his dictations 23:45, 23:47). Killed 23:49, no result kept. Lesson: never A/B on the key the owner dictates with. 23:50 owner: use his OpenRouter key (Meet app's, limited to Gemini 3.7) - asked Business OS (SendMessage msg 7174d618) to lift the model limit via Mac Mini. App calls Google directly: OpenRouter needs a code path (spec + boshla).
 - 11-05 00:00 owner: "Hozir qur" + "qilinmay qolmasligi shart avval free key u ishlamasa srazi openrouter key bn qiladi". Meet STT key (server /opt/data365/app.env OPENROUTER_API_KEY, sk-or-v1-3ca...) pulled over ssh, stored as openrouter_api_key in live config.json. Probe (scratchpad or_probe.py): google/gemini-3-flash-preview 200 2.9 s correct, 3.8 and 3.7 also 200 = NO model limit. BUILDING: any Google error -> OpenRouter google/<model> at once; Google 3.8 fallback only without an OpenRouter key.
 - 00:06 LIVE: his real dictation 000636: Google free key 429 -> OpenRouter google/gemini-3-flash-preview -> pasted in 4 s ('Xo''p, endi ishlayaptimi?'). Free key's 3-flash daily quota is hit (429 since 23:55). 00:09 context test via OpenRouter (scratchpad ab_ctx_or.py, 40 calls, $0.024): plain 4.7% letter errors -> context hint + reasoning 1024 3.7% (0 injections, 3.1 s median, max 5.2 s); Google path plain 3.5%. OpenRouter path now uses the hint. Replay 000856 OK in 5.1 s but began with '...' (watch). 41 tests pass, app restarted 00:09.
+- 00:20 'pul va sifat' -> 'full response'/'pull request' (his clips 001117, 001419). Owner thought the context hint did it: NO - plain prompt (= Google path) gives the same 6/6 (scratchpad pul_probe.py, $0.014). Cause: uz_en prompt + English names push 'pul' to English. Lab line 'Uzbek word first when it fits' (pul_probe2.py): 6/12 right vs 0/12 - noisy, not built. Set 1 had only list names; free English words untested -> docs/ACCURACY_TEST_SENTENCES_2.md (mixed + read in noise, also tests only-my-voice).
 - Proposed (needs "boshla"): model -> gemini-3-flash-preview + 10-name list; 0.4 s tail after release.
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
 
+- OWNER TODO (since 2026-11-05): test 2 ni o'qish - Qiling: shovqinli xonada docs/ACCURACY_TEST_SENTENCES_2.md dagi 10 gapni har birini bitta Ctrl bilan o'qing | Ko'rasiz: men 'yozuvlar keldi' deyman | Blok: yo'q (faqat aniqlik ishi kutadi)
+
 ## OPEN THREADS
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
-- accuracy (12 variants measured on his 10 reads) | winner Gemini 3 Flash + names; tail cut found | built + live on free key 23:28 (1 dictation ok) | watch next days: limit hits, end words | men
-- only-my-voice | measured: others never reached the text | none unless owner wants prompt line | siz
+- accuracy | 3-flash+names live; 'pul'->'full' cause found, Uzbek-first line 6/12 vs 0/12 in lab | owner reads test 2, then A/B on set1+set2, keep only if better | siz
+- only-my-voice | 11-04: others never reached the text in 20 clips; 11-05 owner works in noise, wants it | test 2 read in noise, then prompt line 'main close speaker only' A/B | siz (read test 2)
 
 Tugadi — /clear xavfsiz
 
