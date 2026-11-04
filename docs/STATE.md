@@ -1,5 +1,5 @@
 ﻿STATUS: 11-05 00:29 only-my-voice gate LIVE (lab leak 4/4 -> 0/4); OpenRouter backup LIVE
-NEXT: siz - read docs/ACCURACY_TEST_SENTENCES_2.md in the noisy room (10 sentences, one Ctrl each); then men: score leak + accuracy on those clips, A/B Uzbek-first line. Also watch OpenRouter spend.
+NEXT: siz 11-05 14:00 (reminder set) - read test 2 in the noisy office; then men: score_test2.py, A/B Uzbek-first line. Also watch OpenRouter spend.
 SIZDAN: 1 | test 2 o'qish
  Gemini Mic — STATE
 
@@ -58,12 +58,13 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - 00:06 LIVE: his real dictation 000636: Google free key 429 -> OpenRouter google/gemini-3-flash-preview -> pasted in 4 s ('Xo''p, endi ishlayaptimi?'). Free key's 3-flash daily quota is hit (429 since 23:55). 00:09 context test via OpenRouter (scratchpad ab_ctx_or.py, 40 calls, $0.024): plain 4.7% letter errors -> context hint + reasoning 1024 3.7% (0 injections, 3.1 s median, max 5.2 s); Google path plain 3.5%. OpenRouter path now uses the hint. Replay 000856 OK in 5.1 s but began with '...' (watch). 41 tests pass, app restarted 00:09.
 - 00:20 'pul va sifat' -> 'full response'/'pull request' (his clips 001117, 001419). Owner thought the context hint did it: NO - plain prompt (= Google path) gives the same 6/6 (scratchpad pul_probe.py, $0.014). Cause: uz_en prompt + English names push 'pul' to English. Lab line 'Uzbek word first when it fits' (pul_probe2.py): 6/12 right vs 0/12 - noisy, not built. Set 1 had only list names; free English words untested -> docs/ACCURACY_TEST_SENTENCES_2.md (mixed + read in noise, also tests only-my-voice).
 - 00:29 ONLY-MY-VOICE BUILT + LIVE (owner 00:20: 'faqat meni ovozimni eshitadigan qilish bu shart ... 30-40 sm, maks 50 sm ... Do fast'). near_voice_gate: windows >10 dB under the take's own speech level (95th pct) muted, hold 0.4 s, attack 0.1 s; raw clip still saved, model gets the gated audio; log line 'near gate: muted N%'. Lab (scratchpad near_gate_lab*.py, ~$0.08 OpenRouter): far voice mixed at -16 dB (~2 m) leaked into the text 4/4 pairs plain -> 0/4; 15 dB / 0.25 s hold still leaked. Clean 10 reads 3.1% -> 3.1-3.6% (run noise); his 6 real 11-05 clips same text. LIMIT: a person talking AT THE SAME TIME as him, or right next to him, is not removed - test 2 in his noisy room is the real check. 44 tests OK.
+- 00:40 owner: 'hozir yonimda ichki yo'q, ertaga ish vaqtida sinaymiz. Ertaga soat 2 PMlarda eslatvor' -> test 2 moved to 11-05 14:00 at the office; scheduled task gemini-mic-test2-reminder (14:00, messages this session; may pause on an approval - default mode). Clip 003900 (1st sentence) taken before he stopped - ignore. Scorer ready: scratchpad score_test2.py <start yyyyMMdd-HHmmss> (live vs raw vs gate vs gate+UZ-first, extra-word leak). OpenRouter spend 00:40: today $0.29 (incl. ~$0.16 my lab tests), week $0.85, 23 backup calls today.
 - Proposed (needs "boshla"): model -> gemini-3-flash-preview + 10-name list; 0.4 s tail after release.
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
 
-- OWNER TODO (since 2026-11-05): test 2 ni o'qish - Qiling: shovqinli xonada docs/ACCURACY_TEST_SENTENCES_2.md dagi 10 gapni har birini bitta Ctrl bilan o'qing | Ko'rasiz: men 'yozuvlar keldi' deyman | Blok: yo'q (faqat aniqlik ishi kutadi)
+- OWNER TODO (since 2026-11-05, 14:00 da eslatiladi): test 2 ni o'qish - Qiling: ishxonada, shovqinli xonada docs/ACCURACY_TEST_SENTENCES_2.md dagi 10 gapni har birini bitta Ctrl bilan o'qing | Ko'rasiz: men 'yozuvlar keldi' deyman | Blok: yo'q (faqat aniqlik ishi kutadi)
 
 ## OPEN THREADS
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
