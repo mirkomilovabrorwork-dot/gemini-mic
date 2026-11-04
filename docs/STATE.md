@@ -1,6 +1,6 @@
-STATUS: 11-04 beep fix live (6c96c56), ears unconfirmed; accuracy A/B awaits owner
-NEXT: siz - 1 min idle, Ctrl 3x: bip har safar? + accuracy A yoki B (detail: 2026-11-04 21:00 section). Older: phone-open check, screen-off test. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
-SIZDAN: 2 | 1 daqiqa kuting, Ctrl 3 marta: bip keldimi?
+﻿STATUS: 11-04 beep fix live, ears unconfirmed; accuracy: transcribe model leads, 10 reads due
+NEXT: siz - 10 gapni o'qing (ACCURACY_TEST_SENTENCES.md) + 1 min idle, Ctrl 3x: bip? Then ab10.py. Older: phone-open check, screen-off test. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
+SIZDAN: 2 | 10 ta gapni o'qing, har biriga bitta Ctrl
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
@@ -26,14 +26,23 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
   gains; GER papers gain mostly on weak ASR, over-correction is the known failure.
   Offered owner: A = bigger personal names list + thinking (no extra step) vs B = AI fix pass after
   the text (+3-5 s); both measured on 10 read sentences x3 runs before shipping.
+- 22:15 owner chose "A + Live". New candidate found: gemini-3.5-transcribe (Google's dedicated STT model,
+  Interactions API, custom_vocabulary up to 1000 terms, language_codes; the batch twin of the Live
+  transcribe model). On the 15 past clips (1 run, scratchpad tr_side.txt): with vocab it got Gemini Mic
+  (3 clips), Gemini Live, Opus/Sonnet/GLM, usage right where the app missed; still wrong: Jarvis
+  ("jaruissan"), "Gemini Unlimited", one "Nimaga"->"Nega" swap (breaks the verbatim bar), no paragraphs.
+  Without language_codes 1/15 clip came back in Cyrillic; uz-UZ+en-US fixed it (1 clip, probe_latin.py).
+  Limit: 10 requests/min on this key -> any ship needs a fallback to the current model on 429.
+  Harness for the 10 read sentences ready: scratchpad ab10.py (C0 app / A names+think / T / TS smart,
+  3 runs, WER + injection on sentences 6/10). Live (websocket) not built yet. Owner has not read yet.
 
 ## OWNER TODOs
-- (since 2026-11-04) Qiling: aniqlik uchun A (so'zlar ro'yxati + o'ylash) yoki B (AI tuzatuvchi qadam) ni tanlang va 10 ta gapni o'qib bering | Ko'rasiz: qaysi yo'l xatoni kamaytirgani raqamda | undo: hech narsa o'zgarmaydi, tanlamasangiz hozirgidek qoladi
+- (since 2026-11-04) Qiling: docs/ACCURACY_TEST_SENTENCES.md dagi 10 ta gapni o'qing, har biriga bitta Ctrl | Ko'rasiz: qaysi yo'l xatoni kamaytirgani raqamda | undo: hech narsa o'zgarmaydi, ilova hozirgidek qoladi
 - (since 2026-11-04) Qiling: 1 daqiqa hech narsa qilmang, keyin Ctrl ni 3 marta bosing | Ko'rasiz: har safar bip | undo: BEEP_LEAD_SEC = 0
 
 ## OPEN THREADS
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears 3/3 after idle | siz
-- accuracy A/B (names list+thinking vs AI fix pass) | measured, no ground truth | owner picks + reads 10 sentences | siz
+- accuracy A/B (owner chose A + Live; + transcribe model T) | ab10.py ready, past clips: T best on names | owner reads 10 sentences, then run ab10.py | siz
 - only-my-voice | measured: others never reached the text | none unless owner wants prompt line | siz
 
 Tugadi — /clear xavfsiz
@@ -349,3 +358,4 @@ _Older entries (2026-07 .. 2026-10-14 14:05) moved to docs/STATE_ARCHIVE.md._
 - 2026-10-14 [Ekran o'chiq] Ekran o'chiq sinovi: telefonni 5 daqiqa tegmay, keyin PC da Ctrl bossangiz bip keldimi? -> **Hali sinamadim**
 - 2026-10-14 [Asosiy ovoz] Hamkasblar ovozi aralashganda modelga "faqat asosiy gapiruvchini yoz" deb aytib sinaymizmi? -> **Keyinroq (tavsiya)**
 - 2026-10-14 [Uzun gap] 60 soniyadan uzun gapda matn tartibi buzilishi mumkin. Sizning gaplaringiz 2-4 soniya. Tuzataymi? -> **Keyinroq (tavsiya)**
+- 2026-11-04 [Aniqlik] Aniqlik uchun qaysi yo'lni 10 ta gapda sinab ko'raylik? -> **A + Live (Tavsiya)**
