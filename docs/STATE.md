@@ -60,7 +60,7 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 ## OWNER TODOs
 
 ## OPEN THREADS
-- OpenRouter key for Gemini Mic | Business OS asked to lift 3.7-only limit (23:50) | after reply: spec OpenRouter path, owner boshla | Business OS
+- OpenRouter key for Gemini Mic | Business OS asked to lift 3.7-only limit (23:50) | prep done: OpenRouter takes base64 input_audio (wav) on /api/v1/responses + chat completions (openrouter.ai/docs multimodal/audio); after reply: spec path, owner boshla | Business OS
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
 - accuracy (12 variants measured on his 10 reads) | winner Gemini 3 Flash + names; tail cut found | built + live on free key 23:28 (1 dictation ok) | watch next days: limit hits, end words | men
 - only-my-voice | measured: others never reached the text | none unless owner wants prompt line | siz
