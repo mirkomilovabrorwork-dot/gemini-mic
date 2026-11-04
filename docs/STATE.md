@@ -1,5 +1,5 @@
 ﻿STATUS: 11-05 free Google key first, any error -> OpenRouter at once: LIVE, his dictation passed
-NEXT: men - watch log for OpenRouter cost, '...' prefix, end words. DEFERRED: PhoneHead seq-tagging + primary-speaker A/B
+NEXT: men (waits on days of real use) - check log + OpenRouter spend after ~1 day of dictation. 00:08-00:12 check: 5 live takes via OpenRouter, 3-4 s, no '...' prefix. DEFERRED: PhoneHead seq-tagging + primary-speaker A/B
 SIZDAN: 0 | -
  Gemini Mic — STATE
 
