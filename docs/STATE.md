@@ -1,6 +1,6 @@
 ﻿STATUS: 11-04 3-flash+names+0.4 s tail LIVE on owner's free key (1 dictation ok)
 NEXT: men - keyingi kunlarda log: limit (429) va oxirgi so'z. DEFERRED: PhoneHead seq-tagging + primary-speaker A/B
-SIZDAN: 0 | -
+SIZDAN: 1 | OpenRouter zaxirasi: hozir yoki keyin?
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
@@ -59,8 +59,9 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 
 ## OWNER TODOs
 
+- (since 2026-11-04) Tur: qaror | Qiling: OpenRouter zaxirasini hozir qurishni xohlasangiz "qur" deng, aks holda hech narsa qilmang | Ko'rasiz: bepul limit tugasa ilova o'zi OpenRouter'ga o'tadi | undo: zaxira o'chiriladi, bepul kalit qoladi
 ## OPEN THREADS
-- OpenRouter key for Gemini Mic | Business OS asked to lift 3.7-only limit (23:50) | prep done: OpenRouter takes base64 input_audio (wav) on /api/v1/responses + chat completions (openrouter.ai/docs multimodal/audio); after reply: spec path, owner boshla | Business OS
+- OpenRouter key for Gemini Mic | Business OS 23:58: Meet STT key has NO model limit on the key object (limit may be a dashboard Guardrail or Meet app code); nothing changed | my pick: stay on free Google key, build OpenRouter backup only if 429 limits show up in the log | owner
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
 - accuracy (12 variants measured on his 10 reads) | winner Gemini 3 Flash + names; tail cut found | built + live on free key 23:28 (1 dictation ok) | watch next days: limit hits, end words | men
 - only-my-voice | measured: others never reached the text | none unless owner wants prompt line | siz
