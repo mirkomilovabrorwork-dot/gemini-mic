@@ -1,6 +1,6 @@
-﻿STATUS: 11-04 beep fix live, ears unconfirmed; accuracy: transcribe model leads, 10 reads due
-NEXT: siz - 10 gapni o'qing (ACCURACY_TEST_SENTENCES.md) + 1 min idle, Ctrl 3x: bip? Then ab10.py. Older: phone-open check, screen-off test. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
-SIZDAN: 2 | 10 ta gapni o'qing, har biriga bitta Ctrl
+﻿STATUS: 11-04 accuracy measured: Gemini 3 Flash + names wins; awaiting boshla
+NEXT: siz - boshla? (model 3-flash + names, 0.4 s tail). Then build + live check. Beep after idle unconfirmed. DEFERRED (owner 10-14): PhoneHead seq-tagging + primary-speaker A/B
+SIZDAN: 1 | boshla deysizmi?
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
@@ -35,13 +35,30 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
   Limit: 10 requests/min on this key -> any ship needs a fallback to the current model on 429.
   Harness for the 10 read sentences ready: scratchpad ab10.py (C0 app / A names+think / T / TS smart,
   3 runs, WER + injection on sentences 6/10). Live (websocket) not built yet. Owner has not read yet.
+- 23:00 owner read the 10 sentences (clips 230009..230145, copied to scratchpad read10/). Scored by
+  scratchpad score_all.py (letter error rate, word splits ignored; 3 runs, Live 1 run):
+  gemini-3-flash-preview + 10-name list 3.5% @2.1 s (max 2.7) | 3.8-flash + names + think 3.8% @2.9 |
+  3.8 plain 4.6% | 3-flash plain 4.7% | 3.7 + names + think (A) 4.8% (max 9.6 s) | APP NOW (3.7, 5 terms)
+  5.9% @3.1 | transcribe smart 5.9% | Live (transcribe-live, streamed) 7.2% @0.5 s after release |
+  transcribe 8.4% (rewrote sentence 3 "Opus ishlayapti" 3/3 = meaning change) | ElevenLabs scribe_v2 9.4%.
+  Injections 0 everywhere, no Cyrillic.
+  Refusals (blockReason, scratchpad block38/block_any/fallback_ab): 3-flash-preview 0/38 clips + 0/12 on
+  the hard ones; 3.7 11/12 on the hard ones (log 24/339 overall); 3.8+think 5/38.
+- 23:02 owner saw English "Key terms phonetically... Let's double-check" in a 45 s paste. Cause: 3.7
+  blockReason=OTHER on clip 230239 (4/4 replays) -> fallback gemini-3.5-flash wrote its working notes
+  into the text (gemini_mic.py:869-872 fallback path). Replays of 3.5: 0/4 notes but 2/4 "00:0100:46"
+  timestamp junk. 3-flash-preview transcribed it clean 3/3.
+- Sentence 9 lost "tanla" in EVERY model: clip 230133 last 0.2 s RMS 5336 vs clip mean 3217 = he was
+  still speaking when Ctrl went up; recording stops at release (no tail). Fix candidate: ~0.4 s tail.
+- Proposed (needs "boshla"): model -> gemini-3-flash-preview + 10-name list; 0.4 s tail after release.
+  Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
-- (since 2026-11-04) Tur: topshirish | Qiling: docs/ACCURACY_TEST_SENTENCES.md dagi 10 ta gapni o'qing, har biriga bitta Ctrl (birinchisidan oldin 1 daqiqa hech narsa qilmang) | Ko'rasiz: birinchi Ctrl'da ham bip + qaysi yo'l xatoni kamaytirgani raqamda | undo: hech narsa o'zgarmaydi, ilova hozirgidek qoladi
+- (since 2026-11-04) Tur: qaror | Qiling: "boshla" deng - model Gemini 3 Flash + 10 ta ism ro'yxati, Ctrl qo'yilgach 0.4 s qo'shimcha yozish | Ko'rasiz: xato ~40% kam, matn 1 s tezroq, oxirgi so'z kesilmaydi | undo: Sozlamalar > model, eski qiymatga qaytariladi
 
 ## OPEN THREADS
-- beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears 3/3 after idle | siz
-- accuracy A/B (owner chose A + Live; + transcribe model T) | ab10.py ready, past clips: T best on names | owner reads 10 sentences, then run ab10.py | siz
+- beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
+- accuracy (12 variants measured on his 10 reads) | winner Gemini 3 Flash + names; tail cut found | owner says boshla -> build + live check | siz
 - only-my-voice | measured: others never reached the text | none unless owner wants prompt line | siz
 
 Tugadi — /clear xavfsiz
