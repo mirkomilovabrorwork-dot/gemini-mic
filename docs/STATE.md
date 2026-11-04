@@ -37,8 +37,7 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
   3 runs, WER + injection on sentences 6/10). Live (websocket) not built yet. Owner has not read yet.
 
 ## OWNER TODOs
-- (since 2026-11-04) Qiling: docs/ACCURACY_TEST_SENTENCES.md dagi 10 ta gapni o'qing, har biriga bitta Ctrl | Ko'rasiz: qaysi yo'l xatoni kamaytirgani raqamda | undo: hech narsa o'zgarmaydi, ilova hozirgidek qoladi
-- (since 2026-11-04) Qiling: 1 daqiqa hech narsa qilmang, keyin Ctrl ni 3 marta bosing | Ko'rasiz: har safar bip | undo: BEEP_LEAD_SEC = 0
+- (since 2026-11-04) Tur: topshirish | Qiling: docs/ACCURACY_TEST_SENTENCES.md dagi 10 ta gapni o'qing, har biriga bitta Ctrl (gaplar orasida 1 daqiqa kuting) | Ko'rasiz: har Ctrl'da bip + qaysi yo'l xatoni kamaytirgani raqamda | undo: hech narsa o'zgarmaydi, ilova hozirgidek qoladi
 
 ## OPEN THREADS
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears 3/3 after idle | siz
