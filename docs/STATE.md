@@ -27,6 +27,10 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
   Offered owner: A = bigger personal names list + thinking (no extra step) vs B = AI fix pass after
   the text (+3-5 s); both measured on 10 read sentences x3 runs before shipping.
 
+## OWNER TODOs
+- (since 2026-11-04) Qiling: aniqlik uchun A (so'zlar ro'yxati + o'ylash) yoki B (AI tuzatuvchi qadam) ni tanlang va 10 ta gapni o'qib bering | Ko'rasiz: qaysi yo'l xatoni kamaytirgani raqamda | undo: hech narsa o'zgarmaydi, tanlamasangiz hozirgidek qoladi
+- (since 2026-11-04) Qiling: 1 daqiqa hech narsa qilmang, keyin Ctrl ni 3 marta bosing | Ko'rasiz: har safar bip | undo: BEEP_LEAD_SEC = 0
+
 ## OPEN THREADS
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears 3/3 after idle | siz
 - accuracy A/B (names list+thinking vs AI fix pass) | measured, no ground truth | owner picks + reads 10 sentences | siz
