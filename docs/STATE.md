@@ -1,5 +1,5 @@
 STATUS: 11-05 13:26 XM5 mic trial switch ready (windows/xm5_trial.py on|off), NOT on; XM5 not connected to the PC now
-NEXT: men - when he says the XM5 is on: run xm5_trial.py on, he records 2 takes with someone 1-2 m away, count foreign words vs MICUSB1, then off
+NEXT: siz - XM5 ni kiyib PC ga ulang, 'XM5 kiydim' deng (Blok: XM5 PC ga ulanmagan); keyin men: xm5_trial.py on -> 2 takes -> count -> off
 SIZDAN: 1 - XM5 ni kiyib PC ga ulang va 'XM5 kiydim' deng
  Gemini Mic — STATE
 
