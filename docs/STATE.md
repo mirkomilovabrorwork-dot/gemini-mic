@@ -138,6 +138,7 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
+- XM5 or the desk mic? (since 2026-11-05) Qiling: "stol mikrofoniga qayt" yoki "XM5 qolsin" deng | Ko'rasiz: yozuv tez keladi, signal darhol chalinadi | undo: windows/xm5_trial.py on/off
 
 ## OPEN THREADS
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
