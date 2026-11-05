@@ -1,9 +1,16 @@
-﻿STATUS: 11-05 13:05 other people's words in text = mic distance; after his 12:42 mic move 0/8 takes leaked (was 2-3/12)
-NEXT: siz - 3.8-flash ha/yo'q; men - nothing queued (rumble-cut field check moot: mic now close, his/floor 23-33 dB; quiet takes have no ground truth)
-SIZDAN: 1 | 3.8-flash ga o'tamizmi - ha/yo'q
+﻿STATUS: 11-05 13:10 model -> gemini-3.8-flash (commander's pick, live config); replay OK but 10.3 s (Google 503 -> OpenRouter)
+NEXT: men - watch his next takes: 3.8 latency + 503/blockReason rate in log; revert if takes get slow or lost
+SIZDAN: 0
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
+
+## 2026-11-05 13:10 - switched to gemini-3.8-flash (commander decision, "Men tanladim" - not the owner's words)
+- Basis: test-2 lab 3-flash 6.8% vs 3.8-flash 5.1% letter errors, same speed/cost. Telegram question closed by the commander.
+- Changed ONLY live %APPDATA%\GeminiMic\config.json "model" (backup scratchpad config_before_38.json); DEFAULT_CONFIG untouched.
+  App restarted 13:09:29. Replay of real clip 125227 through gemini_transcribe: text right, but 10.3 s - Google 3.8 gave 503,
+  OpenRouter google/gemini-3.8-flash answered. Risk known: 3.8 refused hard clips before (blockReason; 3.8+think 5/38).
+- UNDO (one line): in config.json set "model": "gemini-3-flash-preview" + restart the app.
 
 ## 2026-11-05 13:05 - other people's words in the text: cause = mic distance, fixed by moving it
 - Owner 12:43 (via system relay): "gaplarimiz orasiga boshqa odamlarning gapi ham tushib qolyapti".
@@ -109,12 +116,11 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
-- (since 2026-11-05) Qiling: "3.8-flash ga o'tamiz" yoki "yo'q" deb yozing | Ko'rasiz: inglizcha so'z xatolari kamayadimi | undo: model nomini 3-flash-preview ga qaytarish
 
 ## OPEN THREADS
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
-- accuracy | vocab fix failed; 3.8-flash lab 6.8%->5.1% (issue still wrong) | owner ha/yo'q on 3.8-flash | siz
+- accuracy | 3.8-flash LIVE 13:10 (lab 6.8%->5.1%) | watch latency/503/blocks; undo = model 3-flash-preview | men
 - quiet speech | rumble cut live 83793f7; mic moved closer 12:42 (his/floor 23-33 dB) | watch | men
 - only-my-voice | 11-05 leak cause = mic 40-50 cm; after move 0/8 leaked | keep mic close; 'mic too far' warning = offer | men
 
