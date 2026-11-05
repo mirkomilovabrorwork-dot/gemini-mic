@@ -1,9 +1,20 @@
-STATUS: 11-05 14:58 XM5 trial ON (level 7% -> 100%, app on Headset (WH-1000XM5) raw); undo: windows/xm5_trial.py off
-NEXT: men - after his 2 XM5 takes (talker 1-2 m): count foreign words vs MICUSB1 takes 12:42+, read XM5 peak/gain from log, then xm5_trial.py off
-SIZDAN: 1 - XM5 bilan 2 ta gap yozdiring, yoningizda kimdir 1-2 m da gapirsin
+STATUS: 11-05 15:05 XM5 trial measured: 0/6 foreign words in text (colleague faint 2/6) but own-word errors up ('boshqa gap'->'boshqa VKP'); slow = Google 3.8 503/timeout 6/6
+NEXT: men - commander verdict: back to MICUSB1 (xm5_trial.py off) + slow fix (model 3-flash or shorter Google wait); XM5 still ON until he decides
+SIZDAN: 0
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
+
+## 2026-11-05 15:05 - XM5 trial result (6 takes 14:59-15:01, talker 1-2 m)
+- Foreign words in pasted text: XM5 0/6 (colleague faint in 2/6, e.g. 150034 0-2 s "Men buni qanday qilib...", not in text);
+  MICUSB1 after the 12:42 move 0/8 (faint 7/8). His "boshqa VKP" = his own "boshqa gap" mis-heard, not a leak.
+- Own-word errors on XM5 (16 kHz hands-free): 'Atrofdagilar gapiryapti, qalay bo'lyapti' -> 'Hamma gapirib, ishlayapti,
+  qayerda bilasiz'; 'gap' -> 'VKP'; ~9/75 words (reference = 3-flash diarization, scratchpad diar_xm5.json, not ground truth).
+- SLOW is not the XM5: Google gemini-3.8-flash failed 6/6 (503 after 5-26 s or ReadTimeout 30 s), OpenRouter then 3-5 s;
+  takes run one after another, so waits stack (145915: stop 14:59:15 -> text 15:00:11 = 56 s).
+- BEEP late: PlaySound on the XM5 in hands-free mode took 0.86-0.90 s (0.5 s silence lead + ~0.3 s output) vs 0.30 s with
+  no lead. The lead was for A2DP sleep (6c96c56); an always-open headset mic keeps the link awake, so it only adds delay.
+- First take 145904 went to 'Quick settings' (he was clicking Bluetooth): kept in clipboard, not pasted.
 
 ## 2026-11-05 13:26 - XM5 mic trial prepared (owner: "5-10 sm dan gapirsam ham tashqi shovqin ... XM5 ni o'zida mikrofon bor-ku")
 - windows/xm5_trial.py: `on` = XM5 first in input_device (falls back to MICUSB1 when the headset is off), XM5 capture
