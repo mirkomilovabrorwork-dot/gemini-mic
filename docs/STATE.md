@@ -1,9 +1,20 @@
-﻿STATUS: 11-05 13:10 model -> gemini-3.8-flash (commander's pick, live config); replay OK but 10.3 s (Google 503 -> OpenRouter)
-NEXT: men - watch his next takes: 3.8 latency + 503/blockReason rate in log; revert if takes get slow or lost
-SIZDAN: 0
+STATUS: 11-05 13:26 XM5 mic trial switch ready (windows/xm5_trial.py on|off), NOT on; XM5 not connected to the PC now
+NEXT: men - when he says the XM5 is on: run xm5_trial.py on, he records 2 takes with someone 1-2 m away, count foreign words vs MICUSB1, then off
+SIZDAN: 1 - XM5 ni kiyib PC ga ulang va 'XM5 kiydim' deng
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
+
+## 2026-11-05 13:26 - XM5 mic trial prepared (owner: "5-10 sm dan gapirsam ham tashqi shovqin ... XM5 ni o'zida mikrofon bor-ku")
+- windows/xm5_trial.py: `on` = XM5 first in input_device (falls back to MICUSB1 when the headset is off), XM5 capture
+  level -> 100 % + unmute, app restarted; `off` = config restored from config.json.before_xm5, restarted.
+  Round trip tested live 13:24-13:25: app back on MICUSB1, config byte-identical. XM5 itself lab-only: it is paired but
+  Unplugged (not connected to the PC), so its level and peak could not be read now.
+- input_device picks the app's mic (windows_default_mic only forces the Windows default) -> the switch edits input_device.
+- RAW_GAIN: no change. Gain is linear and per clip (min(6x, 28000/peak)): it lifts his voice and the room equally, so it
+  cannot let room voices back in relative terms; a louder XM5 just gets a lower gain. XM5 peak shows per take in the log.
+- Not on by default: an open headset mic forces BT hands-free, music on the XM5 drops to phone quality.
+- History to weigh: XM5 on PC gave digital zeros 08-03/10-14 until re-paired; raw->shared fallback exists for that.
 
 ## 2026-11-05 13:10 - switched to gemini-3.8-flash (commander decision, "Men tanladim" - not the owner's words)
 - Basis: test-2 lab 3-flash 6.8% vs 3.8-flash 5.1% letter errors, same speed/cost. Telegram question closed by the commander.
@@ -122,7 +133,7 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
 - accuracy | 3.8-flash LIVE 13:10 (lab 6.8%->5.1%) | watch latency/503/blocks; undo = model 3-flash-preview | men
 - quiet speech | rumble cut live 83793f7; mic moved closer 12:42 (his/floor 23-33 dB) | watch | men
-- only-my-voice | 11-05 leak cause = mic 40-50 cm; after move 0/8 leaked | keep mic close; 'mic too far' warning = offer | men
+- only-my-voice | 13:17 he says room still leaks at 5-10 cm; XM5 trial switch ready (xm5_trial.py), XM5 not connected | he wears XM5 -> on -> 2 takes w/ talker 1-2 m -> count foreign words vs MICUSB1 -> off | men+ega
 
 Tugadi — /clear xavfsiz
 
