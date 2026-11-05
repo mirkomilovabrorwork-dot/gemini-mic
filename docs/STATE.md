@@ -1,9 +1,14 @@
-STATUS: 11-05 15:05 XM5 trial measured: 0/6 foreign words in text (colleague faint 2/6) but own-word errors up ('boshqa gap'->'boshqa VKP'); slow = Google 3.8 503/timeout 6/6
-NEXT: men - commander verdict: back to MICUSB1 (xm5_trial.py off) + slow fix (model 3-flash or shorter Google wait); XM5 still ON until he decides
+STATUS: 11-05 15:07 back on MICUSB1 + model gemini-3-flash-preview (commander 'Men tanladim'); replay 125227 Google-only 2.9/2.3 s, text OK
+NEXT: men - watch his next takes: latency + fallbacks in log; 3.8 retry later = config model gemini-3.8-flash
 SIZDAN: 0
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
+
+## 2026-11-05 15:07 - back to the desk mic and 3-flash (commander decision, "Men tanladim")
+- xm5_trial.py off -> input_device MICUSB1 first again; config "model" -> gemini-3-flash-preview (3.8 failed 6/6 on Google).
+- App restarted 15:06:50 on MICUSB1. Replay of real take 125227 with OpenRouter OFF (no fallback possible): 2.9 s and 2.3 s, text right.
+- RETRY 3.8 LATER (one line): config "model": "gemini-3.8-flash" + restart.
 
 ## 2026-11-05 15:05 - XM5 trial result (6 takes 14:59-15:01, talker 1-2 m)
 - Foreign words in pasted text: XM5 0/6 (colleague faint in 2/6, e.g. 150034 0-2 s "Men buni qanday qilib...", not in text);
@@ -138,14 +143,13 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
   Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
 
 ## OWNER TODOs
-- XM5 or the desk mic? (since 2026-11-05) Qiling: "stol mikrofoniga qayt" yoki "XM5 qolsin" deng | Ko'rasiz: yozuv tez keladi, signal darhol chalinadi | undo: windows/xm5_trial.py on/off
 
 ## OPEN THREADS
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
-- accuracy | 3.8-flash LIVE 13:10 (lab 6.8%->5.1%) | watch latency/503/blocks; undo = model 3-flash-preview | men
+- accuracy | back on 3-flash 15:07 (3.8 Google 503/timeout 6/6) | retry 3.8 later: config model gemini-3.8-flash | men
 - quiet speech | rumble cut live 83793f7; mic moved closer 12:42 (his/floor 23-33 dB) | watch | men
-- only-my-voice | 13:17 he says room still leaks at 5-10 cm; XM5 trial switch ready (xm5_trial.py), XM5 not connected | he wears XM5 -> on -> 2 takes w/ talker 1-2 m -> count foreign words vs MICUSB1 -> off | men+ega
+- only-my-voice | XM5 trial: 0/6 leaks but more own-word errors + late beep -> back on MICUSB1 15:07 | keep mic close; 'mic too far' warning = offer | men
 
 Tugadi — /clear xavfsiz
 
