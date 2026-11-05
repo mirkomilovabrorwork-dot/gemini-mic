@@ -1,6 +1,6 @@
-STATUS: 11-05 13:26 XM5 mic trial switch ready (windows/xm5_trial.py on|off), NOT on; XM5 not connected to the PC now
-NEXT: siz - XM5 ni kiyib PC ga ulang, 'XM5 kiydim' deng (Blok: XM5 PC ga ulanmagan); keyin men: xm5_trial.py on -> 2 takes -> count -> off
-SIZDAN: 1 - XM5 ni kiyib PC ga ulang va 'XM5 kiydim' deng
+STATUS: 11-05 14:58 XM5 trial ON (level 7% -> 100%, app on Headset (WH-1000XM5) raw); undo: windows/xm5_trial.py off
+NEXT: men - after his 2 XM5 takes (talker 1-2 m): count foreign words vs MICUSB1 takes 12:42+, read XM5 peak/gain from log, then xm5_trial.py off
+SIZDAN: 1 - XM5 bilan 2 ta gap yozdiring, yoningizda kimdir 1-2 m da gapirsin
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
