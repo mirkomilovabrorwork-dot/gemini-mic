@@ -1,9 +1,23 @@
-﻿STATUS: 11-05 02:03 quiet speech: rumble cut under 120 Hz live (lab -18 dB voice 9.2% -> 6.1% letter errors)
+﻿STATUS: 11-05 13:05 other people's words in text = mic distance; after his 12:42 mic move 0/8 takes leaked (was 2-3/12)
 NEXT: siz - 3.8-flash ha/yo'q; men - his next quiet takes = field check of the rumble cut (log + clips)
 SIZDAN: 1 | 3.8-flash ga o'tamizmi - ha/yo'q
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
+
+## 2026-11-05 13:05 - other people's words in the text: cause = mic distance, fixed by moving it
+- Owner 12:43 (via system relay): "gaplarimiz orasiga boshqa odamlarning gapi ham tushib qolyapti".
+- Measured on his last 20 takes (scratchpad leak/, diar.py = 3-flash diarization vs pasted text, $0.14):
+  12:34-12:41, mic 40-50 cm: his 95th pct 730-1400, a colleague talking alone only -2.8..+9.8 dB under him ->
+  the 10 dB near gate cannot separate them (muted 0-8%); colleague words in the PASTED text 2-3/12
+  ("Besh portli ekan-da." before he spoke; "Aytyapti to'g'ri emas deb..." overlapping him).
+  ~12:42 he moved the mic closer: his level 4300-7900, his/floor 23-33 dB, colleague 16 dB under; gate muted
+  14-31%; pasted = main-speaker text 8/8 (colleagues still faintly audible in 7/8, none in text).
+- Decision: NO code change. Rejected: stricter gate (cuts his soft word ends at distance), "main speaker only"
+  prompt line (omission/injection risk seen before), level gating cannot remove overlapping speech.
+- Gemini review (agy 3.8-flash-high): AGREE-WITH-CHANGES - keep mic <= ~25 cm; suggests a "mic too far" warning
+  when a take's 95th pct < ~2500 (separates 20/20 takes here). NOT built: offer only (false-alarm risk on soft takes).
+- The far mic was also the quiet-speech cause (his/floor 9-15 dB then vs 23-33 dB now).
 
 ## 2026-11-05 02:03 - quiet speech fixed at the source (rumble cut)
 - Owner 01:50: "sekin gapirsam xato yozyapti, baland gapirsam to'g'ri yozyapti" + "o'zing qaror qilib, to'g'risini qilaver".
@@ -101,8 +115,8 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
 - accuracy | vocab fix failed; 3.8-flash lab 6.8%->5.1% (issue still wrong) | owner ha/yo'q on 3.8-flash | siz
-- quiet speech | rumble cut live 83793f7 (lab -18 dB 9.2->6.1%) | field check on his next quiet takes | men
-- only-my-voice | DONE: gate live, podcast test leak 2/10 -> 0/10 | people talking AT THE SAME TIME untested - watch | men
+- quiet speech | rumble cut live 83793f7; mic moved closer 12:42 (his/floor 23-33 dB) | watch | men
+- only-my-voice | 11-05 leak cause = mic 40-50 cm; after move 0/8 leaked | keep mic close; 'mic too far' warning = offer | men
 
 Tugadi — /clear xavfsiz
 
