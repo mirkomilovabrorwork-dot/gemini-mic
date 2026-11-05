@@ -1,5 +1,5 @@
 ﻿STATUS: 11-05 13:05 other people's words in text = mic distance; after his 12:42 mic move 0/8 takes leaked (was 2-3/12)
-NEXT: siz - 3.8-flash ha/yo'q; men - his next quiet takes = field check of the rumble cut (log + clips)
+NEXT: siz - 3.8-flash ha/yo'q; men - nothing queued (rumble-cut field check moot: mic now close, his/floor 23-33 dB; quiet takes have no ground truth)
 SIZDAN: 1 | 3.8-flash ga o'tamizmi - ha/yo'q
  Gemini Mic — STATE
 
