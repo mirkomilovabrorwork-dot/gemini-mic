@@ -178,7 +178,7 @@ Owner's later recorded refinements (his words, not scope invention):
 ## OWNER TODOs
 
 ## OPEN THREADS
-- speaker separation for Uzbek meetings (Jarvis order 11-06) | test running on a real 21-min Meet recording; research on how foreign recorders do it running | score, Gemini debate, report to Jarvis | men
+- speaker separation for Uzbek meetings (Jarvis order 11-06) | abror-57450491 is a CLIENT meeting (Gemini's 'internal' guess was wrong, read 11-06 22:15); outside sends stopped; research done | local scoring of outputs already made, no more sends, report to Jarvis | men
 - OpenRouter backup | works: 7 of 12 pasted takes 11-05..06, no '...' | watch cost (week $2.51, key shared with Meet) | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it; he has not confirmed or complained | tells me only if the beep is missing | siz
 - accuracy | 3-flash live; main'ga, issue'larni still wrong (test 2) | his order: work on English words; 3.8 retry = config model gemini-3.8-flash | men
