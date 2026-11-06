@@ -1,5 +1,5 @@
-STATUS: 11-06 speaker work handed to the Meet app session (owner: not Gemini Mic's job); deletion answer sent to Jarvis
-NEXT: men - deletion answer to Jarvis, then no work queued; speaker separation belongs to the Meet app session (local_643f0466-8f00-4d97-9c1f-5a2039e11ea9), not here
+STATUS: 11-07 deletion answer sent to Jarvis (queued, read not confirmed); speaker work belongs to the Meet app session
+NEXT: men - blind non-author review of clearance gate + delete script when Agent spawns are allowed; speaker separation belongs to the Meet app session (local_643f0466-8f00-4d97-9c1f-5a2039e11ea9), not here
 SIZDAN: 0
  Gemini Mic — STATE
 
