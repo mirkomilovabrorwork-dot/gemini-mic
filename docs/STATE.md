@@ -1,5 +1,5 @@
-STATUS: 11-06 15:25 picked up on the new account from the 2 old sessions; nothing built. Live app healthy: MICUSB1 + gemini-3-flash-preview, 15 takes since 11-05 15:07, stop-to-text median 5 s, max 9 s
-NEXT: men - no work queued; wait for the owner's order (choices: English words main/issue, 'mic too far' warning, 3.8 retry)
+STATUS: 11-06 22:50 speaker test reported to Jarvis; waiting on owner: Recall trial, vendor copies
+NEXT: men - no work queued; wait for the owner on the speaker decision and his earlier order choices
 SIZDAN: 0
  Gemini Mic — STATE
 
@@ -18,6 +18,11 @@ Owner's later recorded refinements (his words, not scope invention):
 - 2026-07-30: dictate through the BT headset when practical ("headphones yoza
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
+
+## 2026-11-06 22:50 - speaker test result (full: shared notes speaker-separation-results-2026-11-06.md)
+- One 21-min 3-person Meet recording, truth = Meet's lit tile from video (813 of 1283 s readable, 20/24 frames agreed). Error with gaps counted: Gemini told 3 = 22.4, Scribe auto 26.9, Gemini+Scribe 31-35. Short turns wrong 33-60%. No method kept all 3 people.
+- Recommendation: stay on Gemini, pass the speaker count; future Meet: trial per-person audio bot (Recall $0.65/hour). Gemini debate rejected the stitch, 1 round.
+- Gemini times drift, median 6.5 s, max 56 s. Word error not measured. ElevenLabs key has about 440 credits left. Local audio copies deleted; Mac originals untouched.
 
 ## 2026-11-06 - how foreign recorders separate speakers (Jarvis order; full note in shared notes, how-foreign-recorders-separate-speakers-2026-11-06.md)
 - Leaders take the speaker from the call: own audio per person (Recall, $0.65/hour, preview-only official Meet route), lit Meet tile (Vexa code read), mic vs system (Granola). Audio guessing is only the fallback.
@@ -179,7 +184,7 @@ Owner's later recorded refinements (his words, not scope invention):
 - (since 2026-11-06) Client recording copies at vendors. UZ: Qiling: "o'chir" yoki "qoldir" deb ayting | Ko'rasiz: ElevenLabs va OpenRouter'da o'chirish natijasi yoki "qoldi" yozuvi | undo: o'chirilgan nusxa qaytmaydi, lokal nusxa qoladi
 
 ## OPEN THREADS
-- speaker separation for Uzbek meetings (Jarvis order 11-06) | abror-57450491 is a CLIENT meeting (Gemini's 'internal' guess was wrong, read 11-06 22:15); outside sends stopped; research done | local scoring of outputs already made, no more sends, report to Jarvis | men
+- speaker separation for Uzbek meetings (Jarvis order 11-06) | tested on a client recording (internal guess was wrong, sends stopped). Gemini told the speaker count best, no method kept all 3 people | Recall trial and vendor copies wait for the owner | siz
 - OpenRouter backup | works: 7 of 12 pasted takes 11-05..06, no '...' | watch cost (week $2.51, key shared with Meet) | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it; he has not confirmed or complained | tells me only if the beep is missing | siz
 - accuracy | 3-flash live; main'ga, issue'larni still wrong (test 2) | his order: work on English words; 3.8 retry = config model gemini-3.8-flash | men
