@@ -1,9 +1,36 @@
-STATUS: 11-05 15:07 back on MICUSB1 + model gemini-3-flash-preview (commander 'Men tanladim'); replay 125227 Google-only 2.9/2.3 s, text OK
-NEXT: men - watch his next takes: latency + fallbacks in log; 3.8 retry later = config model gemini-3.8-flash
+STATUS: 11-06 15:25 picked up on the new account from the 2 old sessions; nothing built. Live app healthy: MICUSB1 + gemini-3-flash-preview, 15 takes since 11-05 15:07, stop-to-text median 5 s, max 9 s
+NEXT: men - no work queued; wait for the owner's order (choices: English words main/issue, 'mic too far' warning, 3.8 retry)
 SIZDAN: 0
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
+
+## GOAL (owner's words)
+Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
+mixed Uzbek/English/Russian, the text lands in the focused field — free
+(Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
+Owner's later recorded refinements (his words, not scope invention):
+- 2026-07-29 quality bar: "aytgan so'zimni aytganimdek yozish kerak" — verbatim,
+  no word substitution (best measured config = 7/9 on his voice; ceiling and
+  every rejected lever documented below).
+- 2026-07-29 key strategy: ONE key for simplicity ("1 pulli kalit" choice); the
+  "free tier" wording above predates that decision.
+- 2026-07-30: dictate through the BT headset when practical ("headphones yoza
+  olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
+  caveat stands.
+
+## 2026-11-06 15:25 - takeover from the old account's 2 sessions (read tails + summaries; no code touched)
+- Session 4f66a58e (only my voice + accurate text) ended 11-05 01:27 asking 3.8-flash ha/yo'q. CLOSED, not by the owner: commander
+  picked 3.8 at 13:10, then back to 3-flash at 15:07 (Google failed 6/6). No answer is owed.
+- Its "two missing transcripts" (owner 01:16 "ASAP") WERE delivered in chat 01:17 (clips 01:11, 01:12; doubtful name "Pilos AI" flagged).
+- Session 7ab10fa6 (quiet speech, other voices, XM5) ended 11-05 15:07 waiting for new takes -> they now exist, measured below.
+- Log since restart 11-05 15:06:50 (%APPDATA%\GeminiMic\log.txt): 15 takes -> 12 pasted, stop-to-text median 5 s, max 9 s (51 s take).
+  Google 5, OpenRouter 7 + 1 empty: free key 429 from 17:24 to 20:05 on 11-05, Google direct again 11-06 14:33. Leading '...': 0.
+  3 takes without text, all <= 2.4 s near room floor: 172417 + 172418 (gate rejected, loudest 531-551 < threshold ~600), 200415 (model
+  said no speech). Replay without gate gave long sentences that cannot fit 2 s = invented, so NO proof of lost speech (~$0.002).
+- OpenRouter key: this week $2.51, today $0.01, no limit set. It is the Meet app's key, so the total is shared with Meet.
+- Mic stream self-healed twice (11-05 17:40, 11-06 15:11, reopened on MICUSB1), no take lost. Not checked: the owner's own view since 11-05 15:07.
+- Stray empty untracked gemini_mic.py in repo root (0 bytes, 11-05 00:52): left in place, safe to delete on his word.
 
 ## 2026-11-05 15:07 - back to the desk mic and 3-flash (commander decision, "Men tanladim")
 - xm5_trial.py off -> input_device MICUSB1 first again; config "model" -> gemini-3-flash-preview (3.8 failed 6/6 on Google).
@@ -139,56 +166,28 @@ _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: i
 - 00:40 owner: 'hozir yonimda ichki yo'q, ertaga ish vaqtida sinaymiz. Ertaga soat 2 PMlarda eslatvor' -> test 2 moved to 11-05 14:00 at the office; scheduled task gemini-mic-test2-reminder (14:00, messages this session; may pause on an approval - default mode). Clip 003900 (1st sentence) taken before he stopped - ignore. Scorer ready: scratchpad score_test2.py <start yyyyMMdd-HHmmss> (live vs raw vs gate vs gate+UZ-first, extra-word leak). OpenRouter spend 00:40: today $0.29 (incl. ~$0.16 my lab tests), week $0.85, 23 backup calls today.
 - 00:47 TEST 2 DONE (owner read the 10 mixed sentences, podcast loud on his phone ~2 m away; clips 004454..004634 in scratchpad test2/, score_test2.py, $0.016). Podcast words in text: raw (no gate) 2/10 (#10 'O'zi, coder, Angliyada o'sha', #8 'o'sha yerda' for 'online') -> gate 0/10. Letter error raw 8.9% -> gate 5.9%. 'pul va sifat' right. Still wrong: 'Pulni'->'To'lov', 'main''ga'->'menga', 'issue''larni'->other words. Uzbek-first prompt line 6.4% vs 5.9% -> DISCARDED. First word present in 10/10 (pre-roll 0.6 s). 14:00 reminder deleted (owner did the podcast test instead).
 - 00:55 owner: 'Shu tugagandagi tik etishni o'chirib qo'yaver' (end tick = 660 Hz pasted cue; he waited for it). Removed all 3 done beeps (local + 2 phone paste paths); start beep stays. Back-to-back takes already worked (24 in log). Owner: 'endi telefon orqali emas, mikrofon orqali ishlayapmiz faqat' - phone_trigger already False, no phone use 11-04/05. 44 tests OK, app restarted.
-- Proposed (needs "boshla"): model -> gemini-3-flash-preview + 10-name list; 0.4 s tail after release.
-  Owner's 10-14 switch to 3.7 ("mixed language uchun yaxshi") was re-measured as asked (line ~157).
+- Model + 10-name list + 0.4 s tail: built 23:27 above.
 
 ## OWNER TODOs
 
 ## OPEN THREADS
-- OpenRouter backup | LIVE 00:06 (Google 429 -> OpenRouter, pasted) | watch cost + leading '...' in log | men
-- beep 0.5 s lead (6c96c56) | lab-only, live app has it | owner hears it after idle (not confirmed yet) | siz
-- accuracy | back on 3-flash 15:07 (3.8 Google 503/timeout 6/6) | retry 3.8 later: config model gemini-3.8-flash | men
-- quiet speech | rumble cut live 83793f7; mic moved closer 12:42 (his/floor 23-33 dB) | watch | men
-- only-my-voice | XM5 trial: 0/6 leaks but more own-word errors + late beep -> back on MICUSB1 15:07 | keep mic close; 'mic too far' warning = offer | men
+- OpenRouter backup | works: 7 of 12 pasted takes 11-05..06, no '...' | watch cost (week $2.51, key shared with Meet) | men
+- beep 0.5 s lead (6c96c56) | lab-only, live app has it; he has not confirmed or complained | tells me only if the beep is missing | siz
+- accuracy | 3-flash live; main'ga, issue'larni still wrong (test 2) | his order: work on English words; 3.8 retry = config model gemini-3.8-flash | men
+- quiet speech | rumble cut live 83793f7; mic close since 11-05 12:42 | field proof on his real soft voice still absent; watch | men
+- only-my-voice | MICUSB1 close to him, leaks 0/8; XM5 0/6 but more own-word errors | 'mic too far' warning = offer, his call | siz
+- stray gemini_mic.py | empty untracked file in repo root | delete on his word | siz
 
 Tugadi — /clear xavfsiz
 
-## GOAL (owner's words)
-Voice typing that "just works" on BOTH phone and PC: hold a key/mic, speak
-mixed Uzbek/English/Russian, the text lands in the focused field — free
-(Gemini free tier), no fiddling. Owner shares it with a friend as a zip.
-Owner's later recorded refinements (his words, not scope invention):
-- 2026-07-29 quality bar: "aytgan so'zimni aytganimdek yozish kerak" — verbatim,
-  no word substitution (best measured config = 7/9 on his voice; ceiling and
-  every rejected lever documented below).
-- 2026-07-29 key strategy: ONE key for simplicity ("1 pulli kalit" choice); the
-  "free tier" wording above predates that decision.
-- 2026-07-30: dictate through the BT headset when practical ("headphones yoza
-  olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
-  caveat stands.
-
 ## NEXT STEP (single queue, oldest first)
-- DONE 15:47: owner installed the APK, dictated on the phone (volume-down
-  hold) -> PC pasted. Log: relay: accepted 22/44/21 chars, "paste: Ctrl+V sent".
-  His first attempt failed only because he pressed Ctrl on the PC (PC mic path).
-- OPEN (owner 15:48): "PC Ctrl bosganimda telefon yozsin" - PC-triggered phone
-  recording. Would need: phone keeps an outbound long-poll/WebSocket to the PC
-  (Funnel) from its foreground service; PC key -> "start/stop" push -> phone
-  records. Owner 15:50: "Ha, qur" (warned: start lag + Doze). DESIGN (mine):
-  phone long-polls GET /cmd?wait=20 via the Funnel from its foreground service;
-  PC hotkey -> start/stop/cancel; PC plays the START beep only after the phone
-  ACKs "recording" (POST /ack) so the first syllable is safe; text returns via
-  the v1 POST; no phone within 45 s -> local mic as today. Battery: a Settings
-  button to exempt from battery optimisation + wake lock only while recording.
-  Funnel long-poll idle limit: UNVERIFIED (Tailscale docs name no limit; 20 s
-  waits + reconnect backoff). Spec: _handoff/2026-10-14-gemini-mic-pc-trigger.md.
-- XM5 on the PC: still digital zeros on every capture path after the 14:57
-  reconnect (Hands-Free link half-open). Not fixable without re-pairing the
-  headset in Windows Bluetooth settings (owner declined for now). PC dictation
-  is effectively phone-only until then; the app still binds XM5 first.
+- Nothing queued for me: wait for the owner's order.
+- PARKED phone path: PC-trigger built 10-14 (c9b9ac1, detail in STATE_ARCHIVE.md, spec _handoff/2026-10-14-gemini-mic-pc-trigger.md);
+  phone_trigger False in live config, owner 11-05 00:55 "endi telefon orqali emas, mikrofon orqali ishlayapmiz faqat". Screen-off test moot unless he returns to the phone.
+- XM5 on PC: the digital-zeros note is out of date, trial 11-05 14:59 captured real audio. App binds MICUSB1 first, XM5 third.
 - Open since 10-13, unverified: if calls lose the mic while the app holds it ->
   open the mic only while the hotkey is held.
-- Vocabulary list (5 terms) live; "soxta" -> drop thinking budget first;
+- Vocabulary list (10 terms, log 11-06) live; "soxta" -> drop thinking budget first;
   clips: last 20 WAVs in %APPDATA%\GeminiMic\clips.
 - Share-zip handover DONE (owner declared 2026-08-07); a friend's later result
   = NEW input, not this duty reopening.
