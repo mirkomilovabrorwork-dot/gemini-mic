@@ -6,4 +6,7 @@ if errorlevel 1 exit /b 1
 REM 2) Run the Windows edition self-test (prompt/clean/format logic) via the project venv
 windows\.venv\Scripts\python.exe windows\gemini_mic.py --selftest
 if errorlevel 1 exit /b 1
+REM 3) Recording clearance must refuse uncleared files
+python tools\test_recording_clearance.py
+if errorlevel 1 exit /b 1
 exit /b 0

@@ -19,6 +19,10 @@ Owner's later recorded refinements (his words, not scope invention):
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
 
+## 2026-11-06 23:20 - clearance gate built; ElevenLabs copies deleted by accident
+- tools/recording_clearance.py + docs/recording_clearance.json + must-fail test in gate; diar/compare.py now calls it. Ad hoc scripts can still skip it; agent can write a human name; a hook is System's job.
+- INCIDENT: doer's test passed the real host and "yes" to tools/delete_vendor_copies.py with the real key. All 4 ids now 404 (abror x2, Abduazim, Azimjon), control id 200. Order was "delete nothing"; Abduazim and Azimjon were the owner's choice. Irreversible; local outputs intact. Script fixed, stub tests pass; real delete path never run on purpose.
+
 ## 2026-11-06 22:50 - speaker test result (full: shared notes speaker-separation-results-2026-11-06.md)
 - One 21-min 3-person Meet recording, truth = Meet's lit tile from video (813 of 1283 s readable, 20/24 frames agreed). Error with gaps counted: Gemini told 3 = 22.4, Scribe auto 26.9, Gemini+Scribe 31-35. Short turns wrong 33-60%. No method kept all 3 people.
 - Recommendation: stay on Gemini, pass the speaker count; future Meet: trial per-person audio bot (Recall $0.65/hour). Gemini debate rejected the stitch, 1 round.
@@ -181,10 +185,10 @@ Owner's later recorded refinements (his words, not scope invention):
 - Model + 10-name list + 0.4 s tail: built 23:27 above.
 
 ## OWNER TODOs
-- (since 2026-11-06) Client recording copies at vendors. UZ: Qiling: "o'chir" yoki "qoldir" deb ayting | Ko'rasiz: ElevenLabs va OpenRouter'da o'chirish natijasi yoki "qoldi" yozuvi | undo: o'chirilgan nusxa qaytmaydi, lokal nusxa qoladi
+- (since 2026-11-06) OpenRouter logging check. UZ: Qiling: openrouter.ai/settings/preferences oching | Ko'rasiz: prompt logging o'chiq turibdi | undo: faqat ko'rish, hech narsa o'zgarmaydi
 
 ## OPEN THREADS
-- speaker separation for Uzbek meetings (Jarvis order 11-06) | tested on a client recording (internal guess was wrong, sends stopped). Gemini told the speaker count best, no method kept all 3 people | Recall trial and vendor copies wait for the owner | siz
+- speaker separation for Uzbek meetings (Jarvis order 11-06) | tested on a client recording (internal guess was wrong, sends stopped). Gemini told the speaker count best, no method kept all 3 people | Recall trial waits for the owner; ElevenLabs copies gone 11-06 (deleted by a doer test, unauthorised, see log); OpenRouter logging setting unchecked | siz
 - OpenRouter backup | works: 7 of 12 pasted takes 11-05..06, no '...' | watch cost (week $2.51, key shared with Meet) | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it; he has not confirmed or complained | tells me only if the beep is missing | siz
 - accuracy | 3-flash live; main'ga, issue'larni still wrong (test 2) | his order: work on English words; 3.8 retry = config model gemini-3.8-flash | men
