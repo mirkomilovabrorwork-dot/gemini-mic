@@ -19,6 +19,13 @@ Owner's later recorded refinements (his words, not scope invention):
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
 
+## 2026-11-06 - how foreign recorders separate speakers (Jarvis order; full note in shared notes, how-foreign-recorders-separate-speakers-2026-11-06.md)
+- Leaders take the speaker from the call: own audio per person (Recall, $0.65/hour, preview-only official Meet route), lit Meet tile (Vexa code read), mic vs system (Granola). Audio guessing is only the fallback.
+- Room and phone: no magic anywhere, generic labels then human rename. One device shared by several people cannot be split by any of them. No Uzbek accuracy figure exists.
+- For us: old Meet recordings = read the lit tile from the video ($0, days, estimate); phone/room = audio only + attendee names; bot only for future Meet calls. MeetGeek publishes no method.
+- AS recordings have one mixed track (L=R on 5 files). Lit-tile truth is being measured on abror-57450491; it cannot grade itself, a human sample is needed for its own error.
+- Vendor facts for Otter, Read.ai, Fathom, Fireflies, tl;dv, MeetGeek, Krisp are search snippets only.
+
 ## 2026-11-06 15:25 - takeover from the old account's 2 sessions (read tails + summaries; no code touched)
 - Session 4f66a58e (only my voice + accurate text) ended 11-05 01:27 asking 3.8-flash ha/yo'q. CLOSED, not by the owner: commander
   picked 3.8 at 13:10, then back to 3-flash at 15:07 (Google failed 6/6). No answer is owed.
@@ -171,6 +178,7 @@ Owner's later recorded refinements (his words, not scope invention):
 ## OWNER TODOs
 
 ## OPEN THREADS
+- speaker separation for Uzbek meetings (Jarvis order 11-06) | test running on a real 21-min Meet recording; research on how foreign recorders do it running | score, Gemini debate, report to Jarvis | men
 - OpenRouter backup | works: 7 of 12 pasted takes 11-05..06, no '...' | watch cost (week $2.51, key shared with Meet) | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it; he has not confirmed or complained | tells me only if the beep is missing | siz
 - accuracy | 3-flash live; main'ga, issue'larni still wrong (test 2) | his order: work on English words; 3.8 retry = config model gemini-3.8-flash | men
