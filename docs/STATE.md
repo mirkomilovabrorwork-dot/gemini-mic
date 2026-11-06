@@ -176,6 +176,7 @@ Owner's later recorded refinements (his words, not scope invention):
 - Model + 10-name list + 0.4 s tail: built 23:27 above.
 
 ## OWNER TODOs
+- (since 2026-11-06) Client recording copies at vendors. UZ: Qiling: "o'chir" yoki "qoldir" deb ayting | Ko'rasiz: ElevenLabs va OpenRouter'da o'chirish natijasi yoki "qoldi" yozuvi | undo: o'chirilgan nusxa qaytmaydi, lokal nusxa qoladi
 
 ## OPEN THREADS
 - speaker separation for Uzbek meetings (Jarvis order 11-06) | abror-57450491 is a CLIENT meeting (Gemini's 'internal' guess was wrong, read 11-06 22:15); outside sends stopped; research done | local scoring of outputs already made, no more sends, report to Jarvis | men
