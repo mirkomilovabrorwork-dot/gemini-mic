@@ -185,6 +185,7 @@ Owner's later recorded refinements (his words, not scope invention):
 - Model + 10-name list + 0.4 s tail: built 23:27 above.
 
 ## OWNER TODOs
+- (since 2026-11-06) ElevenLabs smoke copy gSNFitP4zpS49FoeI1Wz (41 s, source unknown). UZ: Qiling: "qo'shing" yoki "qoldiring" deb ayting | Ko'rasiz: o'chirish skriptiga qo'shiladi, o'zingiz ishga tushirasiz | undo: o'chirilmaguncha fikrni o'zgartirsa bo'ladi
 - (since 2026-11-06) OpenRouter logging check. UZ: Qiling: openrouter.ai/settings/preferences oching | Ko'rasiz: prompt logging o'chiq turibdi | undo: faqat ko'rish, hech narsa o'zgarmaydi
 
 ## OPEN THREADS
