@@ -1,5 +1,5 @@
-STATUS: 11-06 22:50 speaker test reported to Jarvis; waiting on owner: Recall trial, vendor copies
-NEXT: men - no work queued; wait for the owner on the speaker decision and his earlier order choices
+STATUS: 11-06 speaker work handed to the Meet app session (owner: not Gemini Mic's job); deletion answer sent to Jarvis
+NEXT: men - deletion answer to Jarvis, then no work queued; speaker separation belongs to the Meet app session (local_643f0466-8f00-4d97-9c1f-5a2039e11ea9), not here
 SIZDAN: 0
  Gemini Mic — STATE
 
@@ -191,7 +191,7 @@ RE-RUN AFTER WAKE: blind non-author review of clearance gate + delete script (Ag
 - (since 2026-11-06) OpenRouter logging check. UZ: Qiling: openrouter.ai/settings/preferences oching | Ko'rasiz: prompt logging o'chiq turibdi | undo: faqat ko'rish, hech narsa o'zgarmaydi
 
 ## OPEN THREADS
-- speaker separation for Uzbek meetings (Jarvis order 11-06) | tested on a client recording (internal guess was wrong, sends stopped). Gemini told the speaker count best, no method kept all 3 people | Recall trial waits for the owner; ElevenLabs copies gone 11-06 (deleted by a doer test, unauthorised, see log); OpenRouter logging setting unchecked | siz
+- vendor copies after the speaker test | 4 ElevenLabs copies gone (incident 11-06), last one in the owner's delete script | owner runs the script; OpenRouter setting check | siz
 - OpenRouter backup | works: 7 of 12 pasted takes 11-05..06, no '...' | watch cost (week $2.51, key shared with Meet) | men
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it; he has not confirmed or complained | tells me only if the beep is missing | siz
 - accuracy | 3-flash live; main'ga, issue'larni still wrong (test 2) | his order: work on English words; 3.8 retry = config model gemini-3.8-flash | men
