@@ -1,5 +1,65 @@
 ﻿# Gemini Mic — STATE ARCHIVE (moved out of docs/STATE.md, newest first)
 
+## Moved 2026-11-07
+
+## 2026-11-04 21:00 - owner's 4 asks (only my voice / beep / context correction / max accuracy)
+- Beep: default render = Headphones (WH-1000XM5) (pycaw). PlaySound after 25 s idle takes 0.2-0.45 s
+  longer than warm (scratchpad probe, silent tone) = the BT link sleeps; the bare 80 ms tone was cut.
+  Fix 6c96c56: BEEP_LEAD_SEC 0.5 of silence in beep(). Taps < ~0.3 s stay silent by design (59 of 348
+  takes in the log were < 0.5 s). lab-only: owner's ears. Undo: BEEP_LEAD_SEC = 0.
+- Only-my-voice: 20 clips of 20:29-20:45 copied to scratchpad. Speech/room SNR 13-23 dB, no clipping.
+  3.1-pro-preview heard faint other voices in 8/18, NONE of them appeared in the pasted text (one
+  doubtful: 202935). The x6 software gain scales his voice and others equally -> lowering it blocks
+  nothing. No change made.
+- Accuracy (scratchpad/ab_context.py, results.json, side.txt; 15 clips x 5 variants, one run each):
+  same clip + same settings gives different words run to run (203939 live "Gemini 2", rerun "Gemini
+  Make") -> single runs are noise; ground truth needed (only the speaker knows). Errors seen = his
+  names/English words (Gemini Mic, usage, commander) + a few Uzbek words (bazada/ba'zida).
+  Prev-dictation context: once spread a wrong name 3x ("Gemini Live" for Gemini Mic) - risky.
+  Text-only fix pass with his names list: fixed Gemini Mic in 2 clips, 11 untouched, 1 doubtful, +3-5 s
+  (one 30 s timeout). Thinking 2048: fixed "usage", +~1 s, mixed elsewhere. 3 blockReason misses/75.
+  Research (sourced, sonnet researcher): Live API transcript is a side channel, no documented
+  context correction; Wispr/Superwhisper use screen/app context + learned dictionary, no published
+  gains; GER papers gain mostly on weak ASR, over-correction is the known failure.
+  Offered owner: A = bigger personal names list + thinking (no extra step) vs B = AI fix pass after
+  the text (+3-5 s); both measured on 10 read sentences x3 runs before shipping.
+- 22:15 owner chose "A + Live". New candidate found: gemini-3.5-transcribe (Google's dedicated STT model,
+  Interactions API, custom_vocabulary up to 1000 terms, language_codes; the batch twin of the Live
+  transcribe model). On the 15 past clips (1 run, scratchpad tr_side.txt): with vocab it got Gemini Mic
+  (3 clips), Gemini Live, Opus/Sonnet/GLM, usage right where the app missed; still wrong: Jarvis
+  ("jaruissan"), "Gemini Unlimited", one "Nimaga"->"Nega" swap (breaks the verbatim bar), no paragraphs.
+  Without language_codes 1/15 clip came back in Cyrillic; uz-UZ+en-US fixed it (1 clip, probe_latin.py).
+  Limit: 10 requests/min on this key -> any ship needs a fallback to the current model on 429.
+  Harness for the 10 read sentences ready: scratchpad ab10.py (C0 app / A names+think / T / TS smart,
+  3 runs, WER + injection on sentences 6/10). Live (websocket) not built yet. Owner has not read yet.
+- 23:00 owner read the 10 sentences (clips 230009..230145, copied to scratchpad read10/). Scored by
+  scratchpad score_all.py (letter error rate, word splits ignored; 3 runs, Live 1 run):
+  gemini-3-flash-preview + 10-name list 3.5% @2.1 s (max 2.7) | 3.8-flash + names + think 3.8% @2.9 |
+  3.8 plain 4.6% | 3-flash plain 4.7% | 3.7 + names + think (A) 4.8% (max 9.6 s) | APP NOW (3.7, 5 terms)
+  5.9% @3.1 | transcribe smart 5.9% | Live (transcribe-live, streamed) 7.2% @0.5 s after release |
+  transcribe 8.4% (rewrote sentence 3 "Opus ishlayapti" 3/3 = meaning change) | ElevenLabs scribe_v2 9.4%.
+  Injections 0 everywhere, no Cyrillic.
+  Refusals (blockReason, scratchpad block38/block_any/fallback_ab): 3-flash-preview 0/38 clips + 0/12 on
+  the hard ones; 3.7 11/12 on the hard ones (log 24/339 overall); 3.8+think 5/38.
+- 23:02 owner saw English "Key terms phonetically... Let's double-check" in a 45 s paste. Cause: 3.7
+  blockReason=OTHER on clip 230239 (4/4 replays) -> fallback gemini-3.5-flash wrote its working notes
+  into the text (gemini_mic.py:869-872 fallback path). Replays of 3.5: 0/4 notes but 2/4 "00:0100:46"
+  timestamp junk. 3-flash-preview transcribed it clean 3/3.
+- Sentence 9 lost "tanla" in EVERY model: clip 230133 last 0.2 s RMS 5336 vs clip mean 3217 = he was
+  still speaking when Ctrl went up; recording stops at release (no tail). Fix candidate: ~0.4 s tail.
+- 23:27 owner said ha (boshla). BUILT: model gemini-3-flash-preview + 10-name vocab (DEFAULT_CONFIG + live config.json; backup scratchpad config_before.json), FALLBACK 3.5 -> 3.8-flash, RELEASE_TAIL_SEC 0.4 (_stop_after_tail; re-press inside tail continues the take), 402 toast in Uzbek. gate + 40 tests pass, app restarted 23:26:58. LIVE CHECK BLOCKED: Google prepaid credits depleted (402 on every call since 23:18; my A/B runs ~600 calls helped drain it). Unsent clips saved 231817..232130 - transcribe after top-up. Android/Mac defaults NOT changed.
+- 23:28 owner put a FREE-tier key (new project). First call on it: gemini-3-flash-preview + 10 names, 3 s, his 103-char question verbatim, last word kept (tail live). Free-tier per-model limits are shown only in AI Studio (official rate-limits page); RPD resets midnight Pacific = 13:00 Tashkent. His load: max 136 dictations/day (11-04), usually 5-50. Free tier = Google may use the audio for training. Google's own 'speak into any app' dictation (Gemini desktop) is macOS-only today; gemini.google/desktop says 'more coming to Windows over time' (checked 23:30).
+- 23:40 owner thought Google's dictation reached Windows - re-checked: official Windows help (support.google.com/gemini/answer/18263854) lists no dictation/voice; Speak to Window is only on the Mac help page (hold fn, 'rolling out over time'); Android Police 10-07: Windows has only the Dictate button into Gemini's own box. One report: Speak to Window English-only. Verdict: stay on Gemini Mic. Running: ab_ctx.py (owner idea 'think, fix misheard words by context') on 3-flash + names, 2 runs.
+- 23:47 owner saw 'Model band' - CAUSE = my ab_ctx.py test on his free key ate the per-minute quota (429 on his dictations 23:45, 23:47). Killed 23:49, no result kept. Lesson: never A/B on the key the owner dictates with. 23:50 owner: use his OpenRouter key (Meet app's, limited to Gemini 3.7) - asked Business OS (SendMessage msg 7174d618) to lift the model limit via Mac Mini. App calls Google directly: OpenRouter needs a code path (spec + boshla).
+- 11-05 00:00 owner: "Hozir qur" + "qilinmay qolmasligi shart avval free key u ishlamasa srazi openrouter key bn qiladi". Meet STT key (server /opt/data365/app.env OPENROUTER_API_KEY, sk-or-v1-3ca...) pulled over ssh, stored as openrouter_api_key in live config.json. Probe (scratchpad or_probe.py): google/gemini-3-flash-preview 200 2.9 s correct, 3.8 and 3.7 also 200 = NO model limit. BUILDING: any Google error -> OpenRouter google/<model> at once; Google 3.8 fallback only without an OpenRouter key.
+- 00:06 LIVE: his real dictation 000636: Google free key 429 -> OpenRouter google/gemini-3-flash-preview -> pasted in 4 s ('Xo''p, endi ishlayaptimi?'). Free key's 3-flash daily quota is hit (429 since 23:55). 00:09 context test via OpenRouter (scratchpad ab_ctx_or.py, 40 calls, $0.024): plain 4.7% letter errors -> context hint + reasoning 1024 3.7% (0 injections, 3.1 s median, max 5.2 s); Google path plain 3.5%. OpenRouter path now uses the hint. Replay 000856 OK in 5.1 s but began with '...' (watch). 41 tests pass, app restarted 00:09.
+- 00:20 'pul va sifat' -> 'full response'/'pull request' (his clips 001117, 001419). Owner thought the context hint did it: NO - plain prompt (= Google path) gives the same 6/6 (scratchpad pul_probe.py, $0.014). Cause: uz_en prompt + English names push 'pul' to English. Lab line 'Uzbek word first when it fits' (pul_probe2.py): 6/12 right vs 0/12 - noisy, not built. Set 1 had only list names; free English words untested -> docs/ACCURACY_TEST_SENTENCES_2.md (mixed + read in noise, also tests only-my-voice).
+- 00:29 ONLY-MY-VOICE BUILT + LIVE (owner 00:20: 'faqat meni ovozimni eshitadigan qilish bu shart ... 30-40 sm, maks 50 sm ... Do fast'). near_voice_gate: windows >10 dB under the take's own speech level (95th pct) muted, hold 0.4 s, attack 0.1 s; raw clip still saved, model gets the gated audio; log line 'near gate: muted N%'. Lab (scratchpad near_gate_lab*.py, ~$0.08 OpenRouter): far voice mixed at -16 dB (~2 m) leaked into the text 4/4 pairs plain -> 0/4; 15 dB / 0.25 s hold still leaked. Clean 10 reads 3.1% -> 3.1-3.6% (run noise); his 6 real 11-05 clips same text. LIMIT: a person talking AT THE SAME TIME as him, or right next to him, is not removed - test 2 in his noisy room is the real check. 44 tests OK.
+- 00:40 owner: 'hozir yonimda ichki yo'q, ertaga ish vaqtida sinaymiz. Ertaga soat 2 PMlarda eslatvor' -> test 2 moved to 11-05 14:00 at the office; scheduled task gemini-mic-test2-reminder (14:00, messages this session; may pause on an approval - default mode). Clip 003900 (1st sentence) taken before he stopped - ignore. Scorer ready: scratchpad score_test2.py <start yyyyMMdd-HHmmss> (live vs raw vs gate vs gate+UZ-first, extra-word leak). OpenRouter spend 00:40: today $0.29 (incl. ~$0.16 my lab tests), week $0.85, 23 backup calls today.
+- 00:47 TEST 2 DONE (owner read the 10 mixed sentences, podcast loud on his phone ~2 m away; clips 004454..004634 in scratchpad test2/, score_test2.py, $0.016). Podcast words in text: raw (no gate) 2/10 (#10 'O'zi, coder, Angliyada o'sha', #8 'o'sha yerda' for 'online') -> gate 0/10. Letter error raw 8.9% -> gate 5.9%. 'pul va sifat' right. Still wrong: 'Pulni'->'To'lov', 'main''ga'->'menga', 'issue''larni'->other words. Uzbek-first prompt line 6.4% vs 5.9% -> DISCARDED. First word present in 10/10 (pre-roll 0.6 s). 14:00 reminder deleted (owner did the podcast test instead).
+- 00:55 owner: 'Shu tugagandagi tik etishni o'chirib qo'yaver' (end tick = 660 Hz pasted cue; he waited for it). Removed all 3 done beeps (local + 2 phone paste paths); start beep stays. Back-to-back takes already worked (24 in log). Owner: 'endi telefon orqali emas, mikrofon orqali ishlayapmiz faqat' - phone_trigger already False, no phone use 11-04/05. 44 tests OK, app restarted.
+- Model + 10-name list + 0.4 s tail: built 23:27 above.
+
 ## Moved 2026-11-05 02:05
 
 ## 2026-10-23 17:10 - "No transcript returned" (owner screenshot) -> FIXED on all platforms
