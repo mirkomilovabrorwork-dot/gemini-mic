@@ -19,6 +19,9 @@ Owner's later recorded refinements (his words, not scope invention):
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
 
+## 2026-11-07 21:06 - owner: "gemini micni headphonega otkaz" + "ovozi 100foiz"
+- xm5_trial.py on: input_device WH-1000XM5 first, XM5 mic level 100%; app restarted, log 21:06:09 'mic stream opened on Headset (WH-1000XM5)'. Back: python windows/xm5_trial.py off. No take after the switch yet.
+
 ## 2026-11-07 - blind review of clearance gate + delete script (Gemini 3.8 flash via agy, read-only)
 - Gate (recording_clearance.py): no finding - fail-closed on missing/bad registry, empty list, by sha256 not name. Test 12/12.
 - delete_vendor_copies.py fixed: (1) real host refuses when stdin is not a terminal (piped "yes" = the 11-06 incident path);
