@@ -199,7 +199,6 @@ RE-RUN AFTER WAKE: blind non-author review of clearance gate + delete script (Ag
 - only-my-voice | MICUSB1 close to him, leaks 0/8; XM5 0/6 but more own-word errors | 'mic too far' warning = offer, his call | siz
 - stray gemini_mic.py | empty untracked file in repo root | delete on his word | siz
 
-Tugadi — /clear xavfsiz
 
 ## NEXT STEP (single queue, oldest first)
 - Nothing queued for me: wait for the owner's order.
@@ -221,3 +220,5 @@ Tugadi — /clear xavfsiz
 - 2026-10-14 [Asosiy ovoz] Hamkasblar ovozi aralashganda modelga "faqat asosiy gapiruvchini yoz" deb aytib sinaymizmi? -> **Keyinroq (tavsiya)**
 - 2026-10-14 [Uzun gap] 60 soniyadan uzun gapda matn tartibi buzilishi mumkin. Sizning gaplaringiz 2-4 soniya. Tuzataymi? -> **Keyinroq (tavsiya)**
 - 2026-11-04 [Aniqlik] Aniqlik uchun qaysi yo'lni 10 ta gapda sinab ko'raylik? -> **A + Live (Tavsiya)**
+
+Tugadi — /clear xavfsiz
