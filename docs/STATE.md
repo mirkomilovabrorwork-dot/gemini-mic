@@ -1,5 +1,5 @@
 STATUS: 11-07 blind review done: gate clean, delete script fixed + verified
-NEXT: men - nothing queued; open threads below wait for the owner/Jarvis. Speaker separation belongs to the Meet app session, not here
+NEXT: siz - delete script: run it, type yes (OWNER TODOs); speaker work = Meet app session
 SIZDAN: 2 | delete script: run it, type yes
  Gemini Mic — STATE
 
