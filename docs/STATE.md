@@ -24,7 +24,7 @@ Owner's later recorded refinements (his words, not scope invention):
 - delete_vendor_copies.py fixed: (1) real host refuses when stdin is not a terminal (piped "yes" = the 11-06 incident path);
   (2) only HTTP 200 ids are deleted (500/timeout used to be queued). Verified: piped run -> exit 2 before key/network;
   local stub: 500 id kept, 200 id deleted. Real host never called.
-- Script is git-excluded (.git/info/exclude); backup copy (not git, sha256 same): %APPDATA%\GeminiMicackup\delete_vendor_copies.2026-11-07.py
+- Script is git-excluded (.git/info/exclude); backup copy (not git, sha256 same): C:/Users/mirko/AppData/Roaming/GeminiMic/backup/delete_vendor_copies.2026-11-07.py
 
 ## 2026-11-06 23:20 - clearance gate built; ElevenLabs copies deleted by accident
 - tools/recording_clearance.py + docs/recording_clearance.json + must-fail test in gate; diar/compare.py now calls it. Ad hoc scripts can still skip it; agent can write a human name; a hook is System's job.
