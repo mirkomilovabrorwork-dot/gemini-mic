@@ -851,7 +851,7 @@ def _call_gemini(api_key, model, body, read_timeout=GEMINI_READ_TIMEOUT):
         resp = requests.post(
             url,
             json=body,
-            timeout=(GEMINI_CONNECT_TIMEOUT, read_timeout),
+            timeout=(max(GEMINI_CONNECT_TIMEOUT, read_timeout), read_timeout),
         )
     except requests.RequestException as e:
         # timeout / connection issue → mark retryable so the caller tries the other model
@@ -936,6 +936,20 @@ OPENROUTER_CONTEXT_HINT = (
     "Output ONLY the final transcript.")
 
 
+def audio_part(wav_bytes):
+    """2026-11-08: send MP3 48 kbps (5x smaller than WAV). A/B on 5 clips: same
+    text, 63 s take 14.2 s -> 4.8 s; big WAVs timed out on upload (write timeout)."""
+    try:
+        import lameenc
+        e = lameenc.Encoder()
+        e.set_bit_rate(48); e.set_in_sample_rate(SAMPLE_RATE); e.set_channels(1); e.set_quality(2)
+        data, fmt = bytes(e.encode(wav_bytes[44:]) + e.flush()), "mp3"
+    except Exception as ex:
+        log("audio: mp3 encode failed (%s) -> wav" % ex)
+        data, fmt = wav_bytes, "wav"
+    return {"data": base64.b64encode(data).decode("ascii"), "format": fmt}
+
+
 def _call_openrouter(api_key, model, prompt, wav_bytes, read_timeout=GEMINI_READ_TIMEOUT):
     """Same model through OpenRouter chat completions (the body shape the Meet
     app verified live; probe 2026-11-05: 3-flash-preview 200 in 2.9 s)."""
@@ -946,14 +960,13 @@ def _call_openrouter(api_key, model, prompt, wav_bytes, read_timeout=GEMINI_READ
         "reasoning": {"max_tokens": 1024},
         "messages": [{"role": "user", "content": [
             {"type": "text", "text": prompt + OPENROUTER_CONTEXT_HINT},
-            {"type": "input_audio", "input_audio": {
-                "data": base64.b64encode(wav_bytes).decode("ascii"), "format": "wav"}},
+            {"type": "input_audio", "input_audio": audio_part(wav_bytes)},
         ]}],
     }
     try:
         resp = requests.post("https://openrouter.ai/api/v1/chat/completions",
                              headers={"Authorization": "Bearer " + api_key}, json=body,
-                             timeout=(GEMINI_CONNECT_TIMEOUT, read_timeout))
+                             timeout=(max(GEMINI_CONNECT_TIMEOUT, read_timeout), read_timeout))
     except requests.RequestException as e:
         log("openrouter: request failed (%s: %s)" % (type(e).__name__, str(e)[:160]))
         raise GeminiError("Model band yoki internet sekin. Qayta urinib ko'ring.")
@@ -1011,10 +1024,11 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None,
         log("gemini: try openrouter %s" % m)
         return _call_openrouter(openrouter_key, m, prompt, wav_bytes, read_timeout=read_timeout)
 
-    # Cooldown only bites when OpenRouter exists to carry the traffic.
-    google_first = not (openrouter_key and time.monotonic() < _google_cooldown_until)
-    if not google_first:
-        log("gemini: google cooling down -> openrouter")
+    # 2026-11-08 owner: speed first. With an OpenRouter key the free Google key
+    # is only a LAST resort (its 429 wait cost up to 14 s per take), and it is
+    # skipped entirely while in the 429 cooldown.
+    google_first = not openrouter_key
+    google_last = bool(openrouter_key) and time.monotonic() >= _google_cooldown_until
 
     # (kind, model, status_gate): status_gate = only try when the previous
     # failure's status is retryable (the pre-chain FALLBACK_STATUSES rule,
@@ -1026,10 +1040,12 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None,
         chain.append(("google", FALLBACK_MODEL, FALLBACK_STATUSES))
     if openrouter_key:
         chain.append(("openrouter", model, None))
-        if model != "gemini-2.5-flash":
-            chain.append(("openrouter", "gemini-2.5-flash", None))
-    if google_first and model != "gemini-2.5-flash":
-        chain.append(("google", "gemini-2.5-flash", None))
+        if model != FALLBACK_MODEL:  # 11-08: 2.5-flash is gone (Google 404, OR guardrail 404)
+            chain.append(("openrouter", FALLBACK_MODEL, None))
+    if google_last:
+        chain.append(("google", model, None))
+    if google_last and model != FALLBACK_MODEL:
+        chain.append(("google", FALLBACK_MODEL, None))
 
     text = None
     last_err = None

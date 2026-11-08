@@ -68,8 +68,8 @@ class OpenRouterBackupTest(unittest.TestCase):
         text = gemini_mic.gemini_transcribe("k", "gemini-3-flash-preview", "uz_en", b"RIFF" + b"\0" * 100,
                                             openrouter_key="or")
         self.assertEqual(text, "Salom dunyo.")
-        self.assertEqual(len(self.calls), 2)  # no Google fallback model in between
-        self.assertEqual(self.calls[1], ("https://openrouter.ai/api/v1/chat/completions", "google/gemini-3-flash-preview"))
+        self.assertEqual(len(self.calls), 1)  # 11-08: OpenRouter first, Google not touched
+        self.assertEqual(self.calls[0], ("https://openrouter.ai/api/v1/chat/completions", "google/gemini-3-flash-preview"))
 
 
 if __name__ == "__main__":

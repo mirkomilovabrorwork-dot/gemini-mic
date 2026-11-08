@@ -68,21 +68,24 @@ class LongTakeFallbackTest(unittest.TestCase):
     def google_urls(self):
         return [c for c in self.calls if "openrouter.ai" not in c[0]]
 
-    def test_429_then_openrouter_and_cooldown_skips_google(self):
-        # first call: Google 429 -> cooldown armed -> OpenRouter answers
-        self.assertEqual(self._transcribe(), "Salom dunyo.")
-        self.assertEqual(len(self.google_urls()), 1)
-        # second call INSIDE the 600s cooldown: no Google request at all
-        self.calls = []
+    def test_openrouter_first_google_only_last_resort(self):
+        # 11-08 owner "tezlat": with an OpenRouter key Google is not called at all
         self.assertEqual(self._transcribe(), "Salom dunyo.")
         self.assertEqual(len(self.google_urls()), 0)
-        self.assertEqual(len(self.calls), 1)  # openrouter only
         self.assertEqual(self.calls[0][1], "google/" + self.MODEL)
-        # cooldown in the past -> Google is tried again
+        # OpenRouter down -> Google tried last; its 429 arms the cooldown
         self.calls = []
-        gemini_mic._google_cooldown_until = 0.0
-        self.assertEqual(self._transcribe(), "Salom dunyo.")
-        self.assertEqual(len(self.google_urls()), 1)
+        def _down(model):
+            raise real_requests.exceptions.SSLError("down")
+        self._openrouter = _down
+        with self.assertRaises(gemini_mic.GeminiError):
+            self._transcribe()
+        self.assertEqual(len(self.google_urls()), 2)
+        # inside the cooldown Google is skipped even as last resort
+        self.calls = []
+        with self.assertRaises(gemini_mic.GeminiError):
+            self._transcribe()
+        self.assertEqual(len(self.google_urls()), 0)
 
     def test_openrouter_ssl_then_openrouter_flash(self):
         def _openrouter(model):
@@ -92,9 +95,9 @@ class LongTakeFallbackTest(unittest.TestCase):
         self._openrouter_real = self._openrouter
         self._openrouter = _openrouter
         self.assertEqual(self._transcribe(), "Zanjir ishladi.")
-        # chain: google (429), openrouter model (SSL) -> openrouter gemini-2.5-flash
-        self.assertEqual(len(self.calls), 3)
-        self.assertEqual(self.calls[2][1], "google/gemini-2.5-flash")
+        # chain: openrouter model (SSL) -> openrouter FALLBACK_MODEL
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(self.calls[1][1], "google/" + gemini_mic.FALLBACK_MODEL)
 
     def test_all_steps_fail_raises_last_error(self):
         def _google():
@@ -106,7 +109,7 @@ class LongTakeFallbackTest(unittest.TestCase):
         self._openrouter = _openrouter
         with self.assertRaises(gemini_mic.GeminiError):
             self._transcribe()
-        # chain = google model, openrouter model, openrouter 2.5-flash, google 2.5-flash
+        # chain = openrouter model, openrouter 2.5-flash, google model, google 2.5-flash
         self.assertEqual(len(self.calls), 4)
 
     def test_no_key_google_500_still_uses_fallback_model(self):
@@ -123,7 +126,7 @@ class LongTakeFallbackTest(unittest.TestCase):
     def test_no_speech_is_an_answer_not_a_failure(self):
         self._google = lambda: google_ok("NO_SPEECH")
         with self.assertRaises(gemini_mic.GeminiError) as ctx:
-            self._transcribe()
+            self._transcribe(openrouter_key="")
         self.assertEqual(str(ctx.exception), "Ovoz eshitilmadi")
         self.assertEqual(len(self.calls), 1)
 

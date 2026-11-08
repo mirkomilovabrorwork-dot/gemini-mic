@@ -1,5 +1,5 @@
-STATUS: 11-08 18:00 long take 5 min, fallback chain, Google skip, badge - app restarted
-NEXT: siz - use it; tell me if the badge or a long take misbehaves (5-min take lab-only)
+STATUS: 11-08 19:00 MP3 upload (5x smaller), OpenRouter first, laptop mic first - app restarted
+NEXT: siz - use it; long takes now 145 s -> 13.7 s live; tell me if anything misbehaves
 SIZDAN: 2 | delete script: run it, type yes
  Gemini Mic — STATE
 
@@ -18,6 +18,15 @@ Owner's later recorded refinements (his words, not scope invention):
 - 2026-07-30: dictate through the BT headset when practical ("headphones yoza
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
+
+## 2026-11-08 19:00 - "tezlat", lost 144 s take, mic choice
+- Cause: 144 s take lost 18:32 - 4.6 MB WAV upload > 15 s connect timeout (write timeout) on every step;
+  both 2.5-flash fallbacks dead (Google 404 "no longer available", OpenRouter guardrail 404).
+- Fix: audio sent as MP3 48 kbps (lameenc, 5x smaller); A/B 5 clips same text, 63 s take 14.2 -> 4.8 s;
+  upload timeout scales with length; fallback = gemini-3.8-flash (OR 200 checked); with an OpenRouter key
+  Google (free, 429 most of the time) is only the last resort. Live: lost 145 s clip -> 13.7 s, 6 s clip -> 3.3 s.
+- Mic: XM5 dropped 18:10; owner in a quiet room -> order now Microphone Array|MICUSB1|WH-1000XM5 (full-band beats BT 16 kHz).
+- Thinking (reasoning 1024) kept: it is the context-correction step (4.7 -> 3.7% letter errors), ~1 s.
 
 ## 2026-11-08 18:00 - owner's 4 asks (beep, long speech split, slow, clipboard) + "har doim ishlashi shart"
 - Causes (log 11-05..11-08): AUTO_STOP_SEC=60 rolled long takes into pieces (16 rollovers); Google free key 429 on 157/209 calls,
