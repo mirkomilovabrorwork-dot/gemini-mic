@@ -1,5 +1,5 @@
-STATUS: 11-08 19:00 MP3 upload (5x smaller), OpenRouter first, laptop mic first - app restarted
-NEXT: siz - use it; long takes now 145 s -> 13.7 s live; tell me if anything misbehaves
+STATUS: 11-08 20:15 net-loss retry, model-answer guard, idle-only restart - app restarted
+NEXT: siz - use it; tell me if any take goes missing (retry + guard are lab-only)
 SIZDAN: 2 | delete script: run it, type yes
  Gemini Mic — STATE
 
@@ -18,6 +18,15 @@ Owner's later recorded refinements (his words, not scope invention):
 - 2026-07-30: dictate through the BT headset when practical ("headphones yoza
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
+
+## 2026-11-08 20:15 - lost takes, chime, net outage, restart cut (5583d18 and earlier)
+- Mic: any live mic ranked above the current one wins (396f0d1). TickTick chime muted 89% -> gate guard 0.7 (4f1ddf1).
+- Slow/stuck call: read timeout 15+0.2*s; blue clipboard badge when no paste target (2929791, 472ea34).
+- Net outage 20:01-20:03 lost 2 takes -> retry every 20 s for 15 min, text to clipboard (5583d18).
+- 2.8 s near-silent take came back as a model answer -> drop > 30 chars/s + 30 (5583d18).
+- MY MISTAKE: blind restarts at 19:58/19:59 cut 2 takes. RULE: restart ONLY via windows/restart_when_idle.ps1 (reads state.txt).
+- 19:47 take (clipboard) re-transcribed from clips/20261108-194610.wav and given to owner.
+- lab-only: retry-later and the answer guard not yet exercised live.
 
 ## 2026-11-08 19:00 - "tezlat", lost 144 s take, mic choice
 - Cause: 144 s take lost 18:32 - 4.6 MB WAV upload > 15 s connect timeout (write timeout) on every step;
