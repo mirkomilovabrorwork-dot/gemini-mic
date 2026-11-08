@@ -1083,6 +1083,14 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None,
     transcript = format_paragraphs(cleaned)
     if not transcript:
         raise GeminiError("Ovoz eshitilmadi")
+    # 11-08: a 2.8 s near-silent take came back as a 400-char ANSWER ("Gemini Mic
+    # va Opus o'rtasidagi farq nima? ...") and was pasted. Real takes in 277 logged:
+    # <= 16 chars/s (36 on a 2 s take); answers were 77-245 chars/s.
+    seconds = max(0, len(wav_bytes) - 44) / (SAMPLE_RATE * 2)
+    if len(transcript) > 30 * seconds + 30:
+        log("gemini: %d chars for %.1f s audio -> model answered, not transcribed; dropped"
+            % (len(transcript), seconds))
+        raise GeminiError("Ovoz eshitilmadi")
     return transcript
 
 
@@ -1963,6 +1971,11 @@ class GeminiMicApp:
 
     def set_state(self, state):
         """state: 'idle' | 'recording' | 'transcribing'"""
+        try:  # 11-08: restart_when_idle.ps1 waits for 'idle' (a restart cut 2 takes)
+            with open(os.path.join(CONFIG_DIR, "state.txt"), "w") as f:
+                f.write(state)
+        except OSError:
+            pass
         if self.badge is not None:
             if state == "recording":
                 self.badge.show("recording")
@@ -2335,6 +2348,11 @@ class GeminiMicApp:
                 # qolyapman") - he waited for it between takes; the pasted text is the cue
             except GeminiError as e:
                 log("gemini: error %r" % (e,))
+                if "internet" in str(e) and isinstance(job, (bytes, bytearray)):
+                    # 11-08 20:01: two takes lost while the internet was down.
+                    threading.Thread(target=self._retry_later, args=(job,), daemon=True).start()
+                    self.notify("Internet yo'q: yozuv saqlandi, qaytganda matn clipboardga tushadi")
+                    continue
                 # 402 = prepaid balance empty; the raw JSON toast said nothing to the owner
                 self.notify("Google balansi tugadi - AI Studio'da to'ldiring (yozuv saqlandi)"
                             if getattr(e, "status", None) == 402 else str(e))
@@ -2344,6 +2362,29 @@ class GeminiMicApp:
             finally:
                 if not self.recording:
                     self.set_state("idle")
+
+    def _retry_later(self, wav_bytes):
+        """Retry a take lost to the network every 20 s for 15 min; the text goes
+        to the clipboard (the field he was in may be gone) + the blue badge."""
+        cfg = self.get_config()
+        for _ in range(45):
+            time.sleep(20)
+            try:
+                text = gemini_transcribe(cfg.get("api_key", ""), cfg.get("model", DEFAULT_CONFIG["model"]),
+                                         cfg.get("language_mode", DEFAULT_CONFIG["language_mode"]),
+                                         wav_bytes, cfg.get("vocabulary", []), cfg.get("openrouter_api_key", ""))
+            except GeminiError as e:
+                if "internet" in str(e):
+                    continue
+                log("retry: gave up (%r)" % (e,))
+                return
+            log("retry: recovered %d chars -> clipboard" % len(text))
+            pyperclip.copy(text)
+            if self.badge is not None:
+                self.badge.show("clipboard")
+                threading.Timer(6.0, lambda: (not self.recording) and self.badge.hide()).start()
+            return
+        log("retry: gave up after 15 min")
 
     # -- paste ----------------------------------------------------------
 
