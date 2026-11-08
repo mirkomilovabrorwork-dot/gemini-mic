@@ -1145,7 +1145,7 @@ class RecordingBadge:
     STYLES = {
         "recording": ("#DC2626", "● Yozilyapti"),
         "transcribing": ("#16A34A", "… Matnga aylanmoqda"),
-        "clipboard": ("#2563EB", "📋 Nusxalandi: Ctrl+V"),
+        "clipboard": ("#2563EB", "Nusxalandi: Ctrl+V"),
     }
 
     WIDTH, HEIGHT, TOP_GAP = 170, 34, 12

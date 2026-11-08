@@ -167,6 +167,7 @@ Owner's later recorded refinements (his words, not scope invention):
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it; he has not confirmed or complained | tells me only if the beep is missing | siz
 - accuracy | 3-flash live; main'ga, issue'larni still wrong (test 2) | his order: work on English words; 3.8 retry = config model gemini-3.8-flash | men
 - quiet speech | rumble cut live 83793f7; mic close since 11-05 12:42 | field proof on his real soft voice still absent; watch | men
+- idea capture (2nd hotkey + phone Vol-UP -> TickTick "G'oyalar", daily A/B/C triage) | 11-08 owner "boshlayver"; spec docs/IDEA_CAPTURE_SPEC.md (agy-reviewed, 8/10 folded); GLM building _handoff/2026-11-08-idea-capture-{pc,android}.md; TickTick auth now asks tasks:write (backup scratchpad) | review diffs, register processor task, live test, CI APK | men (+ owner: Allow click)
 - only-my-voice | MICUSB1 close to him, leaks 0/8; XM5 0/6 but more own-word errors | 'mic too far' warning = offer, his call | siz
 - stray gemini_mic.py | empty untracked file in repo root | delete on his word | siz
 
