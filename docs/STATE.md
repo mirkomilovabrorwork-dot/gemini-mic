@@ -1,5 +1,5 @@
-STATUS: 11-07 blind review done: gate clean, delete script fixed + verified
-NEXT: siz - delete script: run it, type yes (OWNER TODOs); speaker work = Meet app session
+STATUS: 11-08 18:00 long take 5 min, fallback chain, Google skip, badge - app restarted
+NEXT: siz - use it; tell me if the badge or a long take misbehaves (5-min take lab-only)
 SIZDAN: 2 | delete script: run it, type yes
  Gemini Mic — STATE
 
@@ -18,6 +18,18 @@ Owner's later recorded refinements (his words, not scope invention):
 - 2026-07-30: dictate through the BT headset when practical ("headphones yoza
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
+
+## 2026-11-08 18:00 - owner's 4 asks (beep, long speech split, slow, clipboard) + "har doim ishlashi shart"
+- Causes (log 11-05..11-08): AUTO_STOP_SEC=60 rolled long takes into pieces (16 rollovers); Google free key 429 on 157/209 calls,
+  each take waited for it (median 1 s, max 31 s); 2 takes lost today when Google AND OpenRouter failed (no 3rd step).
+- Built by GLM (2 handoffs in _handoff/2026-11-08-*), reviewed by me: AUTO_STOP 300 s, read timeout scales with length,
+  max tokens 8192; Google skipped 10 min after a 429; chain Google -> OR same model -> OR 2.5-flash -> Google 2.5-flash.
+  Start beep removed (owner chose on-screen badge): red "Yozilyapti" / green "Matnga aylanmoqda" pill top-center, no focus.
+  Tests 61 pass. Live: replay 174814 -> 6.0 s (429 path) then 2.8 s (Google skipped). Badge screenshot shows it. App restarted 17:51.
+- Lab-only: a real 5-min take; OR 2.5-flash step live. Context step cost: ~$0.003/take on OpenRouter (reasoning 1024 = most of it),
+  OR total this week $3.31 shared with Meet; it bought 4.7% -> 3.7% letter errors for +1 s, kept.
+- Clipboard checked: field confirmed -> old clipboard restored; 13/214 had no confirmed field (Electron) -> text stays in clipboard.
+- Phone for "only my voice": owner chose not now (distance, not the phone, removes other voices; MICUSB1 close = 0/8 leaks).
 
 ## 2026-11-07 21:06 - owner: "gemini micni headphonega otkaz" + "ovozi 100foiz"
 - xm5_trial.py on: input_device WH-1000XM5 first, XM5 mic level 100%; app restarted, log 21:06:09 'mic stream opened on Headset (WH-1000XM5)'. Back: python windows/xm5_trial.py off. No take after the switch yet.
@@ -172,3 +184,5 @@ Owner's later recorded refinements (his words, not scope invention):
 - 2026-11-04 [Aniqlik] Aniqlik uchun qaysi yo'lni 10 ta gapda sinab ko'raylik? -> **A + Live (Tavsiya)**
 
 Tugadi — /clear xavfsiz
+- 2026-11-08 [Tip ovozi] "Tip" ovozi Bluetooth naushnikda ba'zan yo'qoladi, 100% kafolat yo'q. Yozilayotganini qanday bilib turasiz? -> **Ekranda belgi (Tavsiya)**
+- 2026-11-08 [Telefon] Begona ovozni telefonning o'zi emas, mikrofon og'izga yaqin bo'lgani kamaytiradi. Telefonni sinaymizmi? -> **Hozircha kerak emas (Tavsiya)**

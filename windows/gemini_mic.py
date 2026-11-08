@@ -119,6 +119,12 @@ RELAY_PUBLIC_URL = "https://data365.taildef23b.ts.net/mic"
 FALLBACK_MODEL = "gemini-3.8-flash"
 # 0 = a network/timeout error (retryable → try the other model too).
 FALLBACK_STATUSES = (0, 404, 429, 500, 503)
+# 2026-11-08: the free Google key answered 429 on 157 of 209 calls (median 1 s,
+# max 31 s wasted before OpenRouter). After a 429 Google is skipped entirely for
+# this long — but only while an OpenRouter key exists (otherwise Google is all
+# there is and is always tried).
+GOOGLE_COOLDOWN_SEC = 600
+_google_cooldown_until = 0.0
 
 LANGUAGE_CHOICES = [
     ("Uzbek + English", "uz_en"),
@@ -133,13 +139,15 @@ MIN_DURATION_SEC = 0.65
 # last syllable (clip 20261104-230133: last 0.2 s louder than the clip mean,
 # "tanla" lost by every model).
 RELEASE_TAIL_SEC = 0.4
-AUTO_STOP_SEC = 60
-# When the key is STILL HELD at the 60s mark, the recording no longer just
-# stops (the owner lost everything he said after minute one): the finished
+# One held take stays one text up to 5 minutes (2026-11-08: 60s rollovers
+# chopped long speech into pasted pieces; 16 auto-rollovers in one log).
+AUTO_STOP_SEC = 300
+# When the key is STILL HELD at the 300s mark, the recording no longer just
+# stops (the owner lost everything he said after minute five): the finished
 # chunk is queued for transcription and a NEW chunk starts seamlessly, seeded
 # with the ring's pre-roll so the word spanning the boundary survives. Chunks
 # paste in spoken order via a single FIFO worker. The chain cap only guards a
-# physically stuck key — 10 chunks ≈ 10 minutes of continuous speech.
+# physically stuck key — 10 chunks ≈ 50 minutes of continuous speech.
 MAX_CHUNK_CHAIN = 10
 # Speech gate: count 0.2s windows whose RMS clears VOICE_RMS and require several,
 # so a lone transient (keyboard click, thud) — which inflates the whole-clip RMS
@@ -196,6 +204,13 @@ MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
 GEMINI_CONNECT_TIMEOUT = 15
 GEMINI_READ_TIMEOUT = 30
+
+
+def read_timeout_for(wav_bytes):
+    """Read timeout that scales with the clip: a 5-minute take needs far more
+    than the 30 s baseline (a 300 s clip gets 30 + 300*0.25 = 105 s)."""
+    seconds = max(0, len(wav_bytes) - 44) / (SAMPLE_RATE * 2)
+    return GEMINI_READ_TIMEOUT + seconds * 0.25
 
 
 def load_config():
@@ -567,18 +582,9 @@ def make_icon_image(color, size=64):
 # WAV helper
 # ---------------------------------------------------------------------------
 
-def remove_start_beep(audio, sample_rate=SAMPLE_RATE, freq=1000.0, width=40.0):
-    """Notch out the 1 kHz start-cue tone. On laptop speakers + laptop mic the
-    cue leaks into the recording at speech level (measured 2026-10-14: rms up
-    to ~500 vs speech 500-700) exactly over the first word ("Ha" -> "Sizda").
-    A +-40 Hz FFT notch removes the pure tone and leaves speech intact."""
-    if audio.size == 0:
-        return audio
-    spec = np.fft.rfft(audio.astype(np.float64))
-    hz = np.fft.rfftfreq(audio.size, 1.0 / sample_rate)
-    spec[(hz > freq - width) & (hz < freq + width)] = 0
-    out = np.fft.irfft(spec, n=audio.size)
-    return np.clip(out, -32768, 32767).astype(np.int16)
+# (2026-11-08) remove_start_beep() was deleted: the local start beep is gone
+# (replaced by the on-screen RecordingBadge), so there is nothing to notch and
+# nothing else referenced it (tests and the parked phone path did not).
 
 
 CLIPS_DIR = os.path.join(CONFIG_DIR, "clips")
@@ -603,11 +609,10 @@ def save_clip(wav_bytes):
 
 
 def frames_to_wav_bytes(frames, sample_rate=SAMPLE_RATE):
-    """frames: list of numpy int16 arrays (mono). Returns WAV bytes."""
-    if frames:
-        audio = remove_start_beep(np.concatenate(frames))
-    else:
-        audio = np.array([], dtype=np.int16)
+    """frames: list of numpy int16 arrays (mono). Returns WAV bytes.
+    (2026-11-08) passes the audio through unchanged: with no start beep there
+    is nothing to notch (the 1 kHz notch helper was deleted with the beep)."""
+    audio = np.concatenate(frames) if frames else np.array([], dtype=np.int16)
     return audio_to_wav_bytes(audio, sample_rate), audio
 
 
@@ -837,7 +842,7 @@ class GeminiError(Exception):
     pass
 
 
-def _call_gemini(api_key, model, body):
+def _call_gemini(api_key, model, body, read_timeout=GEMINI_READ_TIMEOUT):
     """POST to the Gemini generateContent endpoint for `model` and return the
     joined text of the first candidate's parts."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
@@ -846,7 +851,7 @@ def _call_gemini(api_key, model, body):
         resp = requests.post(
             url,
             json=body,
-            timeout=(GEMINI_CONNECT_TIMEOUT, GEMINI_READ_TIMEOUT),
+            timeout=(GEMINI_CONNECT_TIMEOUT, read_timeout),
         )
     except requests.RequestException as e:
         # timeout / connection issue → mark retryable so the caller tries the other model
@@ -858,6 +863,10 @@ def _call_gemini(api_key, model, body):
     if resp.status_code < 200 or resp.status_code >= 300:
         err = GeminiError(f"Gemini error {resp.status_code}: {resp.text}")
         err.status = resp.status_code
+        if resp.status_code == 429:
+            global _google_cooldown_until
+            _google_cooldown_until = time.monotonic() + GOOGLE_COOLDOWN_SEC
+            log("gemini: google 429 -> skip google for 600s")
         raise err
 
     try:
@@ -905,10 +914,11 @@ def generation_config(model):
     output tokens and the response came back finishReason=MAX_TOKENS, cut
     mid-sentence. With `thinkingLevel: low` the same 45s clip returns the full
     320 chars (identical to 3.5) and still keeps English terms 3.5 mangles.
-    maxOutputTokens is 4096 so a long dictation can never be starved again —
-    output is billed per token produced, so the higher ceiling costs nothing.
+    maxOutputTokens is 8192 so a long dictation can never be starved again —
+    output is billed per token produced, so the higher ceiling costs nothing
+    (2026-11-08: 8192; a 5-minute take must fit even with reasoning tokens).
     """
-    cfg = {"temperature": 0, "maxOutputTokens": 4096}
+    cfg = {"temperature": 0, "maxOutputTokens": 8192}
     if model.startswith("gemini-3.6"):
         cfg["thinkingConfig"] = {"thinkingLevel": "low"}
     else:
@@ -926,13 +936,13 @@ OPENROUTER_CONTEXT_HINT = (
     "Output ONLY the final transcript.")
 
 
-def _call_openrouter(api_key, model, prompt, wav_bytes):
+def _call_openrouter(api_key, model, prompt, wav_bytes, read_timeout=GEMINI_READ_TIMEOUT):
     """Same model through OpenRouter chat completions (the body shape the Meet
     app verified live; probe 2026-11-05: 3-flash-preview 200 in 2.9 s)."""
     body = {
         "model": "google/" + model,
         "temperature": 0,
-        "max_tokens": 4096,
+        "max_tokens": 8192,
         "reasoning": {"max_tokens": 1024},
         "messages": [{"role": "user", "content": [
             {"type": "text", "text": prompt + OPENROUTER_CONTEXT_HINT},
@@ -943,7 +953,7 @@ def _call_openrouter(api_key, model, prompt, wav_bytes):
     try:
         resp = requests.post("https://openrouter.ai/api/v1/chat/completions",
                              headers={"Authorization": "Bearer " + api_key}, json=body,
-                             timeout=(GEMINI_CONNECT_TIMEOUT, GEMINI_READ_TIMEOUT))
+                             timeout=(GEMINI_CONNECT_TIMEOUT, read_timeout))
     except requests.RequestException as e:
         log("openrouter: request failed (%s: %s)" % (type(e).__name__, str(e)[:160]))
         raise GeminiError("Model band yoki internet sekin. Qayta urinib ko'ring.")
@@ -983,18 +993,65 @@ def gemini_transcribe(api_key, model, language_mode, wav_bytes, vocabulary=None,
         "generationConfig": generation_config(model),
     }
 
-    try:
-        text = _call_gemini(api_key, model, body)
-    except GeminiError as e:
-        if openrouter_key:
-            log("gemini: %s -> openrouter model=google/%s" % (getattr(e, "status", None), model))
-            text = _call_openrouter(openrouter_key, model, body["contents"][0]["parts"][0]["text"], wav_bytes)
-        elif getattr(e, "status", None) in FALLBACK_STATUSES and model != FALLBACK_MODEL:
-            log("gemini: fallback -> model=%s (status %s)" % (FALLBACK_MODEL, getattr(e, "status", None)))
-            body["generationConfig"] = generation_config(FALLBACK_MODEL)
-            text = _call_gemini(api_key, FALLBACK_MODEL, body)
-        else:
-            raise
+    # 2026-11-08: ordered fallback chain — never lose a take (both Google AND
+    # OpenRouter failing used to raise straight out, losing the audio). Each
+    # step is tried in order on any GeminiError; the first text wins.
+    prompt = body["contents"][0]["parts"][0]["text"]
+    read_timeout = read_timeout_for(wav_bytes)
+
+    def google_call(m):
+        log("gemini: try google %s" % m)
+        b = body
+        if m != model:
+            b = dict(body)
+            b["generationConfig"] = generation_config(m)
+        return _call_gemini(api_key, m, b, read_timeout=read_timeout)
+
+    def openrouter_call(m):
+        log("gemini: try openrouter %s" % m)
+        return _call_openrouter(openrouter_key, m, prompt, wav_bytes, read_timeout=read_timeout)
+
+    # Cooldown only bites when OpenRouter exists to carry the traffic.
+    google_first = not (openrouter_key and time.monotonic() < _google_cooldown_until)
+    if not google_first:
+        log("gemini: google cooling down -> openrouter")
+
+    # (kind, model, status_gate): status_gate = only try when the previous
+    # failure's status is retryable (the pre-chain FALLBACK_STATUSES rule,
+    # kept for the no-OpenRouter-key case).
+    chain = []
+    if google_first:
+        chain.append(("google", model, None))
+    if not openrouter_key and model != FALLBACK_MODEL:
+        chain.append(("google", FALLBACK_MODEL, FALLBACK_STATUSES))
+    if openrouter_key:
+        chain.append(("openrouter", model, None))
+        if model != "gemini-2.5-flash":
+            chain.append(("openrouter", "gemini-2.5-flash", None))
+    if google_first and model != "gemini-2.5-flash":
+        chain.append(("google", "gemini-2.5-flash", None))
+
+    text = None
+    last_err = None
+    for kind, m, gate in chain:
+        if gate is not None:
+            st = getattr(last_err, "status", None)
+            if st not in gate:
+                continue
+            log("gemini: fallback -> model=%s (status %s)" % (m, st))
+        try:
+            if kind == "openrouter":
+                text = openrouter_call(m)
+            else:
+                text = google_call(m)
+            break
+        except GeminiError as e:
+            last_err = e
+            log("gemini: %s %s failed (status %s: %s)" % (kind, m, getattr(e, "status", None), str(e)[:120]))
+
+    if text is None:
+        # every step failed -> surface the LAST error (the caller shows it)
+        raise last_err
 
     cleaned = clean_transcript(text)
     # The model emits NO_SPEECH for silent/unintelligible audio instead of
@@ -1053,6 +1110,128 @@ def set_startup_enabled(enabled):
 # ---------------------------------------------------------------------------
 # Settings window (Tkinter)
 # ---------------------------------------------------------------------------
+
+class RecordingBadge:
+    """On-screen "Yozilyapti" pill (owner 2026-11-08: the start beep was lost on
+    the BT headset). Own daemon thread, own tk.Tk() root and mainloop — it must
+    NOT share the settings window's Tk root. Other threads only put values into
+    a queue; the Tk thread drains it every 50 ms via root.after. The window
+    never takes focus (WS_EX_NOACTIVATE | SW_SHOWNOACTIVATE): the paste goes to
+    the user's focused field. Any exception logs once and disables the badge;
+    it must never break recording or pasting."""
+
+    STYLES = {
+        "recording": ("#DC2626", "● Yozilyapti"),
+        "transcribing": ("#16A34A", "… Matnga aylanmoqda"),
+    }
+
+    WIDTH, HEIGHT, TOP_GAP = 170, 34, 12
+
+    def __init__(self):
+        self._q = queue.Queue()
+        self._disabled = False
+        self._root = None
+        self._frame = None
+        self._label = None
+        self._hwnd = None
+        self.current_text = ""  # plain str, read by tests from any thread
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    # -- public API (any thread; queue only, never touches Tk) ---------------
+
+    def start(self):
+        self._thread.start()
+
+    def show(self, kind):
+        self._put(("show", kind))
+
+    def hide(self):
+        self._put(("hide", None))
+
+    def close(self):
+        """Stop the Tk thread (tests / shutdown)."""
+        self._put(("quit", None))
+
+    def _put(self, item):
+        if not self._disabled:
+            try:
+                self._q.put(item)
+            except Exception:  # pragma: no cover - queue is built-in safe
+                pass
+
+    # -- Tk thread only ------------------------------------------------------
+
+    def _run(self):
+        try:
+            self._build()
+            self._root.after(50, self._poll)
+            self._root.mainloop()
+        except Exception as e:
+            self._fail(e)
+
+    def _build(self):
+        root = self._root = tk.Tk()
+        root.overrideredirect(True)
+        root.attributes("-topmost", True)
+        x = max(0, (root.winfo_screenwidth() - self.WIDTH) // 2)
+        root.geometry("%dx%d+%d+%d" % (self.WIDTH, self.HEIGHT, x, self.TOP_GAP))
+        bg, text = self.STYLES["recording"]
+        self._frame = tk.Frame(root, bg=bg, padx=10, pady=4)
+        self._frame.pack(fill="both", expand=True)
+        self._label = tk.Label(
+            self._frame, text=text, font=("Segoe UI", 11, "bold"),
+            fg="white", bg=bg,
+        )
+        self._label.pack(fill="both", expand=True)
+        root.update_idletasks()  # make the window/HWND exist
+        # Extended styles on the real Win32 window: never activate, never take
+        # focus, stay topmost, click-through, layered.
+        user32 = ctypes.windll.user32
+        hwnd = self._hwnd = user32.GetParent(root.winfo_id())
+        GWL_EXSTYLE = -20
+        EX = (0x08000000  # WS_EX_NOACTIVATE
+              | 0x00000080  # WS_EX_TOOLWINDOW
+              | 0x8         # WS_EX_TOPMOST
+              | 0x20        # WS_EX_TRANSPARENT (click-through)
+              | 0x80000)    # WS_EX_LAYERED
+        style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
+        user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style | EX)
+        user32.ShowWindow(hwnd, 0)  # start hidden; show() brings it back
+
+    def _poll(self):
+        try:
+            while True:
+                op, kind = self._q.get_nowait()
+                if op == "quit":
+                    self._root.destroy()
+                    return
+                if op == "show":
+                    bg, text = self.STYLES.get(kind, self.STYLES["recording"])
+                    self._label.config(text=text, bg=bg)
+                    self._frame.config(bg=bg)
+                    self.current_text = text
+                    ctypes.windll.user32.ShowWindow(self._hwnd, 4)  # SW_SHOWNOACTIVATE
+                else:  # hide
+                    self.current_text = ""
+                    ctypes.windll.user32.ShowWindow(self._hwnd, 0)  # SW_HIDE
+        except queue.Empty:
+            pass
+        except Exception as e:
+            self._fail(e)
+        if not self._disabled:
+            try:
+                self._root.after(50, self._poll)
+            except Exception as e:  # root destroyed
+                self._fail(e)
+
+    def _fail(self, e):
+        if not self._disabled:
+            self._disabled = True
+            try:
+                log("badge disabled: %r" % (e,))
+            except Exception:
+                pass
+
 
 class SettingsWindow:
     """Runs a Tkinter settings dialog on its own thread with its own mainloop,
@@ -1577,6 +1756,8 @@ class GeminiMicApp:
         self.kb_controller = KeyboardController()
         self.icon = None
         self.settings_window = SettingsWindow(self)
+        self.badge = RecordingBadge()  # on-screen "Yozilyapti" pill (own Tk root/thread)
+        self.badge.start()
         self._listener = None
         self.relay_server = None
         # PC hotkey -> phone recording. phone_lock guards the press/ack/release
@@ -1755,6 +1936,13 @@ class GeminiMicApp:
 
     def set_state(self, state):
         """state: 'idle' | 'recording' | 'transcribing'"""
+        if self.badge is not None:
+            if state == "recording":
+                self.badge.show("recording")
+            elif state == "transcribing":
+                self.badge.show("transcribing")
+            else:
+                self.badge.hide()
         if self.icon is None:
             return
         color = {
@@ -1978,7 +2166,9 @@ class GeminiMicApp:
             self.stop_recording_and_transcribe()
             return
 
-        beep(1000, 80)  # audio cue: capture is live (it actually started ~PRE_ROLL_SEC ago)
+        # (2026-11-08) no start beep: it was lost on the BT headset (0.86-0.90 s
+        # late, 11-05) and silent inside the release tail; the on-screen
+        # RecordingBadge is the cue now.
 
         # auto-stop watchdog — rolls into a NEW chunk when the key is still held
         def watchdog():
@@ -2036,9 +2226,9 @@ class GeminiMicApp:
         # 2026-10-14): it sees the un-gained audio x RAW_GAIN as unclipped floats,
         # exactly the level its thresholds were tuned on. Only the WAV gets g.
         gate_g = RAW_GAIN if self.stream_raw else 1.0
-        # Same 1 kHz start-beep notch the WAV gets - otherwise a beep leak alone
-        # passes the gate (blind review 2026-10-14).
-        gate_audio = (remove_start_beep(np.concatenate(frames)).astype(np.float64) * gate_g
+        # (2026-11-08) no 1 kHz start-beep notch anymore: there is no start beep
+        # to leak (the badge replaced it), so the gate sees the audio unchanged.
+        gate_audio = (np.concatenate(frames).astype(np.float64) * gate_g
                       if frames else np.zeros(0))
         room_floor = None if self.room_floor is None else self.room_floor * gate_g
         if g != 1.0:
