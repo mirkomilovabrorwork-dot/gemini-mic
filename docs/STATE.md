@@ -183,6 +183,6 @@ Owner's later recorded refinements (his words, not scope invention):
 - 2026-10-14 [Uzun gap] 60 soniyadan uzun gapda matn tartibi buzilishi mumkin. Sizning gaplaringiz 2-4 soniya. Tuzataymi? -> **Keyinroq (tavsiya)**
 - 2026-11-04 [Aniqlik] Aniqlik uchun qaysi yo'lni 10 ta gapda sinab ko'raylik? -> **A + Live (Tavsiya)**
 
-Tugadi — /clear xavfsiz
 - 2026-11-08 [Tip ovozi] "Tip" ovozi Bluetooth naushnikda ba'zan yo'qoladi, 100% kafolat yo'q. Yozilayotganini qanday bilib turasiz? -> **Ekranda belgi (Tavsiya)**
 - 2026-11-08 [Telefon] Begona ovozni telefonning o'zi emas, mikrofon og'izga yaqin bo'lgani kamaytiradi. Telefonni sinaymizmi? -> **Hozircha kerak emas (Tavsiya)**
+Tugadi — /clear xavfsiz
