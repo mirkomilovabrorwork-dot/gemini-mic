@@ -1941,11 +1941,15 @@ class GeminiMicApp:
                 cur = ""
                 if self.stream is not None:
                     cur = sd.query_devices(self.stream.device)["name"].lower()
-                if frags[0] in cur or time.monotonic() - last_try < 60:
+                # 11-08 owner: plug in the external mic -> use it. Any mic ranked
+                # ABOVE the current one that is live wins, not only the first.
+                rank = next((i for i, f in enumerate(frags) if f in cur), len(frags))
+                if rank == 0 or time.monotonic() - last_try < 60:
                     continue
-                if self._preferred_endpoint_active(frags[0]):
+                better = next((f for f in frags[:rank] if self._preferred_endpoint_active(f)), None)
+                if better:
                     last_try = time.monotonic()
-                    log("mic watch: %r is back -> switching to it" % frags[0])
+                    log("mic watch: %r is back -> switching to it" % better)
                     self.reconnect_mic()
             except Exception as e:
                 log("mic watch: %r" % (e,))
