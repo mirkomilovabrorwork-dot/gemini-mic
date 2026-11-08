@@ -45,6 +45,15 @@ public class VoiceInputAccessibilityService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         instance = this;
+        // After a reboot the system re-binds this service: try to bring the mic
+        // service (and with it the idea-audio drain) up. Background-start limits may
+        // refuse it - then the arm notification below is the fallback.
+        if (!MicOverlayService.isRunning() && !Prefs.apiKey(this).isEmpty()) {
+            try {
+                startForegroundService(new Intent(this, MicOverlayService.class));
+            } catch (Exception ignored) {
+            }
+        }
         maybePostArmNotification();
     }
 

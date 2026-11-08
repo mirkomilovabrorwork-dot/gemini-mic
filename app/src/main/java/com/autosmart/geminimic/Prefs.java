@@ -18,6 +18,12 @@ final class Prefs {
     static final String PC_URL = "pc_url";
     static final String PC_CODE = "pc_code";
     static final String PC_URL_DEFAULT = "https://data365.taildef23b.ts.net/mic";
+    // Volume-Down hold = idea capture (owner 2026-11-08): true keeps the OLD
+    // type-into-field behaviour; false (default) posts the idea to TickTick.
+    static final String VOLUME_TYPES_TEXT = "volume_types_text";
+    // TickTick pairing, fetched from the PC relay (GET <pc>/ticktick) - no typing.
+    static final String TICKTICK_TOKEN = "ticktick_token";
+    static final String TICKTICK_PROJECT = "ticktick_project_id";
 
     private Prefs() {
     }
@@ -48,6 +54,25 @@ final class Prefs {
 
     static String pcCode(Context ctx) {
         return get(ctx).getString(PC_CODE, "");
+    }
+
+    static boolean volumeTypesText(Context ctx) {
+        return get(ctx).getBoolean(VOLUME_TYPES_TEXT, false);
+    }
+
+    static String ticktickToken(Context ctx) {
+        return get(ctx).getString(TICKTICK_TOKEN, "");
+    }
+
+    static String ticktickProject(Context ctx) {
+        return get(ctx).getString(TICKTICK_PROJECT, "");
+    }
+
+    static void saveTickTick(Context ctx, String token, String projectId) {
+        get(ctx).edit()
+                .putString(TICKTICK_TOKEN, token)
+                .putString(TICKTICK_PROJECT, projectId)
+                .apply();
     }
 
     static String modelLabel(Context ctx) {

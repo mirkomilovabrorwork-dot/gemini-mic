@@ -26,6 +26,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Locale;
@@ -57,6 +58,8 @@ public class MainActivity extends Activity {
     private EditText pcUrlInput;
     private EditText pcCodeInput;
     private Button batteryBtn;
+
+    private TextView ticktickStatusLabel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,7 +135,16 @@ public class MainActivity extends Activity {
         layout.addView(space(16));
 
         layout.addView(buildPcCard(), fullWidth());
-        layout.addView(space(16));
+        layout.addView(space(10));
+
+        // Idea capture (owner 2026-11-08): status line for commander-side
+        // screenshot checks; the owner cannot read the (broken) screen.
+        ticktickStatusLabel = new TextView(this);
+        ticktickStatusLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
+        ticktickStatusLabel.setTextColor(mutedColor);
+        ticktickStatusLabel.setPadding(0, 0, 0, dp(6));
+        layout.addView(ticktickStatusLabel, fullWidth());
+        layout.addView(space(6));
 
         primaryButton = primaryButton("Mikrofonni yoqish");
         primaryButton.setOnClickListener(v -> togglePrimaryAction());
@@ -402,7 +414,9 @@ public class MainActivity extends Activity {
         TextView body = new TextView(this);
         body.setText("1. Ovoz-pastga tugmasini bosib turib gapiring, qo'yib yuborsangiz yoziladi.\n"
                 + "   Qisqa bossangiz — oddiy ovoz pasayadi.\n"
-                + "2. Matn to'g'ridan-to'g'ri faol maydonga yoziladi.");
+                + "2. Gaplangan g'oya TickTick \"📥 Kiruvchi\" ro'yxatiga saqlanadi\n"
+                + "   (tebranish: 1 marta = yozish, 2 marta = saqlandi,\n"
+                + "   3 marta uzuni — internet yo'q, navbatda qoldi).");
         body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f);
         body.setTextColor(mutedColor);
         body.setLineSpacing(dp(2), 1.0f);
@@ -498,9 +512,29 @@ public class MainActivity extends Activity {
             primaryButton.setText(running ? "To'xtatish" : "Mikrofonni yoqish");
 
             nextStep.setText(nextStepText(hasKey, hasMic, hasAccess, running));
+
+            refreshTickTickStatus();
         } catch (Exception e) {
             nextStep.setText("Status check failed: " + e.getMessage());
         }
+    }
+
+    /**
+     * "TickTick: ulangan / ulanmagan, navbatda N ta" — the queue file is read
+     * off the UI thread, the label is updated back on it.
+     */
+    private void refreshTickTickStatus() {
+        final boolean linked = !Prefs.ticktickToken(this).isEmpty()
+                && !Prefs.ticktickProject(this).isEmpty();
+        new Thread(() -> {
+            final int queued = TickTickPoster.queuedCount(this);
+            final int audioQueued = IdeaAudioQueue.count(new File(getFilesDir(), IdeaAudioQueue.DIR_NAME));
+            final String text = (linked ? "TickTick: ulangan" : "TickTick: ulanmagan")
+                    + ", navbatda " + queued + " ta, ovoz navbatda " + audioQueued + " ta";
+            runOnUiThread(() -> {
+                if (ticktickStatusLabel != null) ticktickStatusLabel.setText(text);
+            });
+        }).start();
     }
 
     private String nextStepText(boolean hasKey, boolean hasMic,

@@ -7,7 +7,13 @@ import android.app.Service;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.media.AudioManager;
 import android.media.MediaRecorder;
+import android.media.session.PlaybackState;
+import android.media.VolumeProvider;
+import android.media.session.MediaSession;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -28,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MicOverlayService extends Service {
 
@@ -35,11 +42,17 @@ public class MicOverlayService extends Service {
 
     private static final long AMPLITUDE_SAMPLE_MS = 150;
     private static final String CHANNEL_ID = "gemini_mic";
-    private static final long MAX_RECORDING_MS = 60000;
+    private static final long MAX_RECORDING_MS = 10 * 60 * 1000;  // owner: 5 min takes must never be cut
     private static final long MIN_RECORDING_MS = 650;
     private static final int NOTIFICATION_ID = 41;
     private static final int SILENCE_PEAK_THRESHOLD = 600;
-    private static final long TRANSCRIBE_TIMEOUT_MS = 75000;
+    // Typing / PC-relay takes: 75 s as before, plus the longer read timeout per audio second.
+    private static final long LEGACY_TRANSCRIBE_TIMEOUT_MS = 75000;
+    private static final long IDEA_HANDOFF_MARGIN_MS = 60000;  // store + TickTick post (+ pairing refresh)
+    // Volume-key idea capture (owner 2026-11-08)
+    private static final long QUEUE_RETRY_MS = 5 * 60 * 1000;
+    private static final long MEDIA_TAP_MS = 350;        // media path: no repeat in time = tap
+    private static final long MEDIA_HOLD_GAP_MS = 700;   // media path: silence after repeats = release
 
     final Handler main;
     final ExecutorService worker;
@@ -66,16 +79,58 @@ public class MicOverlayService extends Service {
     long pcSeq;                 // seq of the PC state the phone last applied (acks carry it)
     PowerManager.WakeLock wakeLock;  // PC take: recording + transcription + POST
 
+    // Volume-Down hold = idea -> TickTick (owner 2026-11-08). The screen is
+    // broken: feedback is vibration only, nothing may need typing on the phone.
+    boolean volumeRecording;    // the current recording was started by a volume key
+    boolean ideaJob;            // the running transcription job is an idea take (audio is queued on disk)
+    boolean mediaTake;          // the current take was started via the MediaSession path
+    MediaSession mediaSession;  // captures volume keys while the screen is off
+
+    private final Runnable startBuzz;
+    private final Runnable mediaTapCancel;
+    private final Runnable mediaHoldStop;
+    private Runnable queueRetry;  // not final: the lambda re-posts itself
+
+    // Idea-audio drain (owner 2026-11-08): one worker pass at a time, oldest first
+    private final AtomicBoolean draining = new AtomicBoolean(false);
+    private volatile boolean forceAgain;
+    private ConnectivityManager.NetworkCallback netCallback;
+
+
     public MicOverlayService() {
         this.main = new Handler(Looper.getMainLooper());
         this.worker = Executors.newCachedThreadPool();
         this.autoStopRecording = () -> {
             if (recording && !busy) {
-                toast("Auto-stopping at 60 seconds");
+                toast("Auto-stopping at 10 minutes");
                 stopAndTranscribe();
             }
         };
         this.sampleAmplitude = new AmplitudeRunnable();
+        // Delayed past the tap window so a short volume tap never vibrates,
+        // and only for volume-key takes (a PC/floating take stays silent).
+        this.startBuzz = () -> {
+            if (recording && volumeRecording) {
+                TickTickPoster.buzzStart(MicOverlayService.this);
+            }
+        };
+        this.mediaTapCancel = () -> {
+            if (recording && mediaTake) {
+                cancelRecording();
+                AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+                if (am != null) {
+                    am.adjustSuggestedStreamVolume(AudioManager.ADJUST_LOWER,
+                            AudioManager.USE_DEFAULT_STREAM_TYPE, AudioManager.FLAG_SHOW_UI);
+                }
+            }
+        };
+        this.mediaHoldStop = () -> {
+            if (recording && mediaTake) stopAndTranscribe();
+        };
+        this.queueRetry = () -> {
+            drain(false);
+            main.postDelayed(this.queueRetry, QUEUE_RETRY_MS);
+        };
     }
 
     @Override
@@ -86,14 +141,32 @@ public class MicOverlayService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        try {
+            startMicForeground("Ready");
+        } catch (Exception e) {
+            // a microphone foreground service refused from the background (Android 14+/15):
+            // stop quietly instead of crashing; the arm notification stays for a tap
+            stopSelf();
+            return;
+        }
         instance = this;
         // Once the mic service is up, the post-boot "tap to arm" nudge is done.
         NotificationManager nm = (NotificationManager) getSystemService(NotificationManager.class);
         if (nm != null) {
             nm.cancel(VoiceInputAccessibilityService.ARM_NOTIFICATION_ID);
         }
-        startMicForeground("Ready");
         restartPcPoller();
+        setupMediaSession();
+        // Pair with TickTick via the PC relay on start if we have no token yet.
+        worker.execute(() -> {
+            if (Prefs.ticktickToken(MicOverlayService.this).isEmpty()) {
+                TickTickPoster.fetchPairing(MicOverlayService.this);
+            }
+        });
+        main.postDelayed(queueRetry, QUEUE_RETRY_MS);  // offline queues: every 5 min
+        registerNetworkCallback();  // internet back -> drain at once
+        IdeaDrain.schedule(this);   // persisted job: drains without this service too
+        drain(false);               // and on service start
     }
 
     @Override
@@ -112,6 +185,12 @@ public class MicOverlayService extends Service {
             currentTranscription = null;
         }
         stopPcPoller();
+        releaseMediaSession();
+        unregisterNetworkCallback();
+        main.removeCallbacks(startBuzz);
+        main.removeCallbacks(mediaTapCancel);
+        main.removeCallbacks(mediaHoldStop);
+        main.removeCallbacks(queueRetry);
         stopRecordingQuietly();
         releaseWakeLock();
         worker.shutdownNow();
@@ -125,7 +204,13 @@ public class MicOverlayService extends Service {
     static void volumeStart() {
         MicOverlayService svc = instance;
         if (svc != null) {
-            svc.main.post(svc::startRecording);
+            svc.main.post(() -> {
+                if (svc.startRecording()) {
+                    svc.volumeRecording = true;
+                    svc.mediaTake = false;  // the accessibility path owns this take
+                    svc.acquireVolumeWakeLock();
+                }
+            });
         }
     }
 
@@ -241,6 +326,79 @@ public class MicOverlayService extends Service {
         wakeLock = null;
     }
 
+    /** CPU stays up through a volume-key take (recording + transcription + POST). */
+    private void acquireVolumeWakeLock() {
+        try {
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "GeminiMic:volumeRecording");
+            wakeLock.setReferenceCounted(false);
+            wakeLock.acquire(MAX_RECORDING_MS + 5000);
+        } catch (Exception ignored) {
+            wakeLock = null;
+        }
+    }
+
+    /**
+     * Screen-off capture: while the screen is OFF the accessibility service gets
+     * no volume keys - the system routes them to an ACTIVE MediaSession's remote
+     * VolumeProvider. Honest limits (must be measured on the real phone):
+     * - the provider gives per-press/repeat callbacks but NO key-up event, so a
+     *   "hold" is detected from OS key repeats + a timeout after the last one
+     *   ({@link #MEDIA_HOLD_GAP_MS}); a "tap" = no repeat within {@link #MEDIA_TAP_MS};
+     * - if another app is actively playing, that session may win the keys.
+     * When the screen is ON the accessibility path consumes the keys first;
+     * the mediaTake/!recording guards keep the two paths from double-starting.
+     */
+    private void setupMediaSession() {
+        try {
+            mediaSession = new MediaSession(this, "GeminiMic");
+            mediaSession.setPlaybackState(new PlaybackState.Builder()
+                    .setState(PlaybackState.STATE_PLAYING, 0, 1.0f)
+                    .build());
+            mediaSession.setPlaybackToRemote(new VolumeProvider(
+                    VolumeProvider.VOLUME_CONTROL_ABSOLUTE, 100, 50) {
+                @Override
+                public void onAdjustVolume(int direction) {
+                    // binder thread -> hop to main (all recording state is main-only)
+                    main.post(() -> mediaVolumeAdjust(direction));
+                }
+            });
+            mediaSession.setActive(true);
+        } catch (Exception e) {
+            releaseMediaSession();  // screen-off capture stays off; accessibility path unaffected
+        }
+    }
+
+    private void releaseMediaSession() {
+        if (mediaSession != null) {
+            try {
+                mediaSession.setActive(false);
+                mediaSession.release();
+            } catch (Exception ignored) {
+            }
+            mediaSession = null;
+        }
+    }
+
+    /** Volume-down arrived through the MediaSession (screen off). Main thread. */
+    private void mediaVolumeAdjust(int direction) {
+        if (direction >= 0) return;  // volume-up is not ours
+        if (busy) return;            // a transcription is running: ignore
+        if (!recording) {
+            if (startRecording()) {
+                volumeRecording = true;
+                mediaTake = true;
+                acquireVolumeWakeLock();
+                main.postDelayed(mediaTapCancel, MEDIA_TAP_MS);
+            }
+        } else if (mediaTake) {
+            // another OS key repeat = still held; a stop is armed for the
+            // silence that follows the LAST repeat (no key-up exists here)
+            main.removeCallbacks(mediaTapCancel);
+            main.postDelayed(mediaHoldStop, MEDIA_HOLD_GAP_MS);
+        }
+    }
+
     private static void release(PowerManager.WakeLock wl) {
         if (wl == null) return;
         try { if (wl.isHeld()) wl.release(); } catch (Exception ignored) {}
@@ -258,6 +416,7 @@ public class MicOverlayService extends Service {
             audioFile.delete();
         }
         pcAckStopped(wasPc, "cancel");
+        releaseWakeLock();  // a volume-key take cancelled as a tap: nothing follows
     }
 
     boolean startRecording() {
@@ -273,8 +432,9 @@ public class MicOverlayService extends Service {
             recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             recorder.setOutputFormat(MediaRecorder.OutputFormat.AAC_ADTS);
             recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-            recorder.setAudioSamplingRate(44100);
-            recorder.setAudioEncodingBitRate(96000);
+            recorder.setAudioChannels(1);           // mono, 16 kHz, 48 kbps: 5 min ~ 1.8 MB, same accuracy
+            recorder.setAudioSamplingRate(16000);
+            recorder.setAudioEncodingBitRate(48000);
             recorder.setOutputFile(currentFile.getAbsolutePath());
             recorder.prepare();
             recorder.start();
@@ -283,6 +443,7 @@ public class MicOverlayService extends Service {
             peakAmplitude = 0;
             main.postDelayed(autoStopRecording, MAX_RECORDING_MS);
             main.postDelayed(sampleAmplitude, AMPLITUDE_SAMPLE_MS);
+            main.postDelayed(startBuzz, MEDIA_TAP_MS);  // past the tap window: taps stay silent
             toast("Recording");
             return true;
         } catch (Exception e) {
@@ -294,8 +455,12 @@ public class MicOverlayService extends Service {
 
     void stopAndTranscribe() {
         File audioFile = currentFile;
+        long startedAt = recordingStartedAt;
         long duration = System.currentTimeMillis() - recordingStartedAt;
         boolean wasPc = pcRecording;
+        // Frozen at stop time: a take STARTED by a volume key is an idea (audio queued
+        // on disk, then TickTick) unless the old typing behaviour is forced on.
+        final boolean ideaTake = volumeRecording && !Prefs.volumeTypesText(this);
         try {
             recorder.stop();
         } catch (Exception ignored) {
@@ -303,31 +468,60 @@ public class MicOverlayService extends Service {
         stopRecordingQuietly();
         if (audioFile == null || !audioFile.exists()) {
             pcAckStopped(wasPc, "nofile");
+            if (!wasPc) releaseWakeLock();  // volume take: nothing follows
             toast("No audio");
             return;
         }
         if (duration < MIN_RECORDING_MS) {
             audioFile.delete();
             pcAckStopped(wasPc, "short");
+            if (!wasPc) releaseWakeLock();
             toast("Hold longer");
             return;
         }
         if (peakAmplitude < SILENCE_PEAK_THRESHOLD) {
             audioFile.delete();
             pcAckStopped(wasPc, "silent");
+            if (!wasPc) releaseWakeLock();
             toast("Ovoz eshitilmadi");
             return;
         }
-        if (wasPc && wakeLock != null) {
-            // keep the CPU up through transcription + the POST to the PC
-            try { wakeLock.acquire(TRANSCRIBE_TIMEOUT_MS + 5000); } catch (Exception ignored) {}
+        final long seconds = Math.max(1, (duration + 999) / 1000);
+        final long timeoutMs = ideaTake
+                ? IdeaDrain.ideaTimeoutMs(this, seconds)
+                : LEGACY_TRANSCRIBE_TIMEOUT_MS + 2 * 300 * seconds;
+        if (wakeLock != null) {
+            // keep the CPU up through transcription + the POST
+            try { wakeLock.acquire(timeoutMs + 5000); } catch (Exception ignored) {}
         }
         pcAckStopped(wasPc, "stop");  // text follows through the relay POST
         busy = true;
+        ideaJob = ideaTake;
         updateNotification("Transcribing");
         final int jobId = ++transcriptionJobId;
         currentTranscriptionTimeout = () -> finishTranscriptionTimeout(jobId);
-        main.postDelayed(currentTranscriptionTimeout, TRANSCRIBE_TIMEOUT_MS);
+        main.postDelayed(currentTranscriptionTimeout, timeoutMs);
+        if (ideaTake) {
+            // Write-ahead: the audio goes to disk BEFORE any network call.
+            final IdeaAudioQueue.Item item = IdeaAudioQueue.store(IdeaDrain.audioDir(this), audioFile, startedAt, duration);
+            IdeaDrain.IN_FLIGHT.add(item.name());  // the drain must not touch a live take
+            IdeaDrain.schedule(this);  // safety net: the job drains it even if this service dies
+            try {
+                currentTranscription = worker.submit(() -> {
+                    IdeaDrain.Outcome outcome;
+                    try {
+                        outcome = IdeaDrain.processItem(MicOverlayService.this, item);
+                    } finally {
+                        IdeaDrain.IN_FLIGHT.remove(item.name());
+                    }
+                    main.post(() -> finishIdeaTake(jobId, outcome));
+                });
+            } catch (RuntimeException e) {
+                IdeaDrain.IN_FLIGHT.remove(item.name());  // service is going down: the file stays queued
+                throw e;
+            }
+            return;
+        }
         currentTranscription = worker.submit(() -> {
             try {
                 String text = GeminiClient.transcribe(MicOverlayService.this, audioFile);
@@ -340,9 +534,80 @@ public class MicOverlayService extends Service {
         });
     }
 
+    /** Main thread: vibrate the result of a live idea take (vibration is the only feedback). */
+    private void finishIdeaTake(int jobId, IdeaDrain.Outcome outcome) {
+        if (isActiveTranscription(jobId)) {  // after a timeout the "queued" buzz was already given
+            if (outcome.text != null) copyToClipboard(outcome.text);  // cheap safety net
+            if (outcome.kind == IdeaDrain.OUT_SAVED) {
+                TickTickPoster.buzzSaved(this);
+            } else if (outcome.kind == IdeaDrain.OUT_SILENT) {
+                TickTickPoster.buzzStart(this);  // one short 60 ms: nothing was said
+            } else {
+                TickTickPoster.buzzQueued(this);  // text queued, or audio queued
+            }
+            finishTranscriptionJob();
+        }
+        drain(false);
+    }
+
+    /** Start a drain pass of the idea-audio queue (+ the text queue). force = ignore retry spacing. */
+    void drain(boolean force) {
+        if (!draining.compareAndSet(false, true)) {
+            if (force) forceAgain = true;  // network came back while a pass runs: go again
+            return;
+        }
+        try {
+            worker.execute(() -> {
+                boolean f = force;
+                try {
+                    do {
+                        forceAgain = false;
+                        IdeaDrain.drainOnce(MicOverlayService.this, f, Long.MAX_VALUE);
+                        f = true;
+                    } while (forceAgain && !Thread.currentThread().isInterrupted());
+                } finally {
+                    draining.set(false);
+                }
+            });
+        } catch (RuntimeException e) {
+            draining.set(false);  // worker already shut down
+        }
+    }
+
+    private void registerNetworkCallback() {
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (cm == null) return;
+            netCallback = new ConnectivityManager.NetworkCallback() {
+                @Override
+                public void onAvailable(Network network) {
+                    drain(true);
+                }
+            };
+            cm.registerDefaultNetworkCallback(netCallback);
+        } catch (Exception e) {
+            netCallback = null;  // the 5-minute pass still runs
+        }
+    }
+
+    private void unregisterNetworkCallback() {
+        if (netCallback == null) return;
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            if (cm != null) cm.unregisterNetworkCallback(netCallback);
+        } catch (Exception ignored) {
+        }
+        netCallback = null;
+    }
+
     private void stopRecordingQuietly() {
         recording = false;
         pcRecording = false;  // the wake lock outlives the recording (see finishTranscriptionJob)
+        volumeRecording = false;
+        mediaTake = false;
+        main.removeCallbacks(startBuzz);
+        main.removeCallbacks(mediaTapCancel);
+        main.removeCallbacks(mediaHoldStop);
         main.removeCallbacks(autoStopRecording);
         main.removeCallbacks(sampleAmplitude);
         if (recorder != null) {
@@ -554,8 +819,17 @@ public class MicOverlayService extends Service {
     private void finishTranscriptionTimeout(int jobId) {
         if (!isActiveTranscription(jobId)) return;
         if (currentTranscription != null) {
-            currentTranscription.cancel(true);
+            // an idea item is never interrupted: post + remove must finish (chain calls have hard deadlines)
+            currentTranscription.cancel(!ideaJob);
             currentTranscription = null;
+        }
+        if (ideaJob) {
+            // the audio is already on disk: the drain retries it, nothing is lost
+            toast("Gemini sekin. Ovoz navbatda");
+            TickTickPoster.buzzQueued(this);
+            finishTranscriptionJob();
+            drain(false);
+            return;
         }
         toast("Gemini timeout. Qayta urinib ko'ring");
         finishTranscriptionJob();
@@ -564,6 +838,7 @@ public class MicOverlayService extends Service {
     private void finishTranscriptionJob() {
         clearTranscriptionTimeout();
         releaseWakeLock();
+        ideaJob = false;
         currentTranscription = null;
         updateNotification("Ready");
         busy = false;

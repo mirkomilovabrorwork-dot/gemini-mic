@@ -115,7 +115,7 @@ final class GeminiClient {
     private static JSONObject generationConfig(String model) throws Exception {
         JSONObject cfg = new JSONObject()
                 .put("temperature", 0)
-                .put("maxOutputTokens", 4096);
+                .put("maxOutputTokens", 8192);
         if (model.startsWith("gemini-3.6")) {
             cfg.put("thinkingConfig", new JSONObject().put("thinkingLevel", "low"));
         } else {
@@ -171,16 +171,24 @@ final class GeminiClient {
     }
 
     private static String postGenerateContent(String key, String model, JSONObject body, int readTimeoutMs) throws Exception {
+        return postGenerateContent(key, model, body, readTimeoutMs, null);
+    }
+
+    // `holder` lets another thread disconnect a stalled upload (no write timeout exists).
+    private static String postGenerateContent(String key, String model, JSONObject body, int readTimeoutMs,
+                                              java.util.concurrent.atomic.AtomicReference<HttpURLConnection> holder) throws Exception {
         String urlStr = "https://generativelanguage.googleapis.com/v1beta/models/"
                 + model + ":generateContent?key=" + key;
         HttpURLConnection conn = (HttpURLConnection) new URL(urlStr).openConnection();
+        if (holder != null) holder.set(conn);
         try {
+            byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
             conn.setRequestMethod("POST");
-            conn.setConnectTimeout(15000);
+            conn.setConnectTimeout(TranscribeChain.CONNECT_MS);
             conn.setReadTimeout(readTimeoutMs);
             conn.setDoOutput(true);
+            conn.setFixedLengthStreamingMode(payload.length);
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-            byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
             OutputStream out = conn.getOutputStream();
             try {
                 out.write(payload);
@@ -246,6 +254,78 @@ final class GeminiClient {
         return result;
     }
 
+    /**
+     * Idea take: models in order (TranscribeChain), each call under a hard
+     * deadline. Throws TranscribeChain.Retryable / Fatal / NoSpeech; the audio
+     * file is never touched here.
+     */
+    static String transcribeChain(Context ctx, File audioFile, long audioSeconds) throws Exception {
+        final String key = Prefs.apiKey(ctx);
+        if (key.isEmpty()) {
+            throw new TranscribeChain.Fatal("Missing Gemini API key");
+        }
+        byte[] bytes = Files.readAllBytes(audioFile.toPath());
+        if (bytes.length == 0) {
+            throw new TranscribeChain.Fatal("No audio recorded");
+        }
+        if (bytes.length > 15 * 1024 * 1024) {
+            throw new TranscribeChain.Fatal("Audio is too long");
+        }
+        final JSONObject request = new JSONObject();
+        JSONArray contents = new JSONArray();
+        JSONObject content = new JSONObject();
+        JSONArray parts = new JSONArray();
+        parts.put(new JSONObject().put("text", transcriptionPrompt(ctx)));
+        parts.put(new JSONObject().put("inline_data",
+                new JSONObject()
+                        .put("mime_type", "audio/aac")
+                        .put("data", Base64.encodeToString(bytes, Base64.NO_WRAP))));
+        content.put("parts", parts);
+        contents.put(content);
+        request.put("contents", contents);
+        final java.util.concurrent.atomic.AtomicReference<HttpURLConnection> holder =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        final long seconds = Math.max(1, audioSeconds);
+        TranscribeChain.Poster poster = new TranscribeChain.Poster() {
+            @Override
+            public String post(String model, int readTimeoutMs) throws Exception {
+                request.put("generationConfig", generationConfig(model));
+                String raw;
+                try {
+                    raw = postGenerateContent(key, model, request, readTimeoutMs, holder);
+                } catch (IllegalStateException e) {
+                    throw new TranscribeChain.HttpException(httpCode(e), e.getMessage());
+                }
+                if (isBlocked(raw)) {
+                    throw new TranscribeChain.BadAnswer("blocked / no candidates");
+                }
+                String cleaned = cleanTranscript(extractText(raw));
+                if (isNoSpeech(cleaned)) {
+                    return TranscribeChain.NO_SPEECH;
+                }
+                return formatParagraphs(cleaned);
+            }
+
+            @Override
+            public void abort() {
+                HttpURLConnection c = holder.get();
+                if (c != null) c.disconnect();  // unblocks a stalled upload / read
+            }
+        };
+        return TranscribeChain.run(TranscribeChain.models(Prefs.model(ctx)), seconds, poster);
+    }
+
+    private static int httpCode(IllegalStateException e) {
+        String m = e.getMessage();
+        if (m != null && m.startsWith("Gemini error ")) {
+            try {
+                return Integer.parseInt(m.substring(13, 16));
+            } catch (Exception ignored) {
+            }
+        }
+        return 0;
+    }
+
     static String transcribe(Context ctx, File audioFile) throws Exception {
         String key = Prefs.apiKey(ctx);
         if (key.isEmpty()) {
@@ -272,20 +352,22 @@ final class GeminiClient {
         request.put("contents", contents);
         String model = Prefs.model(ctx);
         request.put("generationConfig", generationConfig(model));
+        // 48 kbps AAC = 6000 bytes/s; the longer a clip, the longer the upload + answer
+        final int readMs = TranscribeChain.readTimeoutMs(bytes.length / 6000);
         String raw;
         try {
-            raw = postGenerateContent(key, model, request, 30000);
+            raw = postGenerateContent(key, model, request, readMs);
         } catch (IllegalStateException e) {
             if (isRetryable(e) && !FALLBACK_MODEL.equals(model)) {
                 request.put("generationConfig", generationConfig(FALLBACK_MODEL));
-                raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
+                raw = postGenerateContent(key, FALLBACK_MODEL, request, readMs);
             } else {
                 throw e;
             }
         } catch (java.io.IOException e) {
             if (!FALLBACK_MODEL.equals(model)) {
                 request.put("generationConfig", generationConfig(FALLBACK_MODEL));
-                raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
+                raw = postGenerateContent(key, FALLBACK_MODEL, request, readMs);
             } else {
                 throw e;
             }
@@ -294,7 +376,7 @@ final class GeminiClient {
         // 2026-10-23, two long takes) -> the other model, which transcribed them.
         if (!FALLBACK_MODEL.equals(model) && isBlocked(raw)) {
             request.put("generationConfig", generationConfig(FALLBACK_MODEL));
-            raw = postGenerateContent(key, FALLBACK_MODEL, request, 30000);
+            raw = postGenerateContent(key, FALLBACK_MODEL, request, readMs);
         }
         String cleaned = cleanTranscript(extractText(raw));
         if (isNoSpeech(cleaned)) {

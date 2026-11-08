@@ -31,6 +31,13 @@ try:
 except Exception:
     _uia = None
 
+# Make the repo-root `capture` package (idea capture -> TickTick) importable
+# both from a checkout (windows/gemini_mic.py) and in tests. The PyInstaller
+# build finds it via hiddenimports instead (see GeminiMic.spec).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
 # ---------------------------------------------------------------------------
 # Paths / config
 # ---------------------------------------------------------------------------
@@ -100,7 +107,21 @@ DEFAULT_CONFIG = {
     # roles, so Telegram/calls use it too) whenever it is plugged in; Windows
     # moves the default to a BT headset on connect. "" = never touch Windows.
     "windows_default_mic": "",
+    # Idea capture (2026-11-08, owner: "Ctrl = Gemini Mic, Alt = idea"): hold
+    # Right Alt ALONE 0.35 s -> record, release -> the transcript goes to the
+    # TickTick "📥 Kiruvchi" list instead of being pasted. Any other key
+    # while it is held = silent discard. "ctrl+alt" = the older combo.
+    # "" = off (Right Ctrl keeps today's paste behaviour either way).
+    "idea_hotkey": "right_alt",
 }
+
+# Idea-capture constants (see docs/IDEA_CAPTURE_SPEC.md).
+IDEA_HOLD_SEC = 0.35       # Ctrl+Alt must be held alone this long to engage
+IDEA_OUTBOX_PATH = os.path.join(CONFIG_DIR, "idea-outbox.jsonl")
+IDEA_OUTBOX_RETRY_SEC = 60  # background retry cadence for the outbox
+IDEA_BADGE_SEC = 1.5        # "Saqlandi" badge duration
+IDEA_MASK_VK = 0xE8         # unassigned VK for the Alt menu-mask tap (AutoHotkey's choice)
+IDEA_MASK_VKS = (0xE8, 0xFF)  # key events the guard ignores as self-sent
 
 RELAY_PUBLIC_URL = "https://data365.taildef23b.ts.net/mic"
 
@@ -485,6 +506,13 @@ from PIL import Image, ImageDraw
 import pystray
 from pynput import keyboard
 from pynput.keyboard import Key, Controller as KeyboardController
+
+# Idea capture: which pynput keys count as Ctrl / Alt (AltGr arrives as
+# LCtrl+RAlt, so it is naturally part of the combo - the 0.35 s alone-hold
+# guard is what keeps Ctrl+Alt+<key> app shortcuts out).
+_CTRL_KEYS = (Key.ctrl, Key.ctrl_l, Key.ctrl_r)
+_ALT_KEYS = (Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr)
+_RALT_KEYS = (Key.alt_r, Key.alt_gr)  # "right_alt" mode (AltGr = Right Alt too)
 
 import winsound
 
@@ -1155,6 +1183,7 @@ class RecordingBadge:
         "recording": ("#DC2626", "● Yozilyapti"),
         "transcribing": ("#16A34A", "… Matnga aylanmoqda"),
         "clipboard": ("#2563EB", "Nusxalandi: Ctrl+V"),
+        "saved": ("#16A34A", "✓ Saqlandi"),
     }
 
     WIDTH, HEIGHT, TOP_GAP = 170, 34, 12
@@ -1520,6 +1549,9 @@ RELAY_LOCK_SEC = 60        # lockout length (the endpoint is on the public inter
 # The Funnel strips the /mic prefix; accept both spellings.
 RELAY_CMD_PATHS = ("/cmd", "/mic/cmd")
 RELAY_ACK_PATHS = ("/ack", "/mic/ack")
+# Phone idea capture: the phone fetches the TickTick token + Kiruvchi project
+# id at pairing (and again on 401) instead of typing them on a broken screen.
+RELAY_TICKTICK_PATHS = ("/ticktick", "/mic/ticktick")
 RELAY_CMD_WAIT = 20        # default long-poll length (s)
 RELAY_CMD_WAIT_MAX = 25    # cap - the phone's read timeout is 35 s
 PHONE_SEEN_SEC = 3         # parked poll, or a poll within this window = phone connected
@@ -1580,11 +1612,35 @@ class RelayHandler(BaseHTTPRequestHandler):
         if parts.path in RELAY_CMD_PATHS:
             self._poll_cmd(parse_qs(parts.query))
             return
+        if parts.path in RELAY_TICKTICK_PATHS:
+            self._ticktick(parse_qs(parts.query))
+            return
         # Health check only - no token, no data.
         if parts.path in RELAY_PING_PATHS:
             self._reply(200, {"ok": True, "app": "gemini-mic"})
         else:
             self._reply(404, {"ok": False, "error": "path"})
+
+    def _ticktick(self, query):
+        """Same token check as /cmd. Returns the TickTick access token and the
+        Kiruvchi project id for the phone. 404 when the token file is missing.
+        The token is in the REPLY (the phone needs it) but never in the log."""
+        if not self._token_ok((query.get("token") or [""])[0]):
+            return
+        import capture.ticktick as ticktick
+        try:
+            token = ticktick.load_token()
+        except (OSError, ValueError, KeyError):
+            self._reply(404, {"ok": False, "error": "no_token"})
+            return
+        try:
+            kiruvchi = ticktick.find_or_create_project(ticktick.KIRUVCHI, token=token)
+        except ticktick.TickTickError as e:
+            log("relay: /ticktick error %s" % e.status)
+            self._reply(502, {"ok": False, "error": "ticktick"})
+            return
+        self._reply(200, {"ok": True, "access_token": token,
+                          "kiruvchi_id": kiruvchi})
 
     def _poll_cmd(self, query):
         """Phone long-poll: reply with the DESIRED state {"state", "seq"} at once
@@ -1747,6 +1803,9 @@ def relay_set_state(server, state, discard=False):
 # ---------------------------------------------------------------------------
 
 class GeminiMicApp:
+    _idea_engaged = False
+    idea_enabled = False  # __init__ sets the real value; old test fixtures skip __init__
+    idea_active = False
     def __init__(self):
         self.cfg = load_config()
         self.lock = threading.Lock()
@@ -1801,6 +1860,21 @@ class GeminiMicApp:
         self.phone_falling_back = False  # no ack / 60 s cap -> local mic is starting
         self.phone_start_seq = 0      # seq of the current session's "recording" (0 = not sent)
         self.phone_stopped_seq = 0    # highest seq the phone acked "stopped" for
+        # Idea capture (Ctrl+Alt hold -> TickTick "📥 Kiruvchi"; never pasted,
+        # never the clipboard, never the phone relay - always the local mic).
+        self.idea_enabled = bool(str(
+            self.cfg.get("idea_hotkey", DEFAULT_CONFIG["idea_hotkey"])).strip())
+        self._idea_ctrl = set()     # Ctrl keys currently down
+        self._idea_alt = set()      # Alt keys currently down
+        self._idea_others = set()   # "right_alt" mode: every other key down
+        self._idea_ctrl_l_at = 0.0  # when Left Ctrl last went down (AltGr check)
+        self._idea_clean = True     # no other key since the combo's first half
+        self._idea_timer = None     # the 0.35 s alone-hold guard timer
+        self._idea_engaged = False  # an idea take is live (release -> TickTick)
+        self.idea_active = False    # the recording being taken is an idea take
+        self._idea_kiruvchi_id = None  # cached TickTick "📥 Kiruvchi" project id
+        self._idea_outbox_thread = None
+        self._idea_outbox_resume()
 
     # -- config -----------------------------------------------------------
 
@@ -1812,6 +1886,8 @@ class GeminiMicApp:
         with self.lock:
             self.cfg = dict(new_cfg)
             self.hotkey_target = parse_hotkey(self.cfg.get("hotkey", DEFAULT_CONFIG["hotkey"]))
+            self.idea_enabled = bool(str(
+                self.cfg.get("idea_hotkey", DEFAULT_CONFIG["idea_hotkey"])).strip())
 
     # -- tray icon ----------------------------------------------------------
 
@@ -2174,7 +2250,7 @@ class GeminiMicApp:
         blocks = judged()
         return bool(blocks) and max(int(np.abs(b.astype(np.int32)).max()) for b in blocks) <= limit
 
-    def start_recording(self):
+    def start_recording(self, idea=False):
         # The stream normally already runs; this only repairs it (device
         # unplugged, first run) — the instant-start property comes from the ring.
         if not self.ensure_stream():
@@ -2187,6 +2263,7 @@ class GeminiMicApp:
                 return
             self.record_gen += 1
             gen = self.record_gen
+            self.idea_active = bool(idea)  # idea take: transcript -> TickTick
             # Seed with the last PRE_ROLL_SEC from the ring so speech that began
             # at (or just before) the key press is not lost.
             ring = list(self.ring)
@@ -2202,8 +2279,9 @@ class GeminiMicApp:
             self.last_dictation = self.record_start  # idle-release clock
         self.set_state("recording")
 
-        if not self.hotkey_down:
+        if not (self.hotkey_down or (self.idea_active and self._idea_engaged)):
             # tap-release race: key already up — discard via the duration gate
+            # (an idea take counts as held only while its Alt/Ctrl+Alt is down)
             self.stop_recording_and_transcribe()
             return
 
@@ -2221,7 +2299,8 @@ class GeminiMicApp:
                 log("auto-rollover: chunk %d finished at %ds, key still held -> next chunk"
                     % (self.chunk_chain, AUTO_STOP_SEC))
                 self.stop_recording_and_transcribe()
-                self.start_recording()  # ring pre-roll bridges the boundary word
+                # the rollover chunk keeps the take's mode (idea -> TickTick)
+                self.start_recording(idea=self.idea_active)  # ring pre-roll bridges the word
             else:
                 if self.hotkey_down:
                     log("auto-stop: chunk chain cap %d reached (stuck key?)" % MAX_CHUNK_CHAIN)
@@ -2248,6 +2327,7 @@ class GeminiMicApp:
             duration = time.monotonic() - self.record_start
             self.last_dictation = time.monotonic()  # idle-release counts from the END
             frames = self.frames
+            idea = self.idea_active  # idea take: no paste, no clipboard
             self.frames = []
         # the persistent stream stays open — only the recording flag flips
 
@@ -2306,7 +2386,9 @@ class GeminiMicApp:
         if not self.recording:
             # during a rollover the next chunk is already recording — keep that state
             self.set_state("transcribing")
-        self.jobs.put(wav_bytes)
+        # idea chunks ride the same FIFO as ("relay", text); the worker sends
+        # them to TickTick instead of paste_text
+        self.jobs.put(("idea", wav_bytes) if idea else wav_bytes)
 
     def _job_worker(self):
         """Single FIFO consumer: transcribe+paste chunks strictly in spoken order.
@@ -2328,7 +2410,11 @@ class GeminiMicApp:
                 if isinstance(job, tuple) and job[0] == "relay":
                     self.paste_text(job[1])  # no done beep, as below
                     continue
-                wav_bytes = job
+                # ("idea", wav): idea take - the transcript goes to TickTick,
+                # NEVER to paste_text or the clipboard (the branch below is
+                # the exact point where the idea path splits from pasting)
+                idea = isinstance(job, tuple) and job[0] == "idea"
+                wav_bytes = job[1] if idea else job
                 cfg = self.get_config()
                 log("gemini: calling model=%s" % cfg.get("model", DEFAULT_CONFIG["model"]))
                 vocabulary = cfg.get("vocabulary", [])
@@ -2343,8 +2429,11 @@ class GeminiMicApp:
                     cfg.get("openrouter_api_key", ""),
                 )
                 log("gemini: transcript %d chars" % len(transcript))
-                log("gemini: text=%r" % transcript[:300])
-                self.paste_text(transcript)
+                if idea:
+                    self.idea_capture(transcript)  # TickTick, not the clipboard
+                else:
+                    log("gemini: text=%r" % transcript[:300])
+                    self.paste_text(transcript)
                 # no "done" beep (owner 2026-11-05: "tugaganda ham tiqillayapti. Men kutib
                 # qolyapman") - he waited for it between takes; the pasted text is the cue
             except GeminiError as e:
@@ -2443,9 +2532,302 @@ class GeminiMicApp:
             except Exception:
                 pass
 
+    # -- idea capture (Ctrl+Alt hold -> TickTick) ----------------------------
+
+    def idea_capture(self, text):
+        """Idea take finished: post the raw transcript to the TickTick
+        "📥 Kiruvchi" list. On ANY TickTick error the note is appended to
+        idea-outbox.jsonl (a background thread retries every 60 s); the badge
+        shows "Saqlandi" either way - the text is safe on disk. It is NEVER
+        pasted or placed on the clipboard."""
+        text = (text or "").strip()
+        if not text:
+            return
+        title = " ".join(text.split())[:60]
+        content = text + "\n\n[manba: PC %s]" % time.strftime("%H:%M")
+        try:
+            self._idea_post(title, content)
+        except Exception as e:
+            log("idea: ticktick error %s -> outbox" % getattr(e, "status", type(e).__name__))
+            self._idea_outbox_append({"text": content, "at": time.strftime("%Y-%m-%dT%H:%M:%S")})
+        # the note is on disk either way (TickTick or the outbox)
+        if self.badge is not None:
+            self.badge.show("saved")
+            threading.Timer(IDEA_BADGE_SEC,
+                            lambda: (not self.recording) and self.badge.hide()).start()
+
+    _idea_outbox_lock = threading.Lock()  # file access only - NEVER held during HTTP
+    _idea_outbox_start_lock = threading.Lock()
+
+    def _idea_post(self, title, content):
+        """create_task in Kiruvchi; the project id is resolved once, cached."""
+        import capture.ticktick as ticktick
+        pid = self._idea_kiruvchi_id
+        if not pid:
+            pid = ticktick.find_or_create_project(ticktick.KIRUVCHI)
+            self._idea_kiruvchi_id = pid
+        try:
+            ticktick.create_task(pid, title, content)
+        except ticktick.TickTickError:
+            self._idea_kiruvchi_id = None  # list may be gone/renamed: re-resolve
+            raise
+
+    def _idea_outbox_resume(self):
+        """App start: lines left from before a restart start the retry loop."""
+        try:
+            if os.path.getsize(IDEA_OUTBOX_PATH) > 0:
+                self._idea_outbox_start()
+        except OSError:
+            pass
+
+    def _idea_outbox_start(self):
+        """Start the 60 s retry loop once (on a first queued line, and at app
+        start when lines from before a restart are waiting)."""
+        with self._idea_outbox_start_lock:
+            if self._idea_outbox_thread is None:
+                self._idea_outbox_thread = threading.Thread(
+                    target=self._idea_outbox_loop, daemon=True)
+                self._idea_outbox_thread.start()
+
+    def _idea_outbox_append(self, obj):
+        try:
+            os.makedirs(CONFIG_DIR, exist_ok=True)
+            with self._idea_outbox_lock:
+                with open(IDEA_OUTBOX_PATH, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+        except OSError as e:
+            log("idea: outbox write failed %r" % (e,))
+            return
+        self._idea_outbox_start()
+
+    def _idea_outbox_loop(self):
+        """Retry the outbox every 60 s; a line is removed only after a 2xx."""
+        while True:
+            time.sleep(IDEA_OUTBOX_RETRY_SEC)
+            try:
+                self._idea_outbox_flush()
+            except Exception as e:  # never let the retry thread die
+                log("idea: outbox retry %r" % (e,))
+
+    def _idea_outbox_remove(self, line):
+        """Drop ONE delivered line (right after its 2xx), re-reading the file
+        so lines appended meanwhile survive. File access only, under the lock."""
+        with self._idea_outbox_lock:
+            try:
+                with open(IDEA_OUTBOX_PATH, "r", encoding="utf-8") as f:
+                    lines = [ln for ln in f.read().splitlines() if ln.strip()]
+            except OSError:
+                return
+            if line in lines:
+                lines.remove(line)
+            tmp = IDEA_OUTBOX_PATH + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
+                for ln in lines:
+                    f.write(ln + "\n")
+            os.replace(tmp, IDEA_OUTBOX_PATH)  # atomic: no line lost mid-write
+
+    def _idea_outbox_flush(self):
+        """Snapshot under the lock, then post with NO lock held (a 15 s
+        TickTick timeout must not stall an append or the job worker); each
+        line is removed right after its own 2xx."""
+        with self._idea_outbox_lock:
+            try:
+                with open(IDEA_OUTBOX_PATH, "r", encoding="utf-8") as f:
+                    lines = [ln for ln in f.read().splitlines() if ln.strip()]
+            except OSError:
+                return  # nothing queued
+        for ln in lines:
+            try:
+                text = json.loads(ln)["text"]
+            except (ValueError, KeyError, TypeError):
+                continue  # unreadable line: keep it, never delete data
+            try:
+                self._idea_post(" ".join(text.split())[:60], text)
+            except Exception:
+                continue  # still failing: try again next round
+            log("idea: outbox line delivered")
+            self._idea_outbox_remove(ln)
+
+
     # -- hotkey listener ----------------------------------------------------
 
+    # Idea-hotkey guard (review 11-08: he is a video editor; Ctrl+Alt+<key>
+    # are app shortcuts and AltGr arrives as LCtrl+RAlt). Recording engages
+    # only after Ctrl+Alt are held ALONE for IDEA_HOLD_SEC; ANY other key
+    # while both are held - before or after the timer - silently discards
+    # (no transcription, no text anywhere). Right Ctrl ALONE keeps today's
+    # paste behaviour exactly; Right Ctrl + Alt is the idea path.
+
+    def _idea_mode(self):
+        """"right_alt" (default: Right Alt held ALONE) or "ctrl+alt"."""
+        mode = str(self.cfg.get("idea_hotkey", DEFAULT_CONFIG["idea_hotkey"])).strip().lower()
+        return "ctrl+alt" if mode in ("ctrl+alt", "alt+ctrl") else "right_alt"
+
+    def _idea_is_mask_key(self, key):
+        """Our own menu-mask tap (and nothing else) - the guard ignores it."""
+        return getattr(key, "vk", None) in IDEA_MASK_VKS
+
+    def _idea_send_mask(self):
+        """Windows opens the window's menu bar when Alt is released with no
+        other key pressed in between (the AutoHotkey "menu mask key" problem).
+        One neutral key tap (VK 0xE8, unassigned) while Alt is still down
+        cancels that; _idea_is_mask_key keeps our own tap out of the guard."""
+        try:
+            import ctypes
+            ke = ctypes.windll.user32.keybd_event
+            ke(IDEA_MASK_VK, 0, 0, 0)
+            ke(IDEA_MASK_VK, 0, 2, 0)  # KEYEVENTF_KEYUP
+        except Exception as e:
+            log("idea: menu mask failed %r" % (e,))
+
+    def _idea_track_press(self, key):
+        """Feed every key-down into the idea guard. Always returns True
+        (tracking never swallows the key from the normal hotkey path)."""
+        if not self.idea_enabled or self._idea_is_mask_key(key):
+            return True
+        if self._idea_mode() == "right_alt":
+            return self._idea_press_right_alt(key)
+        if key in _CTRL_KEYS:
+            self._idea_ctrl.add(key)
+            self._idea_combo_check()
+            return True
+        if key in _ALT_KEYS:
+            self._idea_alt.add(key)
+            self._idea_combo_check()
+            return True
+        # any other key: the combo is dirty
+        self._idea_clean = False
+        self._idea_cancel_timer()
+        if self._idea_engaged:
+            self._idea_discard()
+        return True
+
+    def _idea_press_right_alt(self, key):
+        """Right Alt held ALONE. A key already down when Alt goes down, or any
+        key pressed while it is held (before or after the 0.35 s timer), makes
+        the hold dirty -> silent discard. AltGr layouts send a fake Left Ctrl
+        just before Right Alt: that one is not "another key"."""
+        now = time.monotonic()
+        if key in _RALT_KEYS:
+            if key in self._idea_alt:
+                return True  # auto-repeat
+            # AltGr = synthetic Left Ctrl + Right Alt (alt_r OR alt_gr,
+            # whatever pynput calls it): that Ctrl is not "another key"
+            if (Key.ctrl_l in self._idea_others
+                    and now - self._idea_ctrl_l_at < 0.05):
+                self._idea_others.discard(Key.ctrl_l)  # AltGr's fake Ctrl
+            self._idea_alt.add(key)
+            self._idea_clean = not self._idea_others
+            if self._idea_clean:
+                self._idea_combo_check()
+            return True
+        self._idea_others.add(key)
+        if key == Key.ctrl_l:
+            self._idea_ctrl_l_at = now
+        if self._idea_alt:
+            self._idea_clean = False
+            self._idea_cancel_timer()
+            if self._idea_engaged:
+                self._idea_discard()
+        return True
+
+    def _idea_track_release(self, key):
+        if not self.idea_enabled or self._idea_is_mask_key(key):
+            return
+        right_alt = self._idea_mode() == "right_alt"
+        if right_alt:
+            ctrl = False
+            alt = key in _RALT_KEYS
+            if not alt:
+                self._idea_others.discard(key)
+        else:
+            ctrl = key in _CTRL_KEYS
+            alt = key in _ALT_KEYS
+        if ctrl:
+            self._idea_ctrl.discard(key)
+        if alt:
+            self._idea_alt.discard(key)
+        if ctrl or alt:
+            self._idea_cancel_timer()
+            if not (self._idea_alt and (right_alt or self._idea_ctrl)):
+                self._idea_clean = True  # combo disbands: the next one is fresh
+            if self._idea_engaged:
+                # release of Ctrl or Alt ends the idea take -> transcribe
+                self._idea_engaged = False
+                if self.recording:
+                    threading.Thread(
+                        target=self._stop_after_tail,
+                        args=(self.record_gen, True), daemon=True).start()
+
+    def _idea_combo_check(self):
+        """Hold complete (both halves, or Right Alt): arm the alone-hold
+        timer (once per hold)."""
+        complete = bool(self._idea_alt) and (
+            self._idea_mode() == "right_alt" or bool(self._idea_ctrl))
+        if complete:
+            if (self._idea_clean and not self._idea_engaged
+                    and self._idea_timer is None):
+                timer = threading.Timer(IDEA_HOLD_SEC, self._idea_timer_fire)
+                timer.daemon = True
+                self._idea_timer = timer
+                timer.start()
+
+    def _idea_cancel_timer(self):
+        timer, self._idea_timer = self._idea_timer, None
+        if timer is not None:
+            timer.cancel()
+
+    def _idea_timer_fire(self):
+        self._idea_timer = None
+        held = bool(self._idea_alt) and (
+            self._idea_mode() == "right_alt" or bool(self._idea_ctrl))
+        if not (held and self._idea_clean):
+            return  # a key or a release raced the timer
+        if self._idea_engaged or not self.idea_enabled:
+            return
+        if self.recording:
+            # a Right Ctrl (paste) take is running: it must stay a paste take
+            log("idea: not engaged (a dictation take is running)")
+            return
+        self._idea_engaged = True
+        if self._idea_mode() == "right_alt":
+            self._idea_send_mask()  # Alt-up must not open the window menu
+        # Idea takes are ALWAYS the local mic: end any phone session first.
+        with self.phone_lock:
+            phone = self.phone_recording
+            self.phone_recording = False
+            self.phone_gen += 1  # a pending _phone_start must go stale
+            self.phone_falling_back = False
+        if (phone or self.phone_start_seq) and self.relay_server is not None:
+            try:
+                self.phone_cmd("cancel")
+            except Exception:
+                pass
+            self.phone_start_seq = 0
+        # idea_active is set by start_recording itself, under its lock, only
+        # if THIS call really starts the take (a paste take that wins the race
+        # must never be flipped into an idea take)
+        threading.Thread(target=self.start_recording, args=(True,),
+                         daemon=True).start()
+        log("idea: engaged")
+
+    def _idea_discard(self):
+        """Another key went down while Ctrl+Alt held: drop the take silently
+        (no transcription, no paste, no clipboard, no TickTick)."""
+        self._idea_cancel_timer()
+        self._idea_engaged = False
+        self.idea_active = False
+        with self.lock:
+            drop = self.recording
+            self.recording = False
+            self.frames = []
+            self.record_gen += 1  # stale watchdogs/tails must not touch it
+        if drop:
+            log("idea: discarded (other key while Ctrl+Alt held)")
+        self.set_state("idle")
+
     def _on_press(self, key):
+        self._idea_track_press(key)
         if key_matches(key, self.hotkey_target):
             was_down = self.hotkey_down
             self.hotkey_down = True
@@ -2473,6 +2855,7 @@ class GeminiMicApp:
             # ignore auto-repeat while already recording
 
     def _on_release(self, key):
+        self._idea_track_release(key)
         if key_matches(key, self.hotkey_target):
             self.hotkey_down = False
             self.chunk_chain = 0  # a real release ends any auto-rollover chain
@@ -2492,10 +2875,14 @@ class GeminiMicApp:
             if self.recording:
                 threading.Thread(target=self._stop_after_tail, args=(self.record_gen,), daemon=True).start()
 
-    def _stop_after_tail(self, gen):
+    def _stop_after_tail(self, gen, idea=False):
         time.sleep(RELEASE_TAIL_SEC)
-        # pressed again inside the tail: the same take simply continues
-        if self.hotkey_down or self.record_gen != gen:
+        if self.record_gen != gen:
+            return
+        # pressed again inside the tail: the same take simply continues.
+        # An idea take ends on ANY Ctrl/Alt release, so only a re-held paste
+        # hotkey keeps a normal take going.
+        if self.hotkey_down and not idea:
             return
         self.stop_recording_and_transcribe()
 
