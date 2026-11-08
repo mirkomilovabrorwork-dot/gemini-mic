@@ -19,6 +19,10 @@ Owner's later recorded refinements (his words, not scope invention):
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
 
+## 2026-11-08 22:00 - USB-C EarPods
+- config input_device now "EarPods|MICUSB1|USB MIC|Microphone Array|WH-1000XM5" (owner: plugged mic/headset wins, else laptop). 1 live take 22:00: text exact, rms 799 at max gain 6x (laptop ~2000) - quiet but clean.
+- My 2-mic parallel MME test script garbled audio (Gemini hallucinated) - don't reuse; test via the app itself.
+
 ## 2026-11-08 20:15 - lost takes, chime, net outage, restart cut (5583d18 and earlier)
 - Mic: any live mic ranked above the current one wins (396f0d1). TickTick chime muted 89% -> gate guard 0.7 (4f1ddf1).
 - Slow/stuck call: read timeout 15+0.2*s; blue clipboard badge when no paste target (2929791, 472ea34).
@@ -167,6 +171,7 @@ Owner's later recorded refinements (his words, not scope invention):
   3-flash-preview is the owner's own pick (code comment) -> switch only on his yes.
 
 ## OWNER TODOs
+- Qiling: brauzerda ochilgan Claude sahifasida "Authorize" bosing; kod chiqsa, Terminal'dagi "Claude login" oynasiga qo'yib Enter | Ko'rasiz: oynada "Login successful" | undo: claude auth logout (g'oyalarni tartiblash obunangizda ishlashi uchun) (since 2026-11-08)
 - (since 2026-11-06) Last ElevenLabs copy gSNFitP4zpS49FoeI1Wz (41 s, source unknown). Men tanladim: separate named group in the delete script. UZ: Qiling: python D:\vibecoding\gemini-mic\tools\delete_vendor_copies.py ishga tushiring, yes yozing | Ko'rasiz: o'chdi (404) | undo: yes yozmasangiz hech narsa o'chmaydi
 - (since 2026-11-06) OpenRouter logging check. UZ: Qiling: openrouter.ai/settings/preferences oching | Ko'rasiz: prompt logging o'chiq turibdi | undo: faqat ko'rish, hech narsa o'zgarmaydi
 
@@ -176,7 +181,7 @@ Owner's later recorded refinements (his words, not scope invention):
 - beep 0.5 s lead (6c96c56) | lab-only, live app has it; he has not confirmed or complained | tells me only if the beep is missing | siz
 - accuracy | 3-flash live; main'ga, issue'larni still wrong (test 2) | his order: work on English words; 3.8 retry = config model gemini-3.8-flash | men
 - quiet speech | rumble cut live 83793f7; mic close since 11-05 12:42 | field proof on his real soft voice still absent; watch | men
-- idea capture (2nd hotkey + phone Vol-UP -> TickTick "G'oyalar", daily A/B/C triage) | 11-08 owner "boshlayver"; spec docs/IDEA_CAPTURE_SPEC.md (agy-reviewed, 8/10 folded); GLM building _handoff/2026-11-08-idea-capture-{pc,android}.md; TickTick auth now asks tasks:write (backup scratchpad) | review diffs, register processor task, live test, CI APK | men (+ owner: Allow click)
+- idea capture (Right Alt hold + phone Vol-DOWN hold -> TickTick Kiruvchi -> Sonnet sorts to G'oyalar/Vazifalar; 10-min takes, audio queued offline + JobScheduler, 3-model chain) | 11-08 21:50 code DONE uncommitted, 4 blind reviews folded (pytest 100 pass; local Java test ALL PASS; known limit: service destroy/kill mid-post may duplicate one note, never lose); headless claude CLI not logged in -> owner login pending (terminal 'Claude login') | after login: live processor test, register 2-min processor task, PC hotkey live test via restart_when_idle, commit+CI APK (ask owner), phone test | men (+ owner: Authorize)
 - only-my-voice | MICUSB1 close to him, leaks 0/8; XM5 0/6 but more own-word errors | 'mic too far' warning = offer, his call | siz
 - stray gemini_mic.py | empty untracked file in repo root | delete on his word | siz
 
