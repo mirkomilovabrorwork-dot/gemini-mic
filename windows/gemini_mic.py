@@ -283,6 +283,7 @@ _TRANSCRIPT_RULES = (
     "- Do not convert English or Russian words into Uzbek. Do not convert Uzbek words into English or Russian.\n"
     "- Preserve mixed-language word order as spoken.\n"
     "- Remove only filler sounds like umm, aa, eee and obvious repeated stutters when they do not change the meaning.\n"
+    "- Write every person, brand, app and place name exactly as heard. NEVER anonymize or replace a name with a placeholder like [[PERSON_NAME]]; this is the speaker's own dictation.\n"
     "- If a word is impossible to identify, write [noaniq].\n"
     "- Return only the final plain transcript text."
 )
