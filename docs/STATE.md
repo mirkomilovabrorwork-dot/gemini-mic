@@ -21,6 +21,7 @@ Owner's later recorded refinements (his words, not scope invention):
 
 ## 2026-11-08 22:00 - USB-C EarPods
 - config input_device now "EarPods|MICUSB1|USB MIC|Microphone Array|WH-1000XM5" (owner: plugged mic/headset wins, else laptop). 1 live take 22:00: text exact, rms 799 at max gain 6x (laptop ~2000) - quiet but clean.
+- Output default set to WH-1000XM5 via IPolicyConfig (scratchpad setdef.ps1); EarPods capture endpoint is 100% with 0..0 dB range - no system gain exists. Quiet-speech errors: re-run ungated 4 clips -> no consistent gain; level is not the cause (Gemini level-invariant), source SNR is.
 - My 2-mic parallel MME test script garbled audio (Gemini hallucinated) - don't reuse; test via the app itself.
 
 ## 2026-11-08 20:15 - lost takes, chime, net outage, restart cut (5583d18 and earlier)
