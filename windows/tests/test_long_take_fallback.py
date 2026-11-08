@@ -139,7 +139,7 @@ class LongTakeTimeoutTest(unittest.TestCase):
 
     def test_read_timeout_for_300s_wav(self):
         wav = b"\0" * (44 + 300 * gemini_mic.SAMPLE_RATE * 2)
-        self.assertEqual(gemini_mic.read_timeout_for(wav), 105.0)
+        self.assertEqual(gemini_mic.read_timeout_for(wav), 75.0)
 
     def test_timeout_passed_to_post_for_300s_wav(self):
         wav = b"\0" * (44 + 300 * gemini_mic.SAMPLE_RATE * 2)
@@ -157,7 +157,7 @@ class LongTakeTimeoutTest(unittest.TestCase):
         finally:
             gemini_mic.requests.post, gemini_mic.log, gemini_mic._google_cooldown_until = saved
         self.assertEqual(len(seen), 1)
-        self.assertEqual(seen[0][1], 105.0)  # read part of (connect, read)
+        self.assertEqual(seen[0][1], 75.0)  # read part of (connect, read)
 
 
 if __name__ == "__main__":

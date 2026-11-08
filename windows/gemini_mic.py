@@ -208,9 +208,12 @@ GEMINI_READ_TIMEOUT = 30
 
 def read_timeout_for(wav_bytes):
     """Read timeout that scales with the clip: a 5-minute take needs far more
-    than the 30 s baseline (a 300 s clip gets 30 + 300*0.25 = 105 s)."""
+    than a short one. 11-08: 30 + 0.25*s made a stuck OpenRouter call hold a
+    39 s take for 45 s before the fallback answered in 5 s. Slowest real answer
+    in 42 logged calls: 20 s (128 s clip), 14 s (20 s clip) -> 15 + 0.2*s
+    (39 s clip -> 22.8 s, 300 s clip -> 75 s)."""
     seconds = max(0, len(wav_bytes) - 44) / (SAMPLE_RATE * 2)
-    return GEMINI_READ_TIMEOUT + seconds * 0.25
+    return 15.0 + seconds * 0.2
 
 
 def load_config():
@@ -1142,6 +1145,7 @@ class RecordingBadge:
     STYLES = {
         "recording": ("#DC2626", "● Yozilyapti"),
         "transcribing": ("#16A34A", "… Matnga aylanmoqda"),
+        "clipboard": ("#2563EB", "📋 Nusxalandi: Ctrl+V"),
     }
 
     WIDTH, HEIGHT, TOP_GAP = 170, 34, 12
@@ -2384,7 +2388,11 @@ class GeminiMicApp:
             # apps, so — per owner — don't nag every time. Silently leave the
             # transcript in the clipboard: the start/done beeps already signal a
             # dictation happened, and a missed paste is one Ctrl+V away.
-            log("paste: no confirmed target -> transcript kept in clipboard (silent)")
+            log("paste: no confirmed target -> transcript kept in clipboard")
+            # 11-08 owner did not know if his take arrived: say it for 4 s
+            if self.badge is not None:
+                self.badge.show("clipboard")
+                threading.Timer(4.0, lambda: (not self.recording) and self.badge.hide()).start()
             return
 
         if saved_clipboard is not None:
