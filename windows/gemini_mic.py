@@ -627,6 +627,9 @@ NEAR_HOLD_SEC = 0.4
 NEAR_ATTACK_SEC = 0.1
 
 
+NEAR_GATE_MAX_MUTED = 0.7  # above this the gate locked onto a loud non-voice burst
+
+
 def near_voice_gate(audio):
     """Mute what is far quieter than the speaker's own voice (people further away)."""
     win = int(NEAR_WIN_SEC * SAMPLE_RATE)
@@ -2261,8 +2264,15 @@ class GeminiMicApp:
         # rumble removed first so a soft voice is not buried under it
         cut = highpass(audio)
         near = near_voice_gate(cut)
+        muted = float(np.mean((near == 0) & (cut != 0))) if audio.size else 0.0
         if audio.size:
-            log("near gate: muted %d%%" % round(100.0 * np.mean((near == 0) & (cut != 0))))
+            log("near gate: muted %d%%" % round(100.0 * muted))
+        # 11-08 19:35: a 2 s TickTick chime from the laptop speaker was 10x louder
+        # than his voice, became the gate's reference and muted 89% -> only one
+        # sentence came back (ungated replay = full text). Normal takes mute 8-40%.
+        if muted >= NEAR_GATE_MAX_MUTED:
+            log("near gate: muted too much -> sending ungated audio")
+            near = cut
         wav_bytes = audio_to_wav_bytes(near)
 
         # Energy-based silence gate (RMS, not a single peak): a click/breath spikes
