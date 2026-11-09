@@ -1,7 +1,7 @@
-STATUS: 11-09 idea capture saved on branch idea-capture-wip (da6aee9); tests pass
+STATUS: 11-09 sorter now GLM->Gemini (fe8f4bd on idea-capture-wip); 107 tests pass
 NEXT: siz - OK to push idea-capture-wip for the phone APK (asked again 11-09); men after - live processor test on real TickTick, Right Alt live test
-Done 11-09 17:0x: sorter = GLM glm-5.3 -> OR gemini-3-flash-preview -> Google (handoff 2026-11-09-idea-sorter-glm.md, reviewed); pytest 107 pass; live GLM smoke "glm task Javohirga qo'ng'iroq — ertaga soat 10:00 da qilish". lab-only: OR/Google steps (stubs only). Committed on idea-capture-wip.
 SIZDAN: 1 | push idea-capture-wip for APK: ha/yo'q
+Done 11-09 17:0x: sorter = GLM glm-5.3 -> OR gemini-3-flash-preview -> Google (handoff 2026-11-09-idea-sorter-glm.md, reviewed); pytest 107 pass; live GLM smoke "glm task Javohirga qo'ng'iroq — ertaga soat 10:00 da qilish". lab-only: OR/Google steps (stubs only). Committed on idea-capture-wip.
 Saved 11-09 00:40: local branch idea-capture-wip da6aee9, not pushed, main untouched. Java local ALL PASS; pytest 101 pass with windows/.venv python (system python lacks sounddevice). Left: call_claude -> GLM glm-5.3 + Gemini Flash fallback (owner 11-08: no Claude login), live processor test, 2-min task, Right Alt live test, APK via CI, phone test.
 OWNER TODO (since 2026-11-09): Qiling: "ha, yubor" deb javob bering | Ko'rasiz: telefon ilovasi fayli tayyor bo'ladi | undo: tarmoqni GitHub'dan o'chirish
 OWNER 11-09 00:50 phone test (OLD app, idea code not installed): screen off, no lock, Volume-Down hold does nothing; he wants screen-off buttons working before the PC-typing part. New code already has a screen-off MediaSession path (untested). Web 11-09: screen-off presses reach a MediaSession, but long-press with screen off is unreliable (/e/OS framework commit) -> if hold fails on his phone, fallback = press once start / press again stop (owner decision then).
