@@ -44,9 +44,10 @@ other Jarvis tasks; NOT registered by the doer - commander registers after revie
   the PC relay: NEW `GET /ticktick` on the existing relay server, same relay-token auth as /cmd, returns
   {"access_token", "kiruvchi_id"}; the phone stores both at pairing and refreshes them on 401.
 - Single instance: named mutex / lock file at start; a second run exits at once. Task Scheduler: do not start a new instance.
-- For each open task in Kiruvchi (oldest first, max 10 per run): call
-  `claude -p --model sonnet --effort high --output-format json --json-schema <schema>` (resolve claude.cmd; prompt
-  via STDIN, CREATE_NO_WINDOW, timeout 120 s) with: the raw text and now (Asia/Tashkent).
+- For each open task in Kiruvchi (oldest first, max 10 per run): POST the raw text and now (Asia/Tashkent) to the
+  AI chain GLM glm-5.3 (api.z.ai, key from C:\Users\mirko\.claude\.secrets\glm.key) -> OpenRouter
+  google/gemini-3-flash-preview -> Google gemini-3-flash-preview (keys from %APPDATA%\GeminiMic\config.json;
+  requests, timeouts 10/60 s, first provider whose answer parses as a JSON dict wins).
   Schema: {kind: idea|task|noise, title (<= 70 chars: "<short name> — <one-line takeaway>"), description (cleaned
   full text, Uzbek, his words kept), priority: high|medium|low|none, due: ISO datetime or null (only when he named a
   time/date), reminder_minutes_before: int or null}.

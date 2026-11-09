@@ -1,11 +1,11 @@
 STATUS: 11-09 idea capture saved on branch idea-capture-wip (da6aee9); tests pass
-NEXT: men - sorting brain -> GLM; siz - OK to push branch for the phone APK
-SIZDAN: 4 | push idea-capture-wip for APK: ha/yo'q
+NEXT: siz - OK to push idea-capture-wip for the phone APK (asked again 11-09); men after - live processor test on real TickTick, Right Alt live test
+Done 11-09 17:0x: sorter = GLM glm-5.3 -> OR gemini-3-flash-preview -> Google (handoff 2026-11-09-idea-sorter-glm.md, reviewed); pytest 107 pass; live GLM smoke "glm task Javohirga qo'ng'iroq — ertaga soat 10:00 da qilish". lab-only: OR/Google steps (stubs only). Committed on idea-capture-wip.
+SIZDAN: 1 | push idea-capture-wip for APK: ha/yo'q
 Saved 11-09 00:40: local branch idea-capture-wip da6aee9, not pushed, main untouched. Java local ALL PASS; pytest 101 pass with windows/.venv python (system python lacks sounddevice). Left: call_claude -> GLM glm-5.3 + Gemini Flash fallback (owner 11-08: no Claude login), live processor test, 2-min task, Right Alt live test, APK via CI, phone test.
 OWNER TODO (since 2026-11-09): Qiling: "ha, yubor" deb javob bering | Ko'rasiz: telefon ilovasi fayli tayyor bo'ladi | undo: tarmoqni GitHub'dan o'chirish
 OWNER 11-09 00:50 phone test (OLD app, idea code not installed): screen off, no lock, Volume-Down hold does nothing; he wants screen-off buttons working before the PC-typing part. New code already has a screen-off MediaSession path (untested). Web 11-09: screen-off presses reach a MediaSession, but long-press with screen off is unreliable (/e/OS framework commit) -> if hold fails on his phone, fallback = press once start / press again stop (owner decision then).
 OWNER 11-09 00:35 (his words): "ovozni pasaytirib turadigan tugma bu faqat ideyalar uchun, ovozni tepasidagisi Claude bilan gaplashish uchun, Claude-ga buyruq berish uchun" - Volume-Down hold = ideas (built); Volume-Up hold = talk/command Claude = NOT built, new thread after ideas are live.
-SIZDAN: 2 | delete script: run it, type yes
  Gemini Mic — STATE
 
 _Trigger words: "gemini mic", "gemini-mic". (bare "gemini" dropped 2026-10-20: it is also the model name and hijacked a system session) Source of truth for resume._
@@ -23,6 +23,10 @@ Owner's later recorded refinements (his words, not scope invention):
 - 2026-07-30: dictate through the BT headset when practical ("headphones yoza
   olsa yaxshiroq") — works via the pinned driver path; telephone-grade quality
   caveat stands.
+
+## 2026-11-08 23:24 - names hidden as [[PERSON_NAME]] (dictation app)
+- Model (OR gemini-3-flash-preview) anonymised names at 20:12:18 and 23:12:33; not our code. Rule added to _TRANSCRIPT_RULES (14b99fe), app restarted idle 23:24. Replays never reproduced it -> lab-only; owner reports the time if it recurs.
+- EarPods mic at 2-3 cm = clean and loud (raw ~5x vs 5-6 cm). Windows default output set to XM5 (IPolicyConfig); an EarPods replug may steal it back.
 
 ## 2026-11-08 22:00 - USB-C EarPods
 - config input_device now "EarPods|MICUSB1|USB MIC|Microphone Array|WH-1000XM5" (owner: plugged mic/headset wins, else laptop). 1 live take 22:00: text exact, rms 799 at max gain 6x (laptop ~2000) - quiet but clean.
@@ -177,9 +181,7 @@ Owner's later recorded refinements (his words, not scope invention):
   3-flash-preview is the owner's own pick (code comment) -> switch only on his yes.
 
 ## OWNER TODOs
-- (since 2026-11-08) Naushnik turi. UZ: Qiling: naushnikingiz simlimi yoki Bluetooth - bir so'z yozing | Ko'rasiz: men tugma yo'lini shunga moslayman | undo: keyin o'zgartirsangiz bas
-- (since 2026-11-06) Last ElevenLabs copy gSNFitP4zpS49FoeI1Wz (41 s, source unknown). Men tanladim: separate named group in the delete script. UZ: Qiling: python D:\vibecoding\gemini-mic\tools\delete_vendor_copies.py ishga tushiring, yes yozing | Ko'rasiz: o'chdi (404) | undo: yes yozmasangiz hech narsa o'chmaydi
-- (since 2026-11-06) OpenRouter logging check. UZ: Qiling: openrouter.ai/settings/preferences oching | Ko'rasiz: prompt logging o'chiq turibdi | undo: faqat ko'rish, hech narsa o'zgarmaydi
+Open duty: top line 5 only. Queued (ask later, in OPEN THREADS "vendor copies"): last ElevenLabs copy gSNFitP4zpS49FoeI1Wz via tools/delete_vendor_copies.py; OpenRouter prompt-logging look. Headset-type question closed 11-09 (EarPods wired + XM5).
 
 ## OPEN THREADS
 - vendor copies after the speaker test | 4 ElevenLabs copies gone (incident 11-06), last one in the owner's delete script | owner runs the script; OpenRouter setting check | siz

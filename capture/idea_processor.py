@@ -1,6 +1,7 @@
 r"""Kiruvchi queue processor: raw notes in "📥 Kiruvchi" -> tidy tasks in
-"G'oyalar" / "✅ Vazifalar", noise completed. Decisions come from Claude
-Sonnet via the local `claude` CLI (--json-schema), never from here.
+"G'oyalar" / "✅ Vazifalar", noise completed. Decisions come from GLM
+(glm-5.3), falling back to OpenRouter and then Google Gemini Flash via
+their HTTPS APIs, never from here.
 
 Run (scheduled task, hidden): python capture\idea_processor.py --once
 
@@ -8,7 +9,7 @@ Never loses a note: a task is only completed after a good answer, and the
 state file (%APPDATA%\GeminiMic\idea-state.json) is rewritten atomically
 after EVERY item, so a crash mid-run resumes exactly where it stopped.
 The parsed AI answer is stored in the state file together with the "moved"
-marker, so the update retry after a crash needs no second Claude call.
+marker, so the update retry after a crash needs no second AI call.
 
 Single instance: an exclusive byte lock on idea-processor.lock; a second
 run exits 0 at once.
@@ -21,10 +22,10 @@ import datetime
 import json
 import msvcrt
 import os
-import shutil
-import subprocess
 import sys
 import time
+
+import requests
 
 if __package__ in (None, ""):  # run as `python capture\idea_processor.py`
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -40,8 +41,9 @@ LOCK_PATH = os.path.join(APP_DIR, "idea-processor.lock")
 
 TZ_NAME = "Asia/Tashkent"
 MAX_TASKS_PER_RUN = 10
-MAX_FAILS = 3          # code-check/CLI failures before "ai-xato" and skip
-CLAUDE_TIMEOUT = 120   # s
+MAX_FAILS = 3          # code-check/AI failures before "ai-xato" and skip
+GLM_KEY_FILE = r"C:\Users\mirko\.claude\.secrets\glm.key"  # READ ONLY
+HTTP_TIMEOUT = (10, 60)  # s: (connect, read)
 PRIORITY_MAP = {"high": 5, "medium": 3, "low": 1, "none": 0}
 KINDS = ("idea", "task", "noise")
 
@@ -67,7 +69,7 @@ SCHEMA_JSON = json.dumps(SCHEMA, ensure_ascii=False)
 
 
 class AiError(Exception):
-    """The claude CLI could not be run / answered no usable JSON."""
+    """No AI provider in the chain could be run / answered usable JSON."""
 
 
 def now_local():
@@ -149,73 +151,125 @@ def acquire_lock(path=None):
     return f
 
 
-# -- claude CLI -----------------------------------------------------------
+# -- AI provider chain: GLM -> OpenRouter -> Google ------------------------
 
 
-def claude_exe():
-    return shutil.which("claude.cmd") or shutil.which("claude")
-
-
-def parse_cli_json(stdout):
-    """The -p --output-format json envelope carries the model's structured
-    answer BOTH as `structured_output` (object, preferred) and as `result`
-    (the same object serialized to a JSON string). Verified against the real
-    CLI 2.1.306: probe 2026-11-08 returned
-    {"result":"{\"kind\":\"greeting\"}","structured_output":{"kind":"greeting"},...}
-    """
+def _glm_key():
+    """Stripped text of the GLM key file; '' when missing/unreadable.
+    Path overridable by env GEMINIMIC_GLM_KEY_FILE (tests)."""
+    path = os.environ.get("GEMINIMIC_GLM_KEY_FILE") or GLM_KEY_FILE
     try:
-        envelope = json.loads(stdout)
-    except ValueError:
-        raise AiError("envelope not JSON")
-    if not isinstance(envelope, dict):
-        raise AiError("envelope not an object")
-    so = envelope.get("structured_output")
-    if isinstance(so, dict):
-        return so
-    raw = envelope.get("result")
-    if isinstance(raw, str):
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def _config():
+    """%APPDATA%\\GeminiMic\\config.json as a dict; {} when missing/bad."""
+    try:
+        with open(os.path.join(APP_DIR, "config.json"), "r",
+                  encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _extract_json(text):
+    """Model answer text -> dict. Strips ```json fences; else takes the
+    first `{` .. matching last `}`. Anything else fails the step."""
+    s = (text or "").strip()
+    if "```" in s:
+        lines = s.splitlines()
+        if lines and lines[0].lstrip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].lstrip().startswith("```"):
+            lines = lines[:-1]
+        s = "\n".join(lines).strip()
+    if not s.startswith("{"):
+        i, j = s.find("{"), s.rfind("}")
+        if i < 0 or j <= i:
+            raise AiError("no JSON object")
+        s = s[i:j + 1]
+    obj = json.loads(s)  # ValueError -> this step failed
+    if not isinstance(obj, dict):
+        raise AiError("JSON not an object")
+    return obj
+
+
+def _call_glm(prompt, key):
+    r = requests.post(
+        "https://api.z.ai/api/anthropic/v1/messages",
+        headers={"x-api-key": key, "anthropic-version": "2023-06-01",
+                 "content-type": "application/json"},
+        json={"model": "glm-5.3", "max_tokens": 2048,
+              "messages": [{"role": "user", "content": prompt}]},
+        timeout=HTTP_TIMEOUT)
+    if r.status_code != 200:
+        raise AiError("glm http %d" % r.status_code)
+    data = r.json()
+    text = "".join(b.get("text", "") for b in data.get("content", [])
+                   if isinstance(b, dict) and b.get("type") == "text")
+    return _extract_json(text)
+
+
+def _call_openrouter(prompt, key):
+    r = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={"Authorization": "Bearer " + key,
+                 "content-type": "application/json"},
+        json={"model": "google/gemini-3-flash-preview",
+              "response_format": {"type": "json_object"},
+              "messages": [{"role": "user", "content": prompt}]},
+        timeout=HTTP_TIMEOUT)
+    if r.status_code != 200:
+        raise AiError("or http %d" % r.status_code)
+    data = r.json()
+    text = data["choices"][0]["message"]["content"]
+    return _extract_json(text)
+
+
+def _call_google(prompt, key):
+    r = requests.post(
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        "gemini-3-flash-preview:generateContent",
+        headers={"x-goog-api-key": key,  # NEVER in the URL
+                 "content-type": "application/json"},
+        json={"generationConfig": {"responseMimeType": "application/json"},
+              "contents": [{"parts": [{"text": prompt}]}]},
+        timeout=HTTP_TIMEOUT)
+    if r.status_code != 200:
+        raise AiError("google http %d" % r.status_code)
+    data = r.json()
+    text = data["candidates"][0]["content"]["parts"][0]["text"]
+    return _extract_json(text)
+
+
+def call_ai(prompt):
+    """The sorter call: GLM first, OpenRouter then Google Gemini Flash as
+    fallbacks. Returns (dict, provider). Any step failure (missing key,
+    non-200, timeout, connection error, no parseable JSON object) goes to
+    the next step; all fail -> AiError."""
+    cfg = _config()
+    steps = []
+    glm_key = _glm_key()
+    if glm_key:
+        steps.append(("glm", lambda: _call_glm(prompt, glm_key)))
+    or_key = str(cfg.get("openrouter_api_key") or "").strip()
+    if or_key:
+        steps.append(("or", lambda: _call_openrouter(prompt, or_key)))
+    g_key = str(cfg.get("api_key") or "").strip()
+    if g_key:
+        steps.append(("google", lambda: _call_google(prompt, g_key)))
+    last = "no provider"
+    for name, fn in steps:
         try:
-            parsed = json.loads(raw)
-        except ValueError:
-            raise AiError("result not JSON")
-        if isinstance(parsed, dict):
-            return parsed
-    raise AiError("no structured result in envelope")
-
-
-def claude_env():
-    """Environment for the CLI: a copy of ours WITHOUT every ANTHROPIC_* and
-    CLAUDE* variable except CLAUDE_CODE_OAUTH_TOKEN (same rule as
-    weekly-update-scan.ps1). ANTHROPIC_API_KEY would bill the paid API instead
-    of the owner's subscription; ANTHROPIC_BASE_URL and friends inherited from
-    a desktop host make the headless CLI answer "Not logged in"."""
-    env = dict(os.environ)
-    for k in list(env):
-        u = k.upper()
-        if (u.startswith("ANTHROPIC_") or u.startswith("CLAUDE")) \
-                and u != "CLAUDE_CODE_OAUTH_TOKEN":
-            del env[k]
-    return env
-
-
-def call_claude(prompt):
-    """One sonnet call with the schema; returns the model's dict."""
-    exe = claude_exe()
-    if not exe:
-        raise AiError("claude CLI not found")
-    CREATE_NO_WINDOW = 0x08000000
-    try:
-        proc = subprocess.run(
-            [exe, "-p", "--model", "sonnet", "--effort", "high",
-             "--output-format", "json", "--json-schema", SCHEMA_JSON],
-            input=prompt, text=True, encoding="utf-8", capture_output=True,
-            timeout=CLAUDE_TIMEOUT, creationflags=CREATE_NO_WINDOW,
-            env=claude_env())
-    except (OSError, subprocess.TimeoutExpired) as e:
-        raise AiError(type(e).__name__) from None
-    if proc.returncode != 0:
-        raise AiError("cli exit %d" % proc.returncode)
-    return parse_cli_json(proc.stdout)
+            return fn(), name
+        except (AiError, ValueError, TypeError, KeyError, IndexError,
+                OSError, requests.RequestException) as e:
+            last = "%s %s" % (name, e)
+    raise AiError(last)
 
 
 def build_prompt(raw_title, raw_content, now):
@@ -239,9 +293,11 @@ def build_prompt(raw_title, raw_content, now):
         "- reminder_minutes_before: due bo'lsa eslatma necha daqiqa oldin "
         "(0..1440), aks holda null.\n\n"
         "Hozirgi vaqt (%s): %s\n\n"
-        "XOM eslatma sarlavhasi: %s\nXOM eslatma matni:\n%s"
+        "XOM eslatma sarlavhasi: %s\nXOM eslatma matni:\n%s\n\n"
+        "Javobni FAQAT bitta JSON obyekt sifatida qaytar, boshqa matnsiz, "
+        "quyidagi sxema bo'yicha:\n%s"
         % (TZ_NAME, now.strftime("%Y-%m-%d %H:%M (%A)"), raw_title,
-           raw_content or "(bo'sh)")
+           raw_content or "(bo'sh)", SCHEMA_JSON)
     )
 
 
@@ -405,7 +461,7 @@ def _task_sort_key(t):
 
 def retry_moved(state, now=None):
     """Finish tasks a crashed run left half-way, with the STORED answer (no
-    new Claude call). 'moving' = the answer was saved but the move may or may
+    new AI call). 'moving' = the answer was saved but the move may or may
     not have happened: redo the move, tolerating 'already moved'. 'moved' =
     the move is done: update. The update goes straight to the target list
     (no project_tasks pre-filter, which could hide a moved task); 404 means
@@ -460,7 +516,7 @@ def retry_moved(state, now=None):
 
 
 def process_tasks(state, now=None):
-    """Open Kiruvchi tasks, oldest first, max 10: Claude -> code check ->
+    """Open Kiruvchi tasks, oldest first, max 10: AI -> code check ->
     move FIRST -> update. Every step saves the state file."""
     now = now or now_local()
     kiruvchi = resolve_project(state, ticktick.KIRUVCHI)
@@ -500,11 +556,13 @@ def process_tasks(state, now=None):
         t0 = time.monotonic()
 
         stored = results.get(task_id)
+        provider = None
         if stored:  # a saved answer from an earlier crashed run
             res = stored["ai"]
         else:
             try:
-                res = call_claude(build_prompt(raw_title, raw_content, now))
+                res, provider = call_ai(build_prompt(raw_title, raw_content,
+                                                     now))
             except AiError as e:
                 fails[task_id] = fails.get(task_id, 0) + 1
                 save_state(state)
@@ -520,12 +578,13 @@ def process_tasks(state, now=None):
             continue
         ms = int((time.monotonic() - t0) * 1000)
         kind = res["kind"]
+        ok_code = "ok" if provider is None else "ok %s" % provider
         try:
             if kind == "noise":
                 ticktick.complete_task(kiruvchi, task_id)
                 done[task_id] = "done"
                 save_state(state)
-                log_line(task_id, kind, ms, "ok")
+                log_line(task_id, kind, ms, ok_code)
             else:
                 target = targets[kind]
                 # answer + target saved BEFORE the move: a crash right after
@@ -542,7 +601,7 @@ def process_tasks(state, now=None):
                                      update_fields(res, raw_content, now))
                 done[task_id] = "done"
                 save_state(state)
-                log_line(task_id, kind, ms, "ok")
+                log_line(task_id, kind, ms, ok_code)
         except ticktick.TickTickError as e:
             log_line(task_id, kind, ms, "err %s" % e.status)
             if e.status == 404:
