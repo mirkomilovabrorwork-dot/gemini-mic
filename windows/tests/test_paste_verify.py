@@ -65,7 +65,7 @@ def test_landed_restores_old_clipboard_no_badge():
 
 def test_not_landed_keeps_transcript_and_shows_clipboard_badge():
     badge = mock.Mock()
-    copies = run_paste(True, ["eski matn", "eski matn"], badge)  # readable, unchanged
+    copies = run_paste(True, ["eski matn", "eski matn", "eski matn"], badge)  # readable, unchanged
     assert copies == [TEXT]                      # transcript kept, NO restore
     badge.show.assert_called_once_with("clipboard")
     assert FakeTimer.started[-1].delay == gemini_mic.CLIPBOARD_BADGE_SEC

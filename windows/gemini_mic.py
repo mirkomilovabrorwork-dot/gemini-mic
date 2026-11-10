@@ -2610,6 +2610,11 @@ class GeminiMicApp:
             n_after, n_before, n_text = norm(after), norm(before), norm(text)
             tail = n_text[-40:]  # last <=40 non-space chars of the transcript
             landed = (tail in n_after) or (len(n_after) >= len(n_before) + len(n_text) // 2)
+            if not landed:  # 11-10 16:06 false alarm: the field updated later - look once more
+                time.sleep(0.8)
+                n_after = norm(read_focused_text())
+                landed = (tail in n_after) or (len(n_after) >= len(n_before) + len(n_text) // 2)
+            log("paste: check before=%d after=%d text=%d" % (len(n_before), len(n_after), len(n_text)))
             if landed:
                 log("paste: verified in field")
             else:
