@@ -141,6 +141,8 @@ IDEA_HOLD_SEC = 0.35       # Ctrl+Alt must be held alone this long to engage
 IDEA_OUTBOX_PATH = os.path.join(CONFIG_DIR, "idea-outbox.jsonl")
 IDEA_OUTBOX_RETRY_SEC = 60  # background retry cadence for the outbox
 IDEA_BADGE_SEC = 1.5        # "Saqlandi" badge duration
+CLIPBOARD_BADGE_SEC = 10.0  # blue "Nusxalandi: Ctrl+V" badge duration (owner 11-10:
+                            # 4 s was too short to notice while watching the field)
 IDEA_MASK_VK = 0xE8         # unassigned VK for the Alt menu-mask tap (AutoHotkey's choice)
 IDEA_MASK_VKS = (0xE8, 0xFF)  # key events the guard ignores as self-sent
 
@@ -888,6 +890,41 @@ def focus_foreground_editable():
         return False
     finally:
         del thread_init
+
+
+def read_focused_text():
+    """Text of the focused control, via ValuePattern or TextPattern, or None
+    when the field cannot be read (opaque app, no field, UIA missing).
+    NEVER raises — paste_text uses it only to VERIFY that a Ctrl+V landed;
+    an unreadable field is not an error (no false alarms, owner 11-10)."""
+    if _uia is None:
+        return None
+    # COM stays initialized for the thread's life: a per-call init/uninit let GC
+    # release this call's COM objects after CoUninitialize -> 0x80000003 crash (11-10 test)
+    try:
+        if not getattr(_uia_tls, "init", None):
+            _uia_tls.init = _uia.UIAutomationInitializerInThread()
+    except Exception:
+        pass
+    try:
+        c = _uia.GetFocusedControl()
+        if c is None:
+            return None
+        try:
+            v = c.GetValuePattern().Value
+            if isinstance(v, str):
+                return v
+        except Exception:
+            pass
+        try:
+            return c.GetTextPattern().DocumentRange.GetText(-1)
+        except Exception:
+            return None
+    except Exception:
+        return None
+
+
+_uia_tls = threading.local()
 
 
 # ---------------------------------------------------------------------------
@@ -2493,7 +2530,8 @@ class GeminiMicApp:
             pyperclip.copy(text)
             if self.badge is not None:
                 self.badge.show("clipboard")
-                threading.Timer(6.0, lambda: (not self.recording) and self.badge.hide()).start()
+                threading.Timer(CLIPBOARD_BADGE_SEC,
+                                lambda: (not self.recording) and self.badge.hide()).start()
             return
         log("retry: gave up after 15 min")
 
@@ -2503,6 +2541,11 @@ class GeminiMicApp:
         # If the user didn't click a text field, try to focus one in the
         # foreground window (like the phone) so the paste has a target.
         target_confirmed = focus_foreground_editable()
+        # Owner 11-10: "klipbordga tushadigan bo'lsa, klipbordga tushdi deb
+        # turib chiqaradigan qilib qo'y" - read the field BEFORE the paste so
+        # the landing can be verified afterwards. Only when a target exists;
+        # None = unreadable field (never a failure).
+        before = read_focused_text() if target_confirmed else None
         try:
             buf = ctypes.create_unicode_buffer(256)
             ctypes.windll.user32.GetWindowTextW(ctypes.windll.user32.GetForegroundWindow(), buf, 256)
@@ -2541,6 +2584,8 @@ class GeminiMicApp:
         # sent, yet no text appeared in the Electron foreground app.
         time.sleep(1.2)
 
+        after = read_focused_text() if target_confirmed else None
+
         if not target_confirmed:
             # No confirmed text field (e.g. Electron apps hide theirs from UIA).
             # Whether the Ctrl+V actually landed is NOT detectable for opaque
@@ -2548,11 +2593,35 @@ class GeminiMicApp:
             # transcript in the clipboard: the start/done beeps already signal a
             # dictation happened, and a missed paste is one Ctrl+V away.
             log("paste: no confirmed target -> transcript kept in clipboard")
-            # 11-08 owner did not know if his take arrived: say it for 4 s
+            # 11-08 owner did not know if his take arrived: say it (10 s, 11-10)
             if self.badge is not None:
                 self.badge.show("clipboard")
-                threading.Timer(4.0, lambda: (not self.recording) and self.badge.hide()).start()
+                threading.Timer(CLIPBOARD_BADGE_SEC,
+                                lambda: (not self.recording) and self.badge.hide()).start()
             return
+
+        if after is None:
+            # Target confirmed but its text is unreadable - can't tell whether
+            # the paste landed, so keep today's calm behaviour (restore, no
+            # badge). No false alarms in apps that hide their text.
+            log("paste: unverifiable field")
+        else:
+            norm = lambda s: "".join((s or "").split())
+            n_after, n_before, n_text = norm(after), norm(before), norm(text)
+            tail = n_text[-40:]  # last <=40 non-space chars of the transcript
+            landed = (tail in n_after) or (len(n_after) >= len(n_before) + len(n_text) // 2)
+            if landed:
+                log("paste: verified in field")
+            else:
+                # The Ctrl+V silently did not land - the transcript is still
+                # the ONLY copy in the clipboard, so do NOT restore the old
+                # one; keep it and tell the owner (owner 11-10).
+                log("paste: not landed -> transcript kept in clipboard")
+                if self.badge is not None:
+                    self.badge.show("clipboard")
+                    threading.Timer(CLIPBOARD_BADGE_SEC,
+                                    lambda: (not self.recording) and self.badge.hide()).start()
+                return
 
         if saved_clipboard is not None:
             try:
