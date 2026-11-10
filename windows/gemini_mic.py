@@ -134,6 +134,13 @@ DEFAULT_CONFIG = {
     # while it is held = silent discard. "ctrl+alt" = the older combo.
     # "" = off (Right Ctrl keeps today's paste behaviour either way).
     "idea_hotkey": "right_alt",
+    # Boosted mic monitor (2026-11-10, EarPods too quiet in Telegram): forward the
+    # live mic blocks, times a fixed gain + tanh soft limit, to a playback device
+    # (VB-Cable "CABLE Input"); pick "CABLE Output" as the mic in Telegram.
+    # False = nothing starts, no behaviour change.
+    "boost_monitor": False,
+    "boost_monitor_gain": 4.0,
+    "boost_monitor_device": "CABLE Input",
 }
 
 # Idea-capture constants (see docs/IDEA_CAPTURE_SPEC.md).
@@ -1861,6 +1868,9 @@ def relay_set_state(server, state, discard=False):
 # ---------------------------------------------------------------------------
 
 class GeminiMicApp:
+    boost_q = None  # boosted mic monitor (None = off); class defaults for fixtures that skip __init__
+    boost_out = None
+    _boost_missing_logged = False
     _idea_engaged = False
     idea_enabled = False  # __init__ sets the real value; old test fixtures skip __init__
     idea_active = False
@@ -2155,6 +2165,75 @@ class GeminiMicApp:
         self.ring.append(block)
         if self.recording:
             self.frames.append(block)
+        if self.boost_q is not None:
+            self._boost_push(block)
+
+    # -- boosted mic monitor (opt-in, see DEFAULT_CONFIG boost_monitor) ---------
+
+    def _boost_push(self, block):
+        """Mic-callback side: hand a copy to the monitor queue, never block."""
+        q = self.boost_q
+        if q is None:
+            return
+        try:
+            q.put_nowait(block.copy())
+        except queue.Full:
+            try:
+                q.get_nowait()  # drop the oldest block
+                q.put_nowait(block.copy())
+            except Exception:
+                pass
+
+    def _boost_out_callback(self, outdata, frames_count, time_info, status):
+        """Output side: gain, then tanh soft limit (no hard clip); silence when starved."""
+        try:
+            block = self.boost_q.get_nowait()
+        except Exception:
+            outdata[:] = 0
+            return
+        gain = float(self.cfg.get("boost_monitor_gain", DEFAULT_CONFIG["boost_monitor_gain"]))
+        y = np.tanh(block.astype(np.float32) / 32768.0 * gain) * 32767.0
+        n = min(len(y), len(outdata))
+        outdata[:n, 0] = y[:n].astype(np.int16)
+        outdata[n:] = 0
+
+    def _boost_stop(self):
+        out, self.boost_out, self.boost_q = self.boost_out, None, None
+        if out is not None:
+            try:
+                out.stop()
+                out.close()
+            except Exception:
+                pass
+            log("boost monitor: off")
+
+    def _boost_start(self):
+        """(Re)start the monitor next to the freshly opened mic stream. Never raises."""
+        try:
+            self._boost_stop()
+            if not self.cfg.get("boost_monitor", DEFAULT_CONFIG["boost_monitor"]):
+                return
+            frag = str(self.cfg.get("boost_monitor_device", DEFAULT_CONFIG["boost_monitor_device"])).lower()
+            dev = next((i for i, d in enumerate(sd.query_devices())
+                        if d["max_output_channels"] > 0 and frag in d["name"].lower()), None)
+            if dev is None:
+                if not self._boost_missing_logged:
+                    self._boost_missing_logged = True
+                    log("boost monitor: device not found")
+                return
+            self.boost_q = queue.Queue(maxsize=8)
+            out = sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, dtype="int16",
+                                  blocksize=STREAM_BLOCK, device=dev,
+                                  callback=self._boost_out_callback)
+            out.start()
+            self.boost_out = out
+            self._boost_missing_logged = False
+            log("boost monitor: on -> %s gain %sx" % (sd.query_devices(dev)["name"][:60],
+                self.cfg.get("boost_monitor_gain", DEFAULT_CONFIG["boost_monitor_gain"])))
+        except Exception as e:
+            self.boost_q = None
+            self.boost_out = None
+            log("boost monitor: start failed %r" % (e,))
 
     def resolve_input_device(self):
         """Config 'input_device' name fragment(s) -> candidate device indices, or None for
@@ -2246,6 +2325,7 @@ class GeminiMicApp:
                     mode = "WASAPI shared after raw was silent, "
                 self.stream = s
                 self.last_block = time.monotonic()  # grace until the first callback lands
+                self._boost_start()
                 log("mic stream opened on %s (%spersistent, ring %.1fs, preroll %.1fs)"
                     % (name, mode, RING_SEC, PRE_ROLL_SEC))
                 return True
@@ -3169,6 +3249,7 @@ class GeminiMicApp:
             self.recording = False
             stream = self.stream
             self.stream = None
+        self._boost_stop()
         try:
             if stream is not None:
                 stream.stop()
