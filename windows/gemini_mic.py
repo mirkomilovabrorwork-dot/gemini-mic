@@ -66,6 +66,26 @@ def log(msg):
     except Exception:
         pass
 
+
+HISTORY_PATH = os.environ.get("GEMINI_MIC_HISTORY_PATH") or os.path.join(CONFIG_DIR, "history.jsonl")
+
+
+def save_history(text, where):
+    """Every transcript in FULL + where it went, one JSON line, written BEFORE the paste
+    (owner 11-10: the 300-char log cut lost long dictations). >5 MB -> .old. Never raises."""
+    try:
+        os.makedirs(os.path.dirname(HISTORY_PATH), exist_ok=True)
+        try:
+            if os.path.getsize(HISTORY_PATH) > 5_000_000:
+                os.replace(HISTORY_PATH, HISTORY_PATH + ".old")
+        except OSError:
+            pass
+        with open(HISTORY_PATH, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"at": time.strftime("%Y-%m-%d %H:%M:%S"), "where": where,
+                                "chars": len(text), "text": text}, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
 DEFAULT_CONFIG = {
     "api_key": "",
     # Paid backup: any Google error -> the same model through OpenRouter at once
@@ -2482,6 +2502,13 @@ class GeminiMicApp:
         # If the user didn't click a text field, try to focus one in the
         # foreground window (like the phone) so the paste has a target.
         target_confirmed = focus_foreground_editable()
+        try:
+            buf = ctypes.create_unicode_buffer(256)
+            ctypes.windll.user32.GetWindowTextW(ctypes.windll.user32.GetForegroundWindow(), buf, 256)
+            win = buf.value
+        except Exception:
+            win = "?"
+        save_history(text, ("field: " if target_confirmed else "no target -> clipboard: ") + win)
 
         try:
             saved_clipboard = pyperclip.paste()
@@ -2543,6 +2570,7 @@ class GeminiMicApp:
         text = (text or "").strip()
         if not text:
             return
+        save_history(text, "idea -> TickTick")
         title = " ".join(text.split())[:60]
         content = text + "\n\n[manba: PC %s]" % time.strftime("%H:%M")
         try:
