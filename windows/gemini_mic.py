@@ -67,7 +67,8 @@ def log(msg):
         pass
 
 
-HISTORY_PATH = os.environ.get("GEMINI_MIC_HISTORY_PATH") or os.path.join(CONFIG_DIR, "history.jsonl")
+# next to the log, so tests that redirect GEMINI_MIC_LOG_PATH never write the live history
+HISTORY_PATH = os.environ.get("GEMINI_MIC_HISTORY_PATH") or os.path.join(os.path.dirname(LOG_PATH), "history.jsonl")
 
 
 def save_history(text, where):
