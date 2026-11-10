@@ -100,8 +100,8 @@ class OnTest(BoostBase):
         for v in range(1, 20):
             self.app._audio_callback(self.mic_block(v), 1600, None, None)  # would hang if it blocked
         q = self.app.boost_q
-        self.assertEqual(q.qsize(), 8)
-        self.assertEqual(int(q.get_nowait()[0]), 12)  # oldest 11 dropped
+        self.assertEqual(q.qsize(), 3)
+        self.assertEqual(int(q.get_nowait()[0]), 17)  # oldest 16 dropped
 
     def test_reopen_and_stop(self):
         self.app._boost_start()

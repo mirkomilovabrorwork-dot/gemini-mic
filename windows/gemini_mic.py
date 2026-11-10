@@ -1987,6 +1987,7 @@ class GeminiMicApp:
                     s.stop(); s.close()
             except Exception:
                 pass
+            self._boost_stop()  # PortAudio terminate frees open streams; close ours first
             try:
                 sd._terminate()
                 sd._initialize()
@@ -2191,7 +2192,10 @@ class GeminiMicApp:
         except Exception:
             outdata[:] = 0
             return
-        gain = float(self.cfg.get("boost_monitor_gain", DEFAULT_CONFIG["boost_monitor_gain"]))
+        try:
+            gain = float(self.cfg.get("boost_monitor_gain", DEFAULT_CONFIG["boost_monitor_gain"]))
+        except (TypeError, ValueError):
+            gain = DEFAULT_CONFIG["boost_monitor_gain"]
         y = np.tanh(block.astype(np.float32) / 32768.0 * gain) * 32767.0
         n = min(len(y), len(outdata))
         outdata[:n, 0] = y[:n].astype(np.int16)
@@ -2221,7 +2225,7 @@ class GeminiMicApp:
                     self._boost_missing_logged = True
                     log("boost monitor: device not found")
                 return
-            self.boost_q = queue.Queue(maxsize=8)
+            self.boost_q = queue.Queue(maxsize=3)
             out = sd.OutputStream(samplerate=SAMPLE_RATE, channels=1, dtype="int16",
                                   blocksize=STREAM_BLOCK, device=dev,
                                   callback=self._boost_out_callback)
@@ -2292,6 +2296,7 @@ class GeminiMicApp:
                 pass
             self.stream = None
             if not fresh:
+                self._boost_stop()  # PortAudio terminate frees open streams; close ours first
                 # The device vanished while we ran — PortAudio's cached device
                 # list is stale too, so re-initialize before rescanning, exactly
                 # like the tray "Mikrofonni qayta ulash" button does.
