@@ -28,6 +28,7 @@ final class IdeaDrain {
     static final int OUT_QUEUED = 1;
     static final int OUT_SILENT = 2;
     static final int OUT_FAILED = 3;
+    static final int OUT_OFFLINE = 4;  // no network / no key: every item would fail, stop the pass
 
     static final Set<String> IN_FLIGHT = Collections.synchronizedSet(new HashSet<>());
     private static final ReentrantLock LOCK = new ReentrantLock();
@@ -89,13 +90,17 @@ final class IdeaDrain {
             Thread.currentThread().interrupt();  // service/job stopped: not the audio's fault
             return new Outcome(OUT_FAILED, null);
         } catch (Exception e) {
-            IdeaAudioQueue.markFailed(item, System.currentTimeMillis());  // audio stays queued
-            return new Outcome(OUT_FAILED, null);
+            long now = System.currentTimeMillis();
+            String reason = IdeaAudioQueue.sanitizeReason(e.getMessage(), e.getClass().getSimpleName());
+            IdeaAudioQueue.markFailed(item, now, reason);  // audio stays queued
+            Prefs.get(ctx).edit().putString(Prefs.IDEA_LAST_ERROR, reason)
+                    .putLong(Prefs.IDEA_LAST_ERROR_AT, now).apply();
+            return new Outcome(IdeaAudioQueue.isNetworkOrKey(e) ? OUT_OFFLINE : OUT_FAILED, null);
         }
     }
 
     /**
-     * Worker thread: oldest first, one item at a time, stop at the first failure or
+     * Worker thread: oldest first, one item at a time, stop at the first no-network/no-key failure or
      * when endAtMs has passed; then the text queue. Returns false when another pass
      * already holds the lock (nothing was done). No vibration here.
      */
@@ -110,6 +115,7 @@ final class IdeaDrain {
             } catch (Exception ignored) {
                 wl = null;
             }
+            int failedInRow = 0;
             for (IdeaAudioQueue.Item item : IdeaAudioQueue.list(audioDir(ctx))) {
                 if (Thread.currentThread().isInterrupted()) return true;
                 if (System.currentTimeMillis() > endAtMs) return true;  // job time is short: next run continues
@@ -123,7 +129,11 @@ final class IdeaDrain {
                 } finally {
                     IN_FLIGHT.remove(item.name());
                 }
-                if (outcome.kind == OUT_FAILED) break;  // still offline / model down: keep order
+                if (outcome.kind == OUT_OFFLINE) break;  // no network / no key: stop as before
+                // OUT_FAILED: this item is bad, the next one may still go through -
+                // but two different items failing in a row = the system (stall, 429, 5xx), not the item
+                failedInRow = outcome.kind == OUT_FAILED ? failedInRow + 1 : 0;
+                if (failedInRow >= 2) break;
             }
             if (!Thread.currentThread().isInterrupted()) {
                 TickTickPoster.retryQueue(ctx);  // text queue after the audio items

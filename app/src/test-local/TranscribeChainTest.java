@@ -206,7 +206,7 @@ public class TranscribeChainTest {
 
         // failure keeps the file, persists the count
         long now = base + 10_000_000L;
-        IdeaAudioQueue.markFailed(l.get(0), now);
+        IdeaAudioQueue.markFailed(l.get(0), now, "boom");
         IdeaAudioQueue.Item re = IdeaAudioQueue.list(dir).get(0);
         check("queue: failure keeps file, fails persisted", re.audio.exists() && re.fails == 1
                 && re.lastTry == now);
@@ -216,8 +216,8 @@ public class TranscribeChainTest {
         check("queue: force (network back) ignores spacing", IdeaAudioQueue.due(re, now + 1, true));
 
         // 3 failures -> 15 min spacing
-        IdeaAudioQueue.markFailed(re, now);
-        IdeaAudioQueue.markFailed(re, now);
+        IdeaAudioQueue.markFailed(re, now, "boom");
+        IdeaAudioQueue.markFailed(re, now, "boom");
         IdeaAudioQueue.Item three = IdeaAudioQueue.list(dir).get(0);
         check("queue: after 3 fails spaced to 15 min", three.fails == 3
                 && !IdeaAudioQueue.due(three, now + 14 * 60_000, false)
@@ -257,5 +257,24 @@ public class TranscribeChainTest {
         check("handoff: interrupt flag restored afterwards", flagAfter);
         String r2 = Uninterruptible.call(() -> "x");
         check("handoff: no interrupt -> flag stays clear", "x".equals(r2) && !Thread.currentThread().isInterrupted());
+
+        // failure reason: key stripped, capped, sidecar round-trip; network vs item classification
+        String red = IdeaAudioQueue.sanitizeReason("HTTP 400 https://x/y:generateContent?key=AIzaSECRET&a=1", null);
+        check("reason: nothing after key= survives", !red.contains("AIza") && !red.contains("key="));
+        check("reason: null -> fallback class name", "IOException".equals(IdeaAudioQueue.sanitizeReason(null, "IOException")));
+        check("reason: capped at 200", IdeaAudioQueue.sanitizeReason("x".repeat(500), null).length() == 200);
+        check("class: UnknownHost wrapped in Retryable stops the pass", IdeaAudioQueue.isNetworkOrKey(
+                new TranscribeChain.Retryable("t", new java.net.UnknownHostException("h"))));
+        check("class: timeout/connect stop the pass", IdeaAudioQueue.isNetworkOrKey(new java.net.SocketTimeoutException())
+                && IdeaAudioQueue.isNetworkOrKey(new java.net.ConnectException()));
+        check("class: missing key stops the pass", IdeaAudioQueue.isNetworkOrKey(new TranscribeChain.Fatal("Missing Gemini API key")));
+        check("class: bad answer / HTTP 400 is an item failure", !IdeaAudioQueue.isNetworkOrKey(new TranscribeChain.BadAnswer("blocked"))
+                && !IdeaAudioQueue.isNetworkOrKey(new TranscribeChain.Retryable("t", new TranscribeChain.HttpException(400, "bad"))));
+        File d = Files.createTempDirectory("qerr").toFile();
+        File a = new File(d, "in.aac");
+        Files.write(a.toPath(), new byte[]{1, 2, 3});
+        IdeaAudioQueue.Item it = IdeaAudioQueue.store(d, a, 1000L, 2000L);
+        IdeaAudioQueue.markFailed(it, 5L, "Gemini error 400 key=ZZZ");
+        check("reason: persisted in sidecar and read back", "Gemini error 400".equals(IdeaAudioQueue.list(d).get(0).lastError));
     }
 }

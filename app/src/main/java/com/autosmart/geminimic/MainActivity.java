@@ -529,8 +529,16 @@ public class MainActivity extends Activity {
         new Thread(() -> {
             final int queued = TickTickPoster.queuedCount(this);
             final int audioQueued = IdeaAudioQueue.count(new File(getFilesDir(), IdeaAudioQueue.DIR_NAME));
-            final String text = (linked ? "TickTick: ulangan" : "TickTick: ulanmagan")
+            String status = (linked ? "TickTick: ulangan" : "TickTick: ulanmagan")
                     + ", navbatda " + queued + " ta, ovoz navbatda " + audioQueued + " ta";
+            String lastErr = Prefs.get(this).getString(Prefs.IDEA_LAST_ERROR, "");
+            if (audioQueued > 0 && !lastErr.isEmpty()) {
+                status += "\nOxirgi xato ("
+                        + new java.text.SimpleDateFormat("dd.MM HH:mm",java.util.Locale.ROOT).format(
+                                new java.util.Date(Prefs.get(this).getLong(Prefs.IDEA_LAST_ERROR_AT, 0)))
+                        + "): " + lastErr;
+            }
+            final String text = status;
             runOnUiThread(() -> {
                 if (ticktickStatusLabel != null) ticktickStatusLabel.setText(text);
             });

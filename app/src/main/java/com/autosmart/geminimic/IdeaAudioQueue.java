@@ -38,6 +38,7 @@ final class IdeaAudioQueue {
         final long ms;     // duration
         int fails;
         long lastTry;
+        String lastError = "";
 
         Item(File audio, File json, long atMs, long ms, int fails, long lastTry) {
             this.audio = audio;
@@ -103,10 +104,32 @@ final class IdeaAudioQueue {
         return now - item.lastTry >= gap;
     }
 
-    static void markFailed(Item item, long now) {
+    static void markFailed(Item item, long now, String reason) {
         item.fails++;
         item.lastTry = now;
+        item.lastError = sanitizeReason(reason, null);
         writeSidecar(item);
+    }
+
+    /** Reason for storage/display: no API key (cut at "key="), no quotes/control chars, <= 200 chars. */
+    static String sanitizeReason(String reason, String fallback) {
+        String r = reason == null || reason.trim().isEmpty() ? fallback : reason;
+        if (r == null) return "";
+        int k = r.indexOf("key=");
+        if (k >= 0) r = r.substring(0, k);
+        r = r.replaceAll("[\\p{Cntrl}\"\\\\]", " ").trim();
+        return r.length() > 200 ? r.substring(0, 200) : r;
+    }
+
+    /** True when the failure is the network / the key (every item would fail): the pass must stop. */
+    static boolean isNetworkOrKey(Throwable t) {
+        for (int i = 0; t != null && i < 10; i++, t = t.getCause()) {
+            if (t instanceof java.net.UnknownHostException || t instanceof java.net.SocketTimeoutException
+                    || t instanceof java.net.ConnectException) return true;
+            String m = t.getMessage();
+            if (m != null && (m.contains("Missing Gemini API key") || m.contains("kaliti qabul qilinmadi"))) return true;
+        }
+        return false;
     }
 
     static void remove(Item item) {
@@ -119,7 +142,8 @@ final class IdeaAudioQueue {
         String iso = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ROOT)
                 .format(new Date(item.atMs));
         String body = "{\"at\":\"" + iso + "\",\"atMs\":" + item.atMs + ",\"ms\":" + item.ms
-                + ",\"fails\":" + item.fails + ",\"lastTry\":" + item.lastTry + "}";
+                + ",\"fails\":" + item.fails + ",\"lastTry\":" + item.lastTry
+                + ",\"lastError\":\"" + (item.lastError == null ? "" : item.lastError) + "\"}";
         try {
             FileOutputStream out = new FileOutputStream(item.json, false);
             try {
@@ -136,17 +160,22 @@ final class IdeaAudioQueue {
         long ms = 0;
         int fails = 0;
         long lastTry = 0;
+        String lastError = "";
         try {
             String s = new String(Files.readAllBytes(json.toPath()), StandardCharsets.UTF_8);
             atMs = num(s, "atMs", atMs);
             ms = num(s, "ms", 0);
             fails = (int) num(s, "fails", 0);
             lastTry = num(s, "lastTry", 0);
+            Matcher e = Pattern.compile("\"lastError\"\\s*:\\s*\"([^\"]*)\"").matcher(s);
+            if (e.find()) lastError = e.group(1);
         } catch (IOException ignored) {
             // no sidecar: file time, duration estimated from the size below
         }
         if (ms <= 0) ms = Math.max(1000, audio.length() * 8000L / 48000L);  // 48 kbps estimate
-        return new Item(audio, json, atMs, ms, fails, lastTry);
+        Item item = new Item(audio, json, atMs, ms, fails, lastTry);
+        item.lastError = lastError;
+        return item;
     }
 
     private static long num(String s, String key, long dflt) {

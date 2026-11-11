@@ -24,6 +24,9 @@ final class Prefs {
     // TickTick pairing, fetched from the PC relay (GET <pc>/ticktick) - no typing.
     static final String TICKTICK_TOKEN = "ticktick_token";
     static final String TICKTICK_PROJECT = "ticktick_project_id";
+    // Latest idea-transcription failure (reason without any key + time), shown in the status line.
+    static final String IDEA_LAST_ERROR = "idea_last_error";
+    static final String IDEA_LAST_ERROR_AT = "idea_last_error_at";
 
     private Prefs() {
     }
